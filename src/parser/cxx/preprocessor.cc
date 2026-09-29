@@ -777,6 +777,19 @@ struct Preprocessor::Private {
     return tk;
   }
 
+  // Keep generated spelling separate from the physical source placement of
+  // the token that produced it.
+  [[nodiscard]] auto genTok(TokenKind kind, const std::string_view& text,
+                            const Tok& origin) -> Tok {
+    auto tk = genTok(kind, text);
+    tk.sourceFile = origin.sourceFile;
+    tk.offset = origin.offset;
+    tk.length = origin.length;
+    tk.bol = origin.bol;
+    tk.space = origin.space;
+    return tk;
+  }
+
   [[nodiscard]] auto copyTok(const Tok& src) -> Tok { return src; }
 
   [[nodiscard]] auto tokenForDiagnostic(const Tok& tk) const -> Token {
@@ -1251,16 +1264,14 @@ void Preprocessor::Private::initialize() {
   adddBuiltinMacro(
       "__FILE__", [this](const MacroExpansionContext& context) -> TokVector {
         TokVector result;
-        auto tk =
-            genTok(TokenKind::T_STRING_LITERAL,
-                   quoteStringLiteral(preprocessor_
-                                          ->presumedTokenStartPosition(
-                                              tokenForDiagnostic(*context.tok))
-                                          .fileName));
-        tk.space = context.tok->space;
-        tk.bol = context.tok->bol;
-        tk.offset = context.tok->offset;
-        tk.sourceFile = context.tok->sourceFile;
+        auto tk = genTok(
+            TokenKind::T_STRING_LITERAL,
+            quoteStringLiteral(
+                preprocessor_
+                    ->presumedTokenStartPosition(
+                        tokenForDiagnostic(*context.tok))
+                    .fileName),
+            *context.tok);
         result.push_back(tk);
         return result;
       });
@@ -1270,60 +1281,40 @@ void Preprocessor::Private::initialize() {
         TokVector result;
         const auto start = preprocessor_->presumedTokenStartPosition(
             tokenForDiagnostic(*context.tok));
-        auto tk =
-            genTok(TokenKind::T_INTEGER_LITERAL, std::to_string(start.line));
-        tk.sourceFile = context.tok->sourceFile;
-        tk.space = context.tok->space;
-        tk.bol = context.tok->bol;
-        tk.offset = context.tok->offset;
+        auto tk = genTok(TokenKind::T_INTEGER_LITERAL,
+                         std::to_string(start.line), *context.tok);
+        result.push_back(tk);
+        return result;
+      });
+
+  adddBuiltinMacro("__COUNTER__",
+                   [this](const MacroExpansionContext& context) -> TokVector {
+                     TokVector result;
+                     auto tk = genTok(TokenKind::T_INTEGER_LITERAL,
+                                      std::to_string(counter_++), *context.tok);
+                     result.push_back(tk);
+                     return result;
+                   });
+
+  adddBuiltinMacro(
+      "__DATE__", [this](const MacroExpansionContext& context) -> TokVector {
+        TokVector result;
+        auto tk = genTok(TokenKind::T_STRING_LITERAL, date_, *context.tok);
         result.push_back(tk);
         return result;
       });
 
   adddBuiltinMacro(
-      "__COUNTER__", [this](const MacroExpansionContext& context) -> TokVector {
+      "__TIME__", [this](const MacroExpansionContext& context) -> TokVector {
         TokVector result;
-        auto tk =
-            genTok(TokenKind::T_INTEGER_LITERAL, std::to_string(counter_++));
-        tk.sourceFile = context.tok->sourceFile;
-        tk.space = context.tok->space;
-        tk.bol = context.tok->bol;
-        tk.offset = context.tok->offset;
+        auto tk = genTok(TokenKind::T_STRING_LITERAL, time_, *context.tok);
         result.push_back(tk);
         return result;
       });
 
-  adddBuiltinMacro("__DATE__",
-                   [this](const MacroExpansionContext& context) -> TokVector {
-                     TokVector result;
-                     auto tk = genTok(TokenKind::T_STRING_LITERAL, date_);
-                     tk.sourceFile = context.tok->sourceFile;
-                     tk.space = context.tok->space;
-                     tk.bol = context.tok->bol;
-                     tk.offset = context.tok->offset;
-                     result.push_back(tk);
-                     return result;
-                   });
-
-  adddBuiltinMacro("__TIME__",
-                   [this](const MacroExpansionContext& context) -> TokVector {
-                     TokVector result;
-                     auto tk = genTok(TokenKind::T_STRING_LITERAL, time_);
-                     tk.sourceFile = context.tok->sourceFile;
-                     tk.space = context.tok->space;
-                     tk.bol = context.tok->bol;
-                     tk.offset = context.tok->offset;
-                     result.push_back(tk);
-                     return result;
-                   });
-
   auto replaceWithIntegerLiteral = [this](const Tok& token,
                                           std::string_view spelling) -> Tok {
-    auto tk = genTok(TokenKind::T_INTEGER_LITERAL, spelling);
-    tk.sourceFile = token.sourceFile;
-    tk.space = token.space;
-    tk.bol = token.bol;
-    return tk;
+    return genTok(TokenKind::T_INTEGER_LITERAL, spelling, token);
   };
 
   auto replaceWithBoolLiteral = [replaceWithIntegerLiteral](const Tok& token,
@@ -1333,11 +1324,7 @@ void Preprocessor::Private::initialize() {
 
   auto replaceWithLocal = [this](const Tok& token,
                                  std::string_view local) -> Tok {
-    auto tk = genTok(TokenKind::T_PP_INTERNAL_VARIABLE, local);
-    tk.sourceFile = token.sourceFile;
-    tk.space = token.space;
-    tk.bol = token.bol;
-    return tk;
+    return genTok(TokenKind::T_PP_INTERNAL_VARIABLE, local, token);
   };
 
   adddBuiltinFunctionMacro(
