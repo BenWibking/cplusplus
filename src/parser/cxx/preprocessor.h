@@ -77,6 +77,7 @@ class Preprocessor final : public SourceResolver {
   [[nodiscard]] auto commentHandler() const -> CommentHandler*;
   void setCommentHandler(CommentHandler* commentHandler);
 
+  // Returns the current directory with generic '/' separators.
   [[nodiscard]] auto currentPath() const -> std::string;
   void setCurrentPath(std::string currentPath);
 
@@ -129,21 +130,25 @@ class Preprocessor final : public SourceResolver {
       const std::vector<std::pair<unsigned, int>>& packChanges) const -> Text;
   [[nodiscard]] auto macros() const -> Macros;
 
+  // Returns include search directories with generic '/' separators.
   [[nodiscard]] auto systemIncludePaths() const
       -> const std::vector<std::string>&;
 
   void addSystemIncludePath(std::string path);
 
+  // Returns system framework directories with generic '/' separators.
   [[nodiscard]] auto systemFrameworkPaths() const
       -> const std::vector<std::string>&;
 
   void addSystemFrameworkPath(std::string path);
 
+  // Returns quote-include directories with generic '/' separators.
   [[nodiscard]] auto quoteIncludePaths() const
       -> const std::vector<std::string>&;
 
   void addQuoteIncludePath(std::string path);
 
+  // Returns user-include directories with generic '/' separators.
   [[nodiscard]] auto userIncludePaths() const
       -> const std::vector<std::string>&;
 

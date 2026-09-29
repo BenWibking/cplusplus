@@ -3446,9 +3446,9 @@ auto Preprocessor::Private::locateCursorInInclude(
   };
 
   for (const auto& directory :
-       buildSearchDirs(currentPath_.string(), isQuoted)) {
+       buildSearchDirs(currentPath_.generic_string(), isQuoted)) {
     for (const auto& candidate : candidateFileNames(directory, directoryPart))
-      cursor.request->directories.push_back(candidate.string());
+      cursor.request->directories.push_back(candidate.generic_string());
   }
 
   return cursor;
@@ -3666,7 +3666,7 @@ auto Preprocessor::Private::resolve(const Include& include,
   auto cacheKey = IncludeCacheKey{
       .isQuoted = isQuoted,
       .isIncludeNext = isIncludeNext,
-      .currentPath = currentPath_.string(),
+      .currentPath = currentPath_.generic_string(),
       .headerName = headerName,
   };
 
@@ -3688,12 +3688,12 @@ auto Preprocessor::Private::resolveUncached(const Include& include,
   auto tryCandidate =
       [&](const SearchDirectory& dir) -> std::optional<std::string> {
     for (const auto& candidate : candidateFileNames(dir, headerName)) {
-      if (fileExists(candidate)) return candidate.string();
+      if (fileExists(candidate)) return candidate.generic_string();
     }
     return std::nullopt;
   };
 
-  auto curDir = currentPath_.string();
+  auto curDir = currentPath_.generic_string();
 
   if (!isIncludeNext) {
     if (auto r = resolveNormal(tryCandidate, curDir, isQuoted)) return r;
@@ -3741,7 +3741,7 @@ auto Preprocessor::Private::buildCandidates(const Include& include,
     -> std::vector<IncludeCandidate> {
   const auto headerName = getHeaderName(include);
   const bool isQuoted = std::holds_alternative<QuoteInclude>(include);
-  const auto curDir = currentPath_.string();
+  const auto curDir = currentPath_.generic_string();
   auto dirs = buildSearchDirs(curDir, isQuoted);
 
   std::size_t startIndex = 0;
@@ -3763,7 +3763,7 @@ auto Preprocessor::Private::buildCandidates(const Include& include,
   for (std::size_t i = startIndex; i < dirs.size(); ++i) {
     for (const auto& fileName : candidateFileNames(dirs[i], headerName)) {
       candidates.push_back({
-          .fileName = fileName.string(),
+          .fileName = fileName.generic_string(),
           .isSystemHeader = dirs[i].isSystem,
       });
     }
@@ -4036,7 +4036,7 @@ void Preprocessor::setCommentHandler(CommentHandler* commentHandler) {
 }
 
 auto Preprocessor::currentPath() const -> std::string {
-  return d->currentPath_.string();
+  return d->currentPath_.generic_string();
 }
 
 void Preprocessor::setCurrentPath(std::string currentPath) {
@@ -4330,15 +4330,16 @@ auto Preprocessor::systemIncludePaths() const
   return d->systemIncludePaths_;
 }
 
-static void stripTrailingSep(std::string& path) {
-  while (path.length() > 1 && path.ends_with(fs::path::preferred_separator)) {
-    path.pop_back();
+static auto normalizeIncludeDirectory(std::string path) -> std::string {
+  auto directory = fs::path(std::move(path));
+  while (directory.has_relative_path() && directory.filename().empty()) {
+    directory = directory.parent_path();
   }
+  return directory.generic_string();
 }
 
 void Preprocessor::addSystemIncludePath(std::string path) {
-  stripTrailingSep(path);
-  d->systemIncludePaths_.push_back(std::move(path));
+  d->systemIncludePaths_.push_back(normalizeIncludeDirectory(std::move(path)));
 }
 
 auto Preprocessor::systemFrameworkPaths() const
@@ -4347,13 +4348,12 @@ auto Preprocessor::systemFrameworkPaths() const
 }
 
 void Preprocessor::addSystemFrameworkPath(std::string path) {
-  stripTrailingSep(path);
-  d->systemFrameworkPaths_.push_back(std::move(path));
+  d->systemFrameworkPaths_.push_back(
+      normalizeIncludeDirectory(std::move(path)));
 }
 
 void Preprocessor::addQuoteIncludePath(std::string path) {
-  stripTrailingSep(path);
-  d->quoteIncludePaths_.push_back(std::move(path));
+  d->quoteIncludePaths_.push_back(normalizeIncludeDirectory(std::move(path)));
 }
 
 auto Preprocessor::quoteIncludePaths() const
@@ -4362,8 +4362,7 @@ auto Preprocessor::quoteIncludePaths() const
 }
 
 void Preprocessor::addUserIncludePath(std::string path) {
-  stripTrailingSep(path);
-  d->userIncludePaths_.push_back(std::move(path));
+  d->userIncludePaths_.push_back(normalizeIncludeDirectory(std::move(path)));
 }
 
 auto Preprocessor::userIncludePaths() const -> const std::vector<std::string>& {
