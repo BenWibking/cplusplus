@@ -441,11 +441,9 @@ class Binder {
 
   void bind(TypenameSpecifierAST* ast);
 
-  void bind(EnumeratorAST* ast, const Type* previousType,
-            std::optional<ConstValue> value);
-
-  [[nodiscard]] static auto nextEnumeratorValue(
-      const std::optional<ConstValue>& previous) -> std::optional<ConstValue>;
+  // Binds the provisional type and value visible inside an enum definition.
+  // A null previous symbol denotes the first enumerator.
+  void bind(EnumeratorAST* ast, EnumeratorSymbol* previous);
 
   void bind(TypeExceptionDeclarationAST* ast, const Decl& decl);
 
@@ -907,10 +905,6 @@ class Binder {
   [[nodiscard]] auto specializeMemberClassTemplate(
       ClassSymbol* declared, TemplateDeclarationAST* templateHead,
       SourceLocation location) -> ClassSymbol*;
-
-  [[nodiscard]] auto enumeratorType(
-      EnumeratorAST* ast, const Type* previousType,
-      const std::optional<ConstValue>& value) const -> const Type*;
   void inheritDefaultArgument(ParameterSymbol* target, ParameterSymbol* source);
 
   [[nodiscard]] static auto functionBodyBlock(ScopeSymbol* scope)

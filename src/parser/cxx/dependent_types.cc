@@ -1078,6 +1078,7 @@ auto IsDependent::operator()(IdExpressionAST* ast) -> bool {
   if (namesDependentTemplateParameter(ast->symbol)) return true;
 
   if (auto enumerator = symbol_cast<EnumeratorSymbol>(ast->symbol)) {
+    if (!enumerator->value() && isInTemplateScope(enumerator)) return true;
     if (isDependent(enumerator->type())) return true;
   }
 
