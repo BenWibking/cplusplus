@@ -58,6 +58,7 @@ add_library(cxx-parser
     cxx/binder_resolve_id.cc
     cxx/binder_declare_function.cc
     cxx/binder_device.cc
+    cxx/binder_enums.cc
     cxx/binder_range_for.cc
     cxx/binder_structured_bindings.cc
     cxx/binder_vtable_layout.cc

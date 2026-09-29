@@ -764,8 +764,7 @@ class Parser final {
                                      List<SpecifierAST*>*& typeSpecifierList,
                                      DeclSpecs& specs) -> bool;
   void parse_enumerator_list(List<EnumeratorAST*>*& yyast);
-  void parse_enumerator(EnumeratorAST*& yyast, const Type* previousType,
-                        const std::optional<ConstValue>& previousValue);
+  void parse_enumerator(EnumeratorAST*& yyast, EnumeratorSymbol* previous);
   [[nodiscard]] auto parse_using_enum_declaration(DeclarationAST*& yyast)
       -> bool;
   [[nodiscard]] auto parse_namespace_definition(DeclarationAST*& yyast) -> bool;

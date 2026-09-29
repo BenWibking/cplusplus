@@ -9007,36 +9007,25 @@ auto Parser::parse_enum_base(SourceLocation& colonLoc,
 
 void Parser::parse_enumerator_list(List<EnumeratorAST*>*& yyast) {
   auto it = &yyast;
+  EnumeratorSymbol* previous = nullptr;
+  do {
+    EnumeratorAST* enumerator = nullptr;
+    parse_enumerator(enumerator, previous);
+    previous = enumerator->symbol;
+    *it = make_list_node(pool_, enumerator);
+    it = &(*it)->next;
 
-  EnumeratorAST* enumerator = nullptr;
-  parse_enumerator(enumerator, nullptr, std::nullopt);
-
-  *it = make_list_node(pool_, enumerator);
-  it = &(*it)->next;
-
-  auto lastValue = enumerator->symbol->value();
-
-  SourceLocation commaLoc;
-  auto previousType = enumerator->symbol->type();
-
-  while (match(TokenKind::T_COMMA, commaLoc)) {
+    SourceLocation commaLoc;
+    if (!match(TokenKind::T_COMMA, commaLoc)) break;
     if (lookat(TokenKind::T_RBRACE)) {
       rewind(commaLoc);
       break;
     }
-
-    EnumeratorAST* enumerator = nullptr;
-    parse_enumerator(enumerator, previousType, lastValue);
-    lastValue = enumerator->symbol->value();
-    previousType = enumerator->symbol->type();
-
-    *it = make_list_node(pool_, enumerator);
-    it = &(*it)->next;
-  }
+  } while (true);
 }
 
-void Parser::parse_enumerator(EnumeratorAST*& yyast, const Type* previousType,
-                              const std::optional<ConstValue>& previousValue) {
+void Parser::parse_enumerator(EnumeratorAST*& yyast,
+                              EnumeratorSymbol* previous) {
   auto ast = EnumeratorAST::create(pool_);
   yyast = ast;
 
@@ -9046,19 +9035,13 @@ void Parser::parse_enumerator(EnumeratorAST*& yyast, const Type* previousType,
 
   parse_optional_attribute_specifier_seq(ast->attributeList);
 
-  std::optional<ConstValue> value;
-
   if (match(TokenKind::T_EQUAL, ast->equalLoc)) {
-    if (!parse_constant_expression(ast->expression, value)) {
+    if (!parse_constant_expression(ast->expression)) {
       report_failed_parse("expected an expression");
-    } else {
-      check_constant_expression(ast->expression, value, "enumerator value");
     }
   }
 
-  if (!ast->expression) value = Binder::nextEnumeratorValue(previousValue);
-
-  binder_.bind(ast, previousType, std::move(value));
+  binder_.bind(ast, previous);
   checkTemplateParameterRebinding(ast->symbol);
 }
 
