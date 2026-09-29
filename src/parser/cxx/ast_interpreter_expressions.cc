@@ -49,7 +49,6 @@
 
 namespace cxx {
 namespace {
-
 [[nodiscard]] auto namedTypeSymbol(const Type* type) -> Symbol* {
   if (auto classType = unqualified_cast<ClassType>(type))
     return classType->symbol();
