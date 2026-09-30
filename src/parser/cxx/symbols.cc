@@ -3327,6 +3327,10 @@ void EnumSymbol::setPromotionType(const Type* promotionType) {
   promotionType_ = promotionType;
 }
 
+auto EnumSymbol::isPacked() const -> bool {
+  return findAttribute(attributes(), AttributeKind::kPacked) != nullptr;
+}
+
 ScopedEnumSymbol::ScopedEnumSymbol(ScopeSymbol* enclosingScope)
     : ScopeSymbol(Kind, enclosingScope) {}
 
