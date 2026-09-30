@@ -599,7 +599,7 @@ auto ASTInterpreter::toArithmeticType(const ConstValue& value, const Type* type)
     case TypeKind::kHalf:
     case TypeKind::kFloat16: {
       if (std::holds_alternative<ConstFloat16>(value)) return value;
-      auto result = toDouble(value);
+      auto result = toLongDouble(value);
       auto format = control()->memoryLayout()->floatingPointFormat(type);
       if (!result || !format) return std::nullopt;
       return ConstValue{ConstFloat16{

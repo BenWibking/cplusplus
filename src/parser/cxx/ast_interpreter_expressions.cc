@@ -337,6 +337,9 @@ struct ASTInterpreter::ExpressionVisitor {
     if (unit()->typeTraits().is_integral_or_unscoped_enum(type)) return operand;
 
     switch (type->kind()) {
+      case TypeKind::kHalf:
+      case TypeKind::kFloat16:
+        return interp.toArithmeticType(*operand, type);
       case TypeKind::kFloat:
         return ConstValue{toFloat(*operand)};
       case TypeKind::kDouble:
@@ -370,6 +373,13 @@ struct ASTInterpreter::ExpressionVisitor {
     }
 
     switch (type->kind()) {
+      case TypeKind::kHalf:
+      case TypeKind::kFloat16: {
+        auto value = std::get_if<ConstFloat16>(&*operand);
+        if (!value) return std::nullopt;
+        return ConstValue{
+            ConstFloat16{static_cast<std::uint16_t>(value->bits ^ 0x8000)}};
+      }
       case TypeKind::kFloat:
         return ConstValue{-toFloat(*operand)};
       case TypeKind::kDouble:
@@ -2948,6 +2958,10 @@ auto ASTInterpreter::ExpressionVisitor::operator()(
   if (ast->literalOperatorCall) return evaluate(ast->literalOperatorCall);
   if (ast->literal->components().isLongDouble)
     return ast->literal->longDoubleValue();
+  if (ast->literal->components().suffix ==
+      FloatLiteral::Components::FloatingPointSuffix::kF16)
+    return interp.toArithmeticType(ConstValue{ast->literal->longDoubleValue()},
+                                   ast->type);
   return interp.toArithmeticType(ConstValue{ast->literal->floatValue()},
                                  ast->type);
 }

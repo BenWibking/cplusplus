@@ -27,6 +27,7 @@
 #include <bit>
 #include <charconv>
 #include <cstdint>
+#include <cstdlib>
 #include <format>
 
 namespace cxx {
@@ -969,13 +970,12 @@ auto FloatLiteral::Components::from(std::string_view text,
   components.literalPart = text.substr(0, pos);
 
   const auto firstChar = literalText.data();
-  components.value = strtod(firstChar, nullptr);
+  components.value = std::strtod(firstChar, nullptr);
+  components.longDoubleValue = std::strtold(firstChar, nullptr);
 
   components.isFloat = components.suffix == FloatingPointSuffix::kF;
   components.isLongDouble = components.suffix == FloatingPointSuffix::kL;
   components.isDouble = !components.isFloat && !components.isLongDouble;
-  components.longDoubleValue =
-      components.isLongDouble ? strtold(firstChar, nullptr) : components.value;
 
   return components;
 }
