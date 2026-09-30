@@ -2337,6 +2337,8 @@ void SemanticEncoder::writeSymbolClassSymbol(
   out.varU32(static_cast<std::uint32_t>(self->hasUserDeclaredConstructors()));
   // ::cxx::ClassSymbol::isConstevalBlockClosure_
   out.varU32(static_cast<std::uint32_t>(self->isConstevalBlockClosure()));
+  // ::cxx::ClassSymbol::minimumAlignmentShift_
+  out.varU32(static_cast<std::uint32_t>(self->minimumAlignment()));
 }
 
 void SemanticEncoder::writeSymbolEnumSymbol(
@@ -10433,6 +10435,9 @@ void SemanticDecoder::readSymbolClassSymbol(
   // ::cxx::ClassSymbol::isConstevalBlockClosure_
   unsigned int value74 = static_cast<unsigned int>(in.varU32());
   self->setConstevalBlockClosure(std::move(value74));
+  // ::cxx::ClassSymbol::minimumAlignmentShift_
+  unsigned int value75 = static_cast<unsigned int>(in.varU32());
+  self->setMinimumAlignment(std::move(value75));
 }
 
 void SemanticDecoder::readSymbolEnumSymbol(

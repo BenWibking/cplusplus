@@ -144,6 +144,12 @@ export const bindings: Record<string, ClassBindings> = {
       read: "$->firstNonFriendDeclarationLocation()",
       write: "$->setFirstNonFriendDeclarationLocation($value)",
     },
+    minimumAlignmentShift_: {
+      cls: "P",
+      read: "$->minimumAlignment()",
+      write: "$->setMinimumAlignment($value)",
+      why: "the accessor represents the encoded request as byte alignment",
+    },
     flags_: { cls: "D", why: "the individual bit-fields are persisted" },
     baseClasses_: {
       cls: "P",

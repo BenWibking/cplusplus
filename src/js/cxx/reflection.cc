@@ -718,7 +718,7 @@ constexpr int InjectedClassNameSymbolSlotBase = BaseClassSymbolSlotBase + 2;
 
 constexpr int ClassSymbolSlotBase = InjectedClassNameSymbolSlotBase + 1;
 
-constexpr int EnumSymbolSlotBase = ClassSymbolSlotBase + 71;
+constexpr int EnumSymbolSlotBase = ClassSymbolSlotBase + 72;
 
 constexpr int ScopedEnumSymbolSlotBase = EnumSymbolSlotBase + 15;
 
@@ -7746,63 +7746,68 @@ auto readSymbol(std::intptr_t handle, int slot) -> double {
     case ClassSymbolSlotBase + 53: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(self->packAlignment());
+      return static_cast<double>(self->minimumAlignment());
     }
-    case ClassSymbolSlotBase + 57: {
+    case ClassSymbolSlotBase + 54: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(self->flags());
+      return static_cast<double>(self->packAlignment());
     }
     case ClassSymbolSlotBase + 58: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(self->hasVirtualBaseSubobjects());
+      return static_cast<double>(self->flags());
     }
-    case ClassSymbolSlotBase + 60: {
+    case ClassSymbolSlotBase + 59: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(self->isClosureType());
+      return static_cast<double>(self->hasVirtualBaseSubobjects());
     }
     case ClassSymbolSlotBase + 61: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(self->isConstevalBlockClosure());
+      return static_cast<double>(self->isClosureType());
     }
     case ClassSymbolSlotBase + 62: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(self->hasLambdaCapture());
+      return static_cast<double>(self->isConstevalBlockClosure());
     }
     case ClassSymbolSlotBase + 63: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(reinterpret_cast<std::intptr_t>(
-          static_cast<const ::cxx::Symbol*>(self->capturedThisField())));
+      return static_cast<double>(self->hasLambdaCapture());
     }
     case ClassSymbolSlotBase + 64: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return static_cast<double>(reinterpret_cast<std::intptr_t>(
-          static_cast<const ::cxx::Symbol*>(self->functionCallOperator())));
+          static_cast<const ::cxx::Symbol*>(self->capturedThisField())));
     }
     case ClassSymbolSlotBase + 65: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(self->closureDiscriminator());
+      return static_cast<double>(reinterpret_cast<std::intptr_t>(
+          static_cast<const ::cxx::Symbol*>(self->functionCallOperator())));
     }
     case ClassSymbolSlotBase + 66: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
-      return static_cast<double>(reinterpret_cast<std::intptr_t>(
-          static_cast<const ::cxx::Symbol*>(self->closureInitializerOwner())));
+      return static_cast<double>(self->closureDiscriminator());
     }
     case ClassSymbolSlotBase + 67: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return static_cast<double>(reinterpret_cast<std::intptr_t>(
-          static_cast<const ::cxx::Symbol*>(self->instantiationTemplate())));
+          static_cast<const ::cxx::Symbol*>(self->closureInitializerOwner())));
     }
     case ClassSymbolSlotBase + 68: {
+      auto self = static_cast<const ::cxx::ClassSymbol*>(
+          reinterpret_cast<const ::cxx::Symbol*>(handle));
+      return static_cast<double>(reinterpret_cast<std::intptr_t>(
+          static_cast<const ::cxx::Symbol*>(self->instantiationTemplate())));
+    }
+    case ClassSymbolSlotBase + 69: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return static_cast<double>(
@@ -8940,7 +8945,7 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
         return val(static_cast<double>(item));
       });
     }
-    case ClassSymbolSlotBase + 56: {
+    case ClassSymbolSlotBase + 57: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return [&]() -> val {
@@ -8954,7 +8959,7 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
         return result;
       }();
     }
-    case ClassSymbolSlotBase + 59: {
+    case ClassSymbolSlotBase + 60: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return optionalValue(self->vtableLayout(), [&](const auto& item) {
@@ -10513,24 +10518,24 @@ auto readSymbolSize(std::intptr_t handle, std::intptr_t unit, int slot) -> int {
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return static_cast<int>(std::size(self->convertingConstructors()));
     }
-    case ClassSymbolSlotBase + 54: {
+    case ClassSymbolSlotBase + 55: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return static_cast<int>(std::size(self->befriendingClasses()));
     }
-    case ClassSymbolSlotBase + 55: {
+    case ClassSymbolSlotBase + 56: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return static_cast<int>(std::size(self->templateFriendships()));
     }
-    case ClassSymbolSlotBase + 69: {
+    case ClassSymbolSlotBase + 70: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return static_cast<int>(std::size(expand_template_arguments(
           class_template_arguments(reinterpret_cast<TranslationUnit*>(unit),
                                    const_cast<ClassSymbol*>(self)))));
     }
-    case ClassSymbolSlotBase + 70: {
+    case ClassSymbolSlotBase + 71: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       return static_cast<int>(std::size([&] {
@@ -10813,7 +10818,7 @@ auto readSymbolItem(std::intptr_t handle, std::intptr_t unit, int slot,
       return static_cast<double>(reinterpret_cast<std::intptr_t>(
           static_cast<const ::cxx::Symbol*>(item)));
     }
-    case ClassSymbolSlotBase + 54: {
+    case ClassSymbolSlotBase + 55: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       const auto& container = self->befriendingClasses();
@@ -10948,7 +10953,7 @@ auto readSymbolItem(std::intptr_t handle, std::intptr_t unit, int slot,
 auto readSymbolItemString(std::intptr_t handle, std::intptr_t unit, int slot,
                           int index) -> std::string {
   switch (slot) {
-    case ClassSymbolSlotBase + 70: {
+    case ClassSymbolSlotBase + 71: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       const auto& container = [&] {
@@ -12266,7 +12271,7 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
         return result;
       }();
     }
-    case ClassSymbolSlotBase + 55: {
+    case ClassSymbolSlotBase + 56: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       const auto& container = self->templateFriendships();
@@ -12406,7 +12411,7 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
         return result;
       }();
     }
-    case ClassSymbolSlotBase + 69: {
+    case ClassSymbolSlotBase + 70: {
       auto self = static_cast<const ::cxx::ClassSymbol*>(
           reinterpret_cast<const ::cxx::Symbol*>(handle));
       const auto& container = expand_template_arguments(

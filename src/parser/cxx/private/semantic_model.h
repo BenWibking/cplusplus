@@ -170,6 +170,8 @@ inline constexpr FieldDescriptor kSemanticFieldModelStorage[] = {
      FieldPersistence::kPersisted, ""},
     {"::cxx::ClassSymbol", "isConstevalBlockClosure_",
      FieldPersistence::kPersisted, ""},
+    {"::cxx::ClassSymbol", "minimumAlignmentShift_",
+     FieldPersistence::kPersisted, ""},
     {"::cxx::EnumSymbol", "underlyingType_", FieldPersistence::kPersisted, ""},
     {"::cxx::EnumSymbol", "promotionType_", FieldPersistence::kPersisted, ""},
     {"::cxx::EnumSymbol", "hasFixedUnderlyingType_",

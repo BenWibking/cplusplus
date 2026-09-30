@@ -51,6 +51,7 @@
 
 #include <algorithm>
 #include <format>
+#include <limits>
 
 namespace cxx {
 namespace {
@@ -1259,6 +1260,20 @@ void Binder::bind(ElaboratedTypeSpecifierAST* ast, DeclSpecs& declSpecs,
 
     ast->symbol = classSymbol;
     if (declaresClass) ast->declaredSymbol = classSymbol;
+
+    if (!classSymbol->isComplete()) {
+      applyDeclarationAttributes(classSymbol, ast->attributeList);
+    } else {
+      for (auto attribute : knownAttributes(unit_, ast->attributeList)) {
+        if (attribute.kind() != AttributeKind::kPacked &&
+            attribute.kind() != AttributeKind::kAligned)
+          continue;
+        warning(attribute.location,
+                std::format("'{}' attribute declaration must precede "
+                            "definition",
+                            attribute.spelling->name));
+      }
+    }
 
     if (auto alignment = explicitAlignment(ast->attributeList, location)) {
       checkRedeclaredAlignment(classSymbol, *alignment, location);
@@ -3943,26 +3958,37 @@ auto Binder::validatedAlignment(std::optional<std::intmax_t> value,
     error(loc, "requested alignment is not a power of 2");
     return std::nullopt;
   }
+  if (*value > std::numeric_limits<int>::max()) {
+    error(loc, "requested alignment exceeds the supported layout range");
+    return std::nullopt;
+  }
   return static_cast<int>(*value);
 }
 
 auto Binder::alignedAttribute(List<AttributeSpecifierAST*>* attributeList)
     -> std::optional<int> {
-  auto attribute = findAttribute(unit_, attributeList, AttributeKind::kAligned);
-  if (!attribute) return std::nullopt;
+  std::optional<int> strictest;
+  for (auto attribute :
+       findAttributes(unit_, attributeList, AttributeKind::kAligned)) {
+    std::optional<int> requested;
+    auto clause = attribute.argumentClause;
+    if (!clause || !clause->expressionList) {
+      requested = static_cast<int>(
+          control()->memoryLayout()->alignedAttributeAlignment());
+    } else {
+      auto expression = clause->expressionList->value;
+      if (isDependent(unit_, expression)) continue;
 
-  auto clause = attribute.argumentClause;
-  if (!clause || !clause->expressionList)
-    return static_cast<int>(
-        control()->memoryLayout()->alignedAttributeAlignment());
+      ASTInterpreter interp{unit_, scope()};
+      auto value = interp.evaluate(expression);
+      requested =
+          value ? validatedAlignment(interp.toInt(*value), attribute.location)
+                : validatedAlignment(std::nullopt, attribute.location);
+    }
 
-  auto expression = clause->expressionList->value;
-  if (isDependent(unit_, expression)) return std::nullopt;
-
-  ASTInterpreter interp{unit_, scope()};
-  auto value = interp.evaluate(expression);
-  if (!value) return validatedAlignment(std::nullopt, attribute.location);
-  return validatedAlignment(interp.toInt(*value), attribute.location);
+    if (requested) strictest = std::max(strictest.value_or(0), *requested);
+  }
+  return strictest;
 }
 
 void Binder::applyAlignedAttribute(
@@ -3973,6 +3999,12 @@ void Binder::applyAlignedAttribute(
   if (auto field = symbol_cast<FieldSymbol>(symbol)) {
     field->setExplicitAlignment(
         std::max(field->explicitAlignment(), *requested));
+    return;
+  }
+
+  if (auto classSymbol = symbol_cast<ClassSymbol>(symbol)) {
+    classSymbol->setMinimumAlignment(
+        std::max(classSymbol->minimumAlignment(), *requested));
     return;
   }
 
