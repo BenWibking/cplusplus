@@ -102,8 +102,7 @@ class TypeChecker {
                                         ScopeSymbol* functionScope);
 
   auto check_bool_condition(ExpressionAST*& ast) -> bool;
-  [[nodiscard]] auto fold_constexpr_condition(ExpressionAST*& ast)
-      -> std::optional<bool>;
+  void check_if_statement(IfStatementAST* ast);
   void check_constant_expression(ExpressionAST* ast,
                                  const std::optional<ConstValue>& value,
                                  std::string_view construct);

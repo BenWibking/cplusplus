@@ -7097,6 +7097,7 @@ auto IfStatementAST::clone(Arena* arena) -> IfStatementAST* {
   if (elseStatement) node->elseStatement = elseStatement->clone(arena);
 
   node->symbol = cloneAttribute(arena, symbol);
+  node->constexprValue = cloneAttribute(arena, constexprValue);
 
   return node;
 }
@@ -7112,7 +7113,8 @@ auto IfStatementAST::create(Arena* arena,
                             SourceLocation lparenLoc, StatementAST* initializer,
                             ExpressionAST* condition, SourceLocation rparenLoc,
                             StatementAST* statement, SourceLocation elseLoc,
-                            StatementAST* elseStatement, BlockSymbol* symbol)
+                            StatementAST* elseStatement, BlockSymbol* symbol,
+                            std::optional<bool> constexprValue)
     -> IfStatementAST* {
   auto node = new (arena) IfStatementAST();
   node->attributeList = attributeList;
@@ -7126,6 +7128,7 @@ auto IfStatementAST::create(Arena* arena,
   node->elseLoc = elseLoc;
   node->elseStatement = elseStatement;
   node->symbol = symbol;
+  node->constexprValue = constexprValue;
   return node;
 }
 
@@ -7133,7 +7136,8 @@ auto IfStatementAST::create(Arena* arena,
                             List<AttributeSpecifierAST*>* attributeList,
                             StatementAST* initializer, ExpressionAST* condition,
                             StatementAST* statement,
-                            StatementAST* elseStatement, BlockSymbol* symbol)
+                            StatementAST* elseStatement, BlockSymbol* symbol,
+                            std::optional<bool> constexprValue)
     -> IfStatementAST* {
   auto node = new (arena) IfStatementAST();
   node->attributeList = attributeList;
@@ -7142,6 +7146,7 @@ auto IfStatementAST::create(Arena* arena,
   node->statement = statement;
   node->elseStatement = elseStatement;
   node->symbol = symbol;
+  node->constexprValue = constexprValue;
   return node;
 }
 

@@ -125,6 +125,35 @@ test("compound offsetof reflection exposes the resolved path and value", async (
   assert.equal(designators[1].symbol.text, "value");
 });
 
+test("if constexpr reflection distinguishes false from unresolved", async () => {
+  await using parser = await Parser.parse({
+    path: "/if-constexpr.cc",
+    source: `
+      void known() {
+        if constexpr (true) {}
+        if constexpr (false) {}
+      }
+      void runtime(bool value) { if (value) {} }
+      template <bool Value> void deferred() { if constexpr (Value) {} }
+    `,
+  });
+
+  assert.deepEqual(parser.diagnostics, []);
+  const branches = traverse(
+    parser.ast,
+    {
+      IfStatement(path, found) {
+        found.push(path.node);
+      },
+    },
+    [],
+  );
+  assert.deepEqual(
+    branches.map((branch) => branch.constexprValue),
+    [true, false, undefined, undefined],
+  );
+});
+
 test("the AST is traversed by kind, by children and by visitor", async () => {
   await using parser = await Parser.parse({
     path: "/traverse.cc",

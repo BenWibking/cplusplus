@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -118,6 +119,22 @@ class Prefix {
 
   finder.accept(expression);
   return finder.result;
+}
+
+class BranchSelectionVisitor final : public ASTVisitor {
+ public:
+  void visit(IfStatementAST* ast) override {
+    selections.push_back(ast->constexprValue);
+    ASTVisitor::visit(ast);
+  }
+
+  std::vector<std::optional<bool>> selections;
+};
+
+auto branchSelections(AST* ast) -> std::vector<std::optional<bool>> {
+  BranchSelectionVisitor visitor;
+  visitor.accept(ast);
+  return visitor.selections;
 }
 
 }  // namespace
@@ -265,6 +282,43 @@ constexpr auto saved_offset =
   auto integer = std::get_if<ConstInt>(&*value);
   ASSERT_TRUE(integer);
   EXPECT_EQ(integer->toUIntMax(), 16u);
+}
+
+TEST(PrecompiledHeader, RestoresConstexprBranchSelections) {
+  Prefix prefix{R"(
+void known() {
+  if constexpr (true) {}
+  if constexpr (false) {}
+}
+
+void runtime(bool value) {
+  if (value) {}
+}
+
+template <bool Value>
+void deferred() {
+  if constexpr (Value) {}
+}
+)"};
+
+  const std::vector<std::optional<bool>> expected = {true, false, std::nullopt,
+                                                     std::nullopt};
+  EXPECT_EQ(branchSelections(prefix.unit()->ast()), expected);
+  EXPECT_EQ(
+      branchSelections(prefix.unit()->ast()->clone(prefix.unit()->arena())),
+      expected);
+
+  const auto data = prefix.emit();
+  ASSERT_TRUE(prefix.errors().empty());
+  ASSERT_FALSE(data.empty());
+
+  DiagnosticsClient diagnostics;
+  TranslationUnit consumer{&diagnostics};
+  consumer.setSource("", "consumer.cc");
+
+  PrecompiledHeaderReader reader{&consumer, keys()};
+  ASSERT_TRUE(reader(data)) << reader.error();
+  EXPECT_EQ(branchSelections(consumer.ast()), expected);
 }
 
 TEST(PrecompiledHeader, RestoresScopeLookup) {
