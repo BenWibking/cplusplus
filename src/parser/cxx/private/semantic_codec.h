@@ -182,6 +182,7 @@ class SemanticEncoder final : public SemanticEncoderBase {
                                const cxx::LongDoubleType* self);
   void writeTypeHalfType(ByteWriter& out, const cxx::HalfType* self);
   void writeTypeFloat16Type(ByteWriter& out, const cxx::Float16Type* self);
+  void writeTypeBFloat16Type(ByteWriter& out, const cxx::BFloat16Type* self);
   void writeTypeFloat128Type(ByteWriter& out, const cxx::Float128Type* self);
   void writeTypeQualType(ByteWriter& out, const cxx::QualType* self);
   void writeTypeBoundedArrayType(ByteWriter& out,
@@ -926,6 +927,7 @@ class SemanticDecoder final : public SemanticDecoderBase {
   [[nodiscard]] auto readTypeLongDoubleType(ByteReader& in) -> const cxx::Type*;
   [[nodiscard]] auto readTypeHalfType(ByteReader& in) -> const cxx::Type*;
   [[nodiscard]] auto readTypeFloat16Type(ByteReader& in) -> const cxx::Type*;
+  [[nodiscard]] auto readTypeBFloat16Type(ByteReader& in) -> const cxx::Type*;
   [[nodiscard]] auto readTypeFloat128Type(ByteReader& in) -> const cxx::Type*;
   [[nodiscard]] auto readTypeQualType(ByteReader& in) -> const cxx::Type*;
   [[nodiscard]] auto readTypeBoundedArrayType(ByteReader& in)

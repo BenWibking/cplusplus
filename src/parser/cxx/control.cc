@@ -250,6 +250,7 @@ struct Control::Private {
   LongDoubleType longDoubleType;
   HalfType halfType;
   Float16Type float16Type;
+  BFloat16Type bfloat16Type;
   Float128Type float128Type;
 
   TypeSet<QualType> qualTypes;
@@ -764,6 +765,10 @@ auto Control::getLongDoubleType() -> const LongDoubleType* {
 auto Control::getHalfType() -> const HalfType* { return &d->halfType; }
 
 auto Control::getFloat16Type() -> const Float16Type* { return &d->float16Type; }
+
+auto Control::getBFloat16Type() -> const BFloat16Type* {
+  return &d->bfloat16Type;
+}
 
 auto Control::getFloat128Type() -> const Float128Type* {
   return &d->float128Type;

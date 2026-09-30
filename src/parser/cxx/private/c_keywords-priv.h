@@ -359,6 +359,14 @@ static inline auto classifyC6(const char* s, int& value) -> cxx::TokenKind {
             }
           }
         }
+      } else if (s[2] == 'b') {
+        if (s[3] == 'f') {
+          if (s[4] == '1') {
+            if (s[5] == '6') {
+              return cxx::TokenKind::T___BF16;
+            }
+          }
+        }
       }
     }
   }

@@ -669,6 +669,11 @@ struct ExternalNameEncoder::EncodeType {
     return false;
   }
 
+  auto operator()(const BFloat16Type* type) -> bool {
+    encoder.out("DF16b");
+    return false;
+  }
+
   auto operator()(const Float128Type* type) -> bool {
     encoder.out("g");
     return false;

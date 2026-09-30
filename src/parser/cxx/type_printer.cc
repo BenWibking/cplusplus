@@ -341,6 +341,8 @@ class TypePrinter {
 
   void operator()(const Float16Type* type) { specifiers_.append("_Float16"); }
 
+  void operator()(const BFloat16Type* type) { specifiers_.append("__bf16"); }
+
   void operator()(const Float128Type* type) {
     specifiers_.append("__float128");
   }
