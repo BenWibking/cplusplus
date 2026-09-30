@@ -221,7 +221,6 @@ struct [[nodiscard]] Binder::BuildRecordLayout {
   [[nodiscard]] auto packAlignment(int alignment) const -> int;
   [[nodiscard]] auto keepsBitFieldInAllocationUnit(FieldSymbol* field) const
       -> bool;
-  [[nodiscard]] auto alignedAttributeOfClass() -> std::optional<int>;
   void propagateBaseFields();
   void propagateAnonymousFields();
   void copyFieldInfos(const ClassLayout* ownerLayout, std::uint64_t ownerOffset,
@@ -1164,17 +1163,6 @@ auto Binder::BuildRecordLayout::keepsBitFieldInAllocationUnit(
   return !field->isPacked();
 }
 
-auto Binder::BuildRecordLayout::alignedAttributeOfClass()
-    -> std::optional<int> {
-  auto specifier = ast_cast<ClassSpecifierAST>(classSymbol->declaration());
-  if (!specifier) return std::nullopt;
-  auto head = binder.alignedAttribute(specifier->attributeList);
-  auto trailing = binder.alignedAttribute(specifier->trailingAttributeList);
-  if (!head) return trailing;
-  if (!trailing) return head;
-  return std::max(*head, *trailing);
-}
-
 auto Binder::BuildRecordLayout::layoutFields()
     -> std::expected<bool, std::string> {
   FieldSymbol* lastField = nullptr;
@@ -1271,8 +1259,8 @@ void Binder::BuildRecordLayout::finalize() {
     }
   }
 
-  if (auto requested = alignedAttributeOfClass())
-    calculatedAlignment = std::max(calculatedAlignment, *requested);
+  calculatedAlignment =
+      std::max(calculatedAlignment, classSymbol->minimumAlignment());
 
   const auto dataSize = static_cast<std::uint64_t>(calculatedSize);
 

@@ -1236,6 +1236,10 @@ void ASTRewriter::SpecifierVisitor::initializeClassDefinition(
     classSymbol->setExplicitAlignment(*alignment);
   }
   classSymbol->setPackAlignment(ast->symbol->packAlignment());
+  classSymbol->setMinimumAlignment(std::max(classSymbol->minimumAlignment(),
+                                            ast->symbol->minimumAlignment()));
+  binder()->applyAlignedAttribute(classSymbol, copy->attributeList);
+  binder()->applyAlignedAttribute(classSymbol, copy->trailingAttributeList);
   classSymbol->setAccessControlDisabled(ast->symbol->isAccessControlDisabled());
   binder()->inheritDeclarationAttributes(classSymbol, ast->symbol);
   classSymbol->setDeclaration(copy);
