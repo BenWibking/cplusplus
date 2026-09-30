@@ -2077,15 +2077,12 @@ auto Codegen::ExpressionVisitor::codegenBuiltinVectorReduce(
 auto Codegen::ExpressionVisitor::operator()(BuiltinOffsetofExpressionAST* ast)
     -> ExpressionResult {
   auto loc = ast->firstSourceLocation();
-
-  auto interp = ASTInterpreter{gen.unit_};
-  auto value = interp.evaluate(ast);
-  auto offset = value ? interp.toUInt(*value) : std::nullopt;
-  if (!offset) {
-    return {gen.emitTodoExpr(loc, "__builtin_offsetof is not a constant")};
+  if (!ast->value) {
+    cxx_runtime_error("cannot generate an unresolved offsetof expression");
   }
 
-  return {gen.emitter_.constantInt(loc, gen.convertType(ast->type), *offset)};
+  auto resultType = gen.convertType(ast->type);
+  return {gen.emitter_.constantInt(loc, resultType, *ast->value)};
 }
 
 auto Codegen::ExpressionVisitor::operator()(TypeidExpressionAST* ast)

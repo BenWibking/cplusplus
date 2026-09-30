@@ -1417,6 +1417,8 @@ inline constexpr FieldDescriptor kSemanticFieldModelStorage[] = {
      FieldPersistence::kPersisted, ""},
     {"::cxx::BuiltinOffsetofExpressionAST", "symbol",
      FieldPersistence::kPersisted, ""},
+    {"::cxx::BuiltinOffsetofExpressionAST", "value",
+     FieldPersistence::kPersisted, ""},
     {"::cxx::TypeidExpressionAST", "typeidLoc", FieldPersistence::kPersisted,
      ""},
     {"::cxx::TypeidExpressionAST", "lparenLoc", FieldPersistence::kPersisted,

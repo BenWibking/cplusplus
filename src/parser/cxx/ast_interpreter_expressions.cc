@@ -3638,12 +3638,13 @@ auto ASTInterpreter::ExpressionVisitor::operator()(
 
 auto ASTInterpreter::ExpressionVisitor::operator()(
     BuiltinOffsetofExpressionAST* ast) -> ExpressionResult {
-  auto typeIdResult = interp.typeId(ast->typeId);
+  if (!ast->value) return std::nullopt;
 
-  auto offset = interp.offsetOfDesignated(ast);
-  if (!offset) return std::nullopt;
-
-  return ConstValue{static_cast<std::intmax_t>(*offset)};
+  auto constant = unit()->typeTraits().integral_constant(
+      ast->type,
+      static_cast<ConstInt::Wide>(static_cast<ConstInt::UWide>(*ast->value)));
+  if (!constant) return std::nullopt;
+  return ConstValue{*constant};
 }
 
 auto ASTInterpreter::ExpressionVisitor::operator()(TypeidExpressionAST* ast)

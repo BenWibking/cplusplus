@@ -956,7 +956,7 @@ const BuiltinConvertVectorExpressionASTSlotBase =
   BuiltinBitCastExpressionASTSlotBase + 6;
 const BuiltinOffsetofExpressionASTSlotBase =
   BuiltinConvertVectorExpressionASTSlotBase + 6;
-const TypeidExpressionASTSlotBase = BuiltinOffsetofExpressionASTSlotBase + 9;
+const TypeidExpressionASTSlotBase = BuiltinOffsetofExpressionASTSlotBase + 10;
 const TypeidOfTypeExpressionASTSlotBase = TypeidExpressionASTSlotBase + 4;
 const SpliceExpressionASTSlotBase = TypeidOfTypeExpressionASTSlotBase + 4;
 const GlobalScopeReflectExpressionASTSlotBase = SpliceExpressionASTSlotBase + 2;
@@ -5388,6 +5388,12 @@ export class BuiltinOffsetofExpressionAST extends ExpressionAST {
       cxx.readAST(this.handle, BuiltinOffsetofExpressionASTSlotBase + 8),
       this.modelOwner,
     );
+  }
+  get value(): bigint | undefined {
+    return cxx.readASTVal(
+      this.handle,
+      BuiltinOffsetofExpressionASTSlotBase + 9,
+    ) as bigint | undefined;
   }
 }
 /** @category AST Nodes */

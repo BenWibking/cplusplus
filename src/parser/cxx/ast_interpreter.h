@@ -868,9 +868,6 @@ class ASTInterpreter {
   [[nodiscard]] auto fieldOffsetIn(const Type* type, FieldSymbol* field)
       -> std::optional<std::uintmax_t>;
 
-  [[nodiscard]] auto offsetOfDesignated(BuiltinOffsetofExpressionAST* ast)
-      -> std::optional<std::uintmax_t>;
-
   [[nodiscard]] auto evaluateBuiltinAssume(CallExpressionAST* ast)
       -> std::optional<ConstValue>;
 
