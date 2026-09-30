@@ -95,6 +95,36 @@ test("packed enum reflection separates representation from promotion", async () 
   assert.equal([...declarations[0].trailingAttributeList].length, 1);
 });
 
+test("compound offsetof reflection exposes the resolved path and value", async () => {
+  await using parser = await Parser.parse({
+    path: "/compound-offsetof.cc",
+    source: `
+      struct Item { char lead; int value; };
+      struct Container { char prefix; Item items[2]; };
+      constexpr auto offset =
+          __builtin_offsetof(Container, items[1].value);
+    `,
+  });
+
+  assert.deepEqual(parser.diagnostics, []);
+  const expressions = traverse(
+    parser.ast,
+    {
+      BuiltinOffsetofExpression(path, found) {
+        found.push(path.node);
+      },
+    },
+    [],
+  );
+  assert.equal(expressions.length, 1);
+  assert.equal(expressions[0].value, 16n);
+  assert.equal(expressions[0].symbol.text, "items");
+  const designators = [...expressions[0].designatorList];
+  assert.ok(designators[0] instanceof S.SubscriptDesignatorAST);
+  assert.ok(designators[1] instanceof S.DotDesignatorAST);
+  assert.equal(designators[1].symbol.text, "value");
+});
+
 test("the AST is traversed by kind, by children and by visitor", async () => {
   await using parser = await Parser.parse({
     path: "/traverse.cc",

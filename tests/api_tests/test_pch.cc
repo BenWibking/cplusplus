@@ -19,6 +19,8 @@
 // SOFTWARE.
 
 #include <cxx/ast.h>
+#include <cxx/ast_interpreter.h>
+#include <cxx/ast_visitor.h>
 #include <cxx/attributes.h>
 #include <cxx/control.h>
 #include <cxx/diagnostics_client.h>
@@ -104,6 +106,18 @@ class Prefix {
     if (id && id->name() == name) return member;
   }
   return nullptr;
+}
+
+[[nodiscard]] auto findBuiltinOffsetof(ExpressionAST* expression)
+    -> BuiltinOffsetofExpressionAST* {
+  struct Finder final : ASTVisitor {
+    BuiltinOffsetofExpressionAST* result = nullptr;
+
+    void visit(BuiltinOffsetofExpressionAST* ast) override { result = ast; }
+  } finder;
+
+  finder.accept(expression);
+  return finder.result;
 }
 
 }  // namespace
@@ -206,6 +220,51 @@ enum Packed { value = 255 } __attribute__((packed));
   ASSERT_TRUE(findAttribute(packed->attributes(), AttributeKind::kPacked));
   ASSERT_TRUE(type_cast<UnsignedCharType>(packed->underlyingType()));
   ASSERT_TRUE(type_cast<IntType>(packed->promotionType()));
+}
+
+TEST(PrecompiledHeader, RestoresResolvedCompoundOffsetof) {
+  Prefix prefix{R"(
+struct Item {
+  char lead;
+  int value;
+};
+
+struct Container {
+  char prefix;
+  Item items[2];
+};
+
+constexpr auto saved_offset =
+    __builtin_offsetof(Container, items[1].value);
+)"};
+
+  const auto data = prefix.emit();
+
+  ASSERT_TRUE(prefix.errors().empty());
+  ASSERT_FALSE(data.empty());
+
+  DiagnosticsClient diagnostics;
+  TranslationUnit consumer{&diagnostics};
+  consumer.setSource("", "consumer.cc");
+
+  PrecompiledHeaderReader reader{&consumer, keys()};
+  ASSERT_TRUE(reader(data)) << reader.error();
+
+  auto savedOffset = symbol_cast<VariableSymbol>(
+      findMember(consumer.globalScope(), "saved_offset"));
+  ASSERT_TRUE(savedOffset);
+
+  auto builtin = findBuiltinOffsetof(savedOffset->initializer());
+  ASSERT_TRUE(builtin);
+  ASSERT_TRUE(builtin->value);
+  EXPECT_EQ(*builtin->value, 16u);
+
+  ASTInterpreter interpreter{&consumer, consumer.globalScope()};
+  auto value = interpreter.evaluate(savedOffset->initializer());
+  ASSERT_TRUE(value);
+  auto integer = std::get_if<ConstInt>(&*value);
+  ASSERT_TRUE(integer);
+  EXPECT_EQ(integer->toUIntMax(), 16u);
 }
 
 TEST(PrecompiledHeader, RestoresScopeLookup) {
