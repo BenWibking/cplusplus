@@ -178,6 +178,7 @@ struct IsIntegral {
 struct IsFloatingPoint {
   auto operator()(const HalfType*) const -> bool { return true; }
   auto operator()(const Float16Type*) const -> bool { return true; }
+  auto operator()(const BFloat16Type*) const -> bool { return true; }
   auto operator()(const Float128Type*) const -> bool { return true; }
   auto operator()(const FloatType*) const -> bool { return true; }
   auto operator()(const DoubleType*) const -> bool { return true; }
@@ -213,6 +214,7 @@ struct IsSigned {
   auto operator()(const LongDoubleType*) const -> bool { return true; }
   auto operator()(const HalfType*) const -> bool { return true; }
   auto operator()(const Float16Type*) const -> bool { return true; }
+  auto operator()(const BFloat16Type*) const -> bool { return true; }
   auto operator()(const Float128Type*) const -> bool { return true; }
   auto operator()(const BitIntType*) const -> bool { return true; }
 
@@ -835,6 +837,10 @@ struct IsSameVisitor {
   }
 
   auto operator()(const Float16Type*, const Float16Type*) const -> bool {
+    return true;
+  }
+
+  auto operator()(const BFloat16Type*, const BFloat16Type*) const -> bool {
     return true;
   }
 
@@ -2347,6 +2353,11 @@ auto TypeTraits::is_narrowing_conversion(const Type* from, const Type* to) const
   if (is_floating_point(from) && is_integral(to)) return true;
 
   if (is_floating_point(from) && is_floating_point(to)) {
+    if ((from->kind() == TypeKind::kFloat16 &&
+         to->kind() == TypeKind::kBFloat16) ||
+        (from->kind() == TypeKind::kBFloat16 &&
+         to->kind() == TypeKind::kFloat16))
+      return true;
     auto fromSize = control()->memoryLayout()->sizeOf(from);
     auto toSize = control()->memoryLayout()->sizeOf(to);
     if (fromSize && toSize && *fromSize > *toSize) return true;
@@ -3051,6 +3062,16 @@ struct StandardFloatingPointRank {
   return visit(StandardFloatingPointRank{}, type);
 }
 
+struct ExtendedFloatingPointRank {
+  [[nodiscard]] auto operator()(const BFloat16Type*) const -> int { return 1; }
+  [[nodiscard]] auto operator()(const Float16Type*) const -> int { return 2; }
+  [[nodiscard]] auto operator()(const Type*) const -> int { return 0; }
+};
+
+[[nodiscard]] auto extendedFloatingPointRank(const Type* type) -> int {
+  return visit(ExtendedFloatingPointRank{}, type);
+}
+
 [[nodiscard]] auto compareValueSets(const FloatingPointFormat& a,
                                     const FloatingPointFormat& b)
     -> std::partial_ordering {
@@ -3109,6 +3130,13 @@ auto TypeTraits::floating_point_conversion_order(const Type* a,
   const auto standardA = standardFloatingPointRank(a);
   const auto standardB = standardFloatingPointRank(b);
   if (standardA && standardB) return standardA <=> standardB;
+
+  // C++ leaves the relative rank of extended floating-point types
+  // implementation-defined. Match Clang's ordering for the source types it
+  // exposes even when their representable value sets are incomparable.
+  const auto extendedA = extendedFloatingPointRank(a);
+  const auto extendedB = extendedFloatingPointRank(b);
+  if (extendedA && extendedB) return extendedA <=> extendedB;
 
   auto formatA = control()->memoryLayout()->floatingPointFormat(a);
   auto formatB = control()->memoryLayout()->floatingPointFormat(b);

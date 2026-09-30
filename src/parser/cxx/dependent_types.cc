@@ -505,6 +505,7 @@ struct IsDependent {
   auto operator()(const HalfType* type) -> bool { return false; }
 
   auto operator()(const Float16Type* type) -> bool { return false; }
+  auto operator()(const BFloat16Type* type) -> bool { return false; }
   auto operator()(const Float128Type* type) -> bool { return false; }
 
   auto operator()(const QualType* type) -> bool {

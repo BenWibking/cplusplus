@@ -11343,6 +11343,8 @@ export class HalfType extends Type {}
 /** @category Types */
 export class Float16Type extends Type {}
 /** @category Types */
+export class BFloat16Type extends Type {}
+/** @category Types */
 export class Float128Type extends Type {}
 /** @category Types */
 export class QualType extends Type {
@@ -12386,6 +12388,7 @@ export type TypeKind =
   | "LongDouble"
   | "Half"
   | "Float16"
+  | "BFloat16"
   | "Float128"
   | "Qual"
   | "BoundedArray"
@@ -12449,41 +12452,42 @@ const typeKindNames: Record<number, TypeKind> = {
   24: "LongDouble",
   25: "Half",
   26: "Float16",
-  27: "Float128",
-  28: "Qual",
-  29: "BoundedArray",
-  30: "UnboundedArray",
-  31: "Pointer",
-  32: "LvalueReference",
-  33: "RvalueReference",
-  34: "Function",
-  35: "Class",
-  36: "Enum",
-  37: "ScopedEnum",
-  38: "MemberObjectPointer",
-  39: "MemberFunctionPointer",
-  40: "Namespace",
-  41: "TypeParameter",
-  42: "TemplateTypeParameter",
-  43: "TemplateTypeParameterSpecialization",
-  44: "PackExpansion",
-  45: "Decltype",
-  46: "UnresolvedName",
-  47: "UnresolvedBoundedArray",
-  48: "UnresolvedUnderlying",
-  49: "UnresolvedPackIndex",
-  50: "UnresolvedBuiltin",
-  51: "OverloadSet",
-  52: "BuiltinVaList",
-  53: "BuiltinMetaInfo",
-  54: "BitInt",
-  55: "UnsignedBitInt",
-  56: "UnresolvedBitInt",
-  57: "Vector",
-  58: "UnresolvedVector",
-  59: "Complex",
-  60: "Atomic",
-  61: "Sve",
+  27: "BFloat16",
+  28: "Float128",
+  29: "Qual",
+  30: "BoundedArray",
+  31: "UnboundedArray",
+  32: "Pointer",
+  33: "LvalueReference",
+  34: "RvalueReference",
+  35: "Function",
+  36: "Class",
+  37: "Enum",
+  38: "ScopedEnum",
+  39: "MemberObjectPointer",
+  40: "MemberFunctionPointer",
+  41: "Namespace",
+  42: "TypeParameter",
+  43: "TemplateTypeParameter",
+  44: "TemplateTypeParameterSpecialization",
+  45: "PackExpansion",
+  46: "Decltype",
+  47: "UnresolvedName",
+  48: "UnresolvedBoundedArray",
+  49: "UnresolvedUnderlying",
+  50: "UnresolvedPackIndex",
+  51: "UnresolvedBuiltin",
+  52: "OverloadSet",
+  53: "BuiltinVaList",
+  54: "BuiltinMetaInfo",
+  55: "BitInt",
+  56: "UnsignedBitInt",
+  57: "UnresolvedBitInt",
+  58: "Vector",
+  59: "UnresolvedVector",
+  60: "Complex",
+  61: "Atomic",
+  62: "Sve",
 };
 /** @category Enumerations */
 export type NameKind =
@@ -14818,6 +14822,7 @@ const typeConstructors: Record<
   LongDouble: LongDoubleType,
   Half: HalfType,
   Float16: Float16Type,
+  BFloat16: BFloat16Type,
   Float128: Float128Type,
   Qual: QualType,
   BoundedArray: BoundedArrayType,

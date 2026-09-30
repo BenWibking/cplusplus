@@ -313,6 +313,9 @@ struct ASTInterpreter::ExpressionVisitor {
                                         const ExpressionResult& right,
                                         auto&& op) -> ExpressionResult {
     switch (type->kind()) {
+      case TypeKind::kBFloat16:
+        return interp.toArithmeticType(
+            ConstValue{op(toFloat(*left), toFloat(*right))}, type);
       case TypeKind::kFloat:
         return ConstValue{op(toFloat(*left), toFloat(*right))};
       case TypeKind::kLongDouble:
@@ -339,6 +342,8 @@ struct ASTInterpreter::ExpressionVisitor {
     switch (type->kind()) {
       case TypeKind::kHalf:
       case TypeKind::kFloat16:
+        return interp.toArithmeticType(*operand, type);
+      case TypeKind::kBFloat16:
         return interp.toArithmeticType(*operand, type);
       case TypeKind::kFloat:
         return ConstValue{toFloat(*operand)};
@@ -380,6 +385,8 @@ struct ASTInterpreter::ExpressionVisitor {
         return ConstValue{
             ConstFloat16{static_cast<std::uint16_t>(value->bits ^ 0x8000)}};
       }
+      case TypeKind::kBFloat16:
+        return interp.toArithmeticType(ConstValue{-toFloat(*operand)}, type);
       case TypeKind::kFloat:
         return ConstValue{-toFloat(*operand)};
       case TypeKind::kDouble:
@@ -2958,8 +2965,9 @@ auto ASTInterpreter::ExpressionVisitor::operator()(
   if (ast->literalOperatorCall) return evaluate(ast->literalOperatorCall);
   if (ast->literal->components().isLongDouble)
     return ast->literal->longDoubleValue();
-  if (ast->literal->components().suffix ==
-      FloatLiteral::Components::FloatingPointSuffix::kF16)
+  const auto suffix = ast->literal->components().suffix;
+  if (suffix == FloatLiteral::Components::FloatingPointSuffix::kF16 ||
+      suffix == FloatLiteral::Components::FloatingPointSuffix::kBF16)
     return interp.toArithmeticType(ConstValue{ast->literal->longDoubleValue()},
                                    ast->type);
   return interp.toArithmeticType(ConstValue{ast->literal->floatValue()},

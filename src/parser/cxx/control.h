@@ -124,6 +124,7 @@ class Control {
   [[nodiscard]] auto getLongDoubleType() -> const LongDoubleType*;
   [[nodiscard]] auto getHalfType() -> const HalfType*;
   [[nodiscard]] auto getFloat16Type() -> const Float16Type*;
+  [[nodiscard]] auto getBFloat16Type() -> const BFloat16Type*;
   [[nodiscard]] auto getFloat128Type() -> const Float128Type*;
   [[nodiscard]] auto getQualType(
       const Type* elementType, CvQualifiers cvQualifiers,

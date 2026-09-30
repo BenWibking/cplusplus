@@ -578,6 +578,14 @@ auto ASTInterpreter::toArithmeticType(const ConstValue& value, const Type* type)
   }
 
   switch (type->kind()) {
+    case TypeKind::kBFloat16: {
+      auto result = toLongDouble(value);
+      auto format = control()->memoryLayout()->floatingPointFormat(type);
+      if (!result || !format) return std::nullopt;
+      return ConstValue{
+          static_cast<float>(format->value(format->representation(*result)))};
+    }
+
     case TypeKind::kFloat: {
       auto result = toFloat(value);
       if (!result) return std::nullopt;
