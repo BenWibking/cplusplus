@@ -21,6 +21,7 @@
 #include <cxx/device_profile_limits.h>
 #include <cxx/memory_layout.h>
 #include <cxx/symbols.h>
+#include <cxx/triple.h>
 #include <cxx/types.h>
 
 #include <array>
@@ -865,6 +866,13 @@ auto MemoryLayout::isDarwin() const -> bool {
 
 auto MemoryLayout::usesArmMemberPointerAbi() const -> bool {
   return isAArch64() || isWebAssembly();
+}
+
+auto MemoryLayout::usesMicrosoftBitFieldLayout() const -> bool {
+  const auto target = Triple{triple_};
+  return target.os() == TripleOS::kWindows ||
+         target.environment() == TripleEnvironment::kMSVC ||
+         target.environment() == TripleEnvironment::kMinGW;
 }
 
 auto MemoryLayout::unnamedBitFieldAlignsAggregate() const -> bool {

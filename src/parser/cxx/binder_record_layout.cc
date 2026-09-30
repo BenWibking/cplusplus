@@ -232,6 +232,13 @@ auto Binder::BuildRecordLayout::operator()()
 }
 
 auto Binder::BuildRecordLayout::validate() -> std::expected<bool, std::string> {
+  if (memoryLayout->usesMicrosoftBitFieldLayout() &&
+      std::ranges::any_of(
+          views::members(classSymbol) | views::non_static_fields,
+          [](FieldSymbol* field) { return field->isBitField(); })) {
+    return std::unexpected("Microsoft ABI bit-field layout is not supported");
+  }
+
   for (auto base : classSymbol->baseClasses()) {
     auto baseClassSymbol = symbol_cast<ClassSymbol>(base->symbol());
     if (!baseClassSymbol) {
@@ -843,19 +850,32 @@ auto Binder::BuildRecordLayout::layoutBitfield(FieldSymbol* field)
     return true;
   }
 
-  if (hasExcessWidth || field->explicitAlignment()) {
+  if (hasExcessWidth) {
     closeBitfieldRun();
     nextBitPos = align_to(nextBitPos, fieldAlign * 8);
     calculatedSize = nextBitPos / 8;
-  } else if (fieldSizeBits > 0 && keepsBitFieldInAllocationUnit(field)) {
-    auto startUnit = nextBitPos / fieldSizeBits;
-    auto endUnit = (nextBitPos + bitWidth - 1) / fieldSizeBits;
-    if (startUnit != endUnit) {
-      if (inBitfieldRun) {
-        closeBitfieldRun();
-      }
-      nextBitPos = align_to(nextBitPos, fieldSizeBits);
+  } else {
+    // An explicit alignment begins a new allocation unit. The boundary follows
+    // the request even when it is below the field type's natural alignment;
+    // aggregate alignment still uses fieldAlign below. A pragma pack cap may
+    // reduce the requested boundary.
+    if (field->explicitAlignment()) {
+      closeBitfieldRun();
+      auto boundary = packAlignment(field->explicitAlignment());
+      nextBitPos = align_to(nextBitPos, boundary * 8);
       calculatedSize = nextBitPos / 8;
+    }
+
+    if (fieldSizeBits > 0 && keepsBitFieldInAllocationUnit(field)) {
+      auto startUnit = nextBitPos / fieldSizeBits;
+      auto endUnit = (nextBitPos + bitWidth - 1) / fieldSizeBits;
+      if (startUnit != endUnit) {
+        if (inBitfieldRun) {
+          closeBitfieldRun();
+        }
+        nextBitPos = align_to(nextBitPos, fieldSizeBits);
+        calculatedSize = nextBitPos / 8;
+      }
     }
   }
 
