@@ -199,7 +199,9 @@ auto ReachabilityAnalysis::completesNormally(StatementAST* stmt) -> bool {
 
     case ASTKind::IfStatement: {
       auto ast = static_cast<IfStatementAST*>(stmt);
-      if (auto value = conditionValue(ast->condition)) {
+      if (auto value = ast->constexprValue.has_value()
+                           ? ast->constexprValue
+                           : conditionValue(ast->condition)) {
         if (*value) return completesNormally(ast->statement);
         return completesNormally(ast->elseStatement);
       }

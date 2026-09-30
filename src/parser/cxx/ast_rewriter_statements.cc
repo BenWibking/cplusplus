@@ -381,21 +381,18 @@ auto ASTRewriter::StatementVisitor::operator()(IfStatementAST* ast)
   copy->constexprLoc = ast->constexprLoc;
   copy->lparenLoc = ast->lparenLoc;
   copy->initializer = rewrite.statement(ast->initializer);
+  copy->constexprValue = ast->constexprValue;
   {
     TranslationUnit::ImmediateFunctionContextScope immediate{
         translationUnit(), static_cast<bool>(ast->constexprLoc)};
     copy->condition = rewrite.expression(ast->condition);
-    typeChecker().check_bool_condition(copy->condition);
+    typeChecker().check_if_statement(copy);
   }
   copy->rparenLoc = ast->rparenLoc;
 
-  std::optional<bool> constexprValue;
-  if (ast->constexprLoc)
-    constexprValue = typeChecker().fold_constexpr_condition(copy->condition);
-
   copy->elseLoc = ast->elseLoc;
-  if (constexprValue.has_value()) {
-    if (*constexprValue) {
+  if (copy->constexprValue.has_value()) {
+    if (*copy->constexprValue) {
       copy->statement = rewrite.statement(ast->statement);
     } else {
       copy->elseStatement = rewrite.statement(ast->elseStatement);

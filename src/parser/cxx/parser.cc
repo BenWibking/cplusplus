@@ -4967,7 +4967,8 @@ auto Parser::parse_if_statement(StatementAST*& yyast,
     TranslationUnit::ImmediateFunctionContextScope immediate{
         unit_, static_cast<bool>(ast->constexprLoc)};
     parse_condition(ast->condition, ExprContext{});
-    check_bool_condition(ast->condition);
+    CheckContext context{this, scope()};
+    context.check.check_if_statement(ast);
   }
 
   expect(TokenKind::T_RPAREN, ast->rparenLoc);
@@ -4992,9 +4993,8 @@ auto Parser::parse_if_statement(StatementAST*& yyast,
 auto Parser::discardedIfBranches(IfStatementAST* ast) -> DiscardedIfBranches {
   if (!ast->constexprLoc || !ast->condition) return {};
 
-  CheckContext context{this, scope()};
-  if (auto taken = context.check.fold_constexpr_condition(ast->condition))
-    return {!*taken, *taken};
+  if (ast->constexprValue.has_value())
+    return {!*ast->constexprValue, *ast->constexprValue};
 
   return {binder_.inTemplate(), binder_.inTemplate()};
 }

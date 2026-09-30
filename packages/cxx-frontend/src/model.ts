@@ -902,7 +902,7 @@ const DefaultStatementASTSlotBase = CaseStatementASTSlotBase + 7;
 const ExpressionStatementASTSlotBase = DefaultStatementASTSlotBase + 3;
 const CompoundStatementASTSlotBase = ExpressionStatementASTSlotBase + 3;
 const IfStatementASTSlotBase = CompoundStatementASTSlotBase + 5;
-const ConstevalIfStatementASTSlotBase = IfStatementASTSlotBase + 11;
+const ConstevalIfStatementASTSlotBase = IfStatementASTSlotBase + 12;
 const SwitchStatementASTSlotBase = ConstevalIfStatementASTSlotBase + 8;
 const WhileStatementASTSlotBase = SwitchStatementASTSlotBase + 8;
 const DoStatementASTSlotBase = WhileStatementASTSlotBase + 7;
@@ -3695,6 +3695,12 @@ export class IfStatementAST extends StatementAST {
     return symbolOf(
       cxx.readAST(this.handle, IfStatementASTSlotBase + 10),
       this.modelOwner,
+    );
+  }
+  get constexprValue(): boolean | undefined {
+    return optionalOf(
+      cxx.readASTVal(this.handle, IfStatementASTSlotBase + 11),
+      (item: any) => item !== 0,
     );
   }
 }

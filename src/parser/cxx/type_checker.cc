@@ -10413,31 +10413,39 @@ auto TypeChecker::check_bool_condition(ExpressionAST*& expr) -> bool {
   return false;
 }
 
-auto TypeChecker::fold_constexpr_condition(ExpressionAST*& expr)
-    -> std::optional<bool> {
-  if (!expr || isDependent(unit_, expr)) return std::nullopt;
+void TypeChecker::check_if_statement(IfStatementAST* ast) {
+  if (!check_bool_condition(ast->condition) || !ast->constexprLoc ||
+      ast->constexprValue.has_value() || isDependent(unit_, ast->condition))
+    return;
 
   ASTInterpreter interpreter{unit_, scope_};
-  auto value = interpreter.evaluate(expr);
-  check_constant_expression(expr, value, "constexpr if condition");
-  if (!value) return std::nullopt;
+  auto value = interpreter.evaluate(ast->condition);
+  check_constant_expression(ast->condition, value, "constexpr if condition");
+  if (!value) {
+    if (unit_->isTemplatedContext() &&
+        !unit_->diagnosticsClient()->hasErrorWithin(
+            ast->condition->firstSourceLocation(),
+            ast->condition->lastSourceLocation()))
+      error(ast->condition->firstSourceLocation(),
+            "constexpr if condition is not a constant expression");
+    return;
+  }
 
-  auto taken = interpreter.toBool(*value);
-  if (!taken) return std::nullopt;
+  ast->constexprValue = interpreter.toBool(*value);
 
-  if (auto constant = ast_cast<ConstExpressionAST>(expr)) {
+  if (auto constant = ast_cast<ConstExpressionAST>(ast->condition)) {
     constant->constValue = unit_->arena()->make<ConstValue>(std::move(*value));
     constant->evaluationKind =
         ConstantEvaluationKind::kManifestlyConstantEvaluated;
     constant->evaluationScope = scope_;
-    return taken;
+    return;
   }
 
-  expr = ConstExpressionAST::create(
-      unit_->arena(), expr, unit_->arena()->make<ConstValue>(std::move(*value)),
-      false, ConstantEvaluationKind::kManifestlyConstantEvaluated, scope_,
+  ast->condition = ConstExpressionAST::create(
+      unit_->arena(), ast->condition,
+      unit_->arena()->make<ConstValue>(std::move(*value)), false,
+      ConstantEvaluationKind::kManifestlyConstantEvaluated, scope_,
       ValueCategory::kPrValue, unit_->control()->getBoolType());
-  return taken;
 }
 
 void TypeChecker::check_discarded_value(ExpressionAST*& expr) {

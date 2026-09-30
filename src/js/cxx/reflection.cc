@@ -211,7 +211,7 @@ constexpr int CompoundStatementASTSlotBase = ExpressionStatementASTSlotBase + 3;
 
 constexpr int IfStatementASTSlotBase = CompoundStatementASTSlotBase + 5;
 
-constexpr int ConstevalIfStatementASTSlotBase = IfStatementASTSlotBase + 11;
+constexpr int ConstevalIfStatementASTSlotBase = IfStatementASTSlotBase + 12;
 
 constexpr int SwitchStatementASTSlotBase = ConstevalIfStatementASTSlotBase + 8;
 
@@ -6979,6 +6979,13 @@ auto readASTVal(std::intptr_t handle, int slot) -> val {
                        (self->binding).bindingDeclaratorList))));
         return result;
       }();
+    }
+    case IfStatementASTSlotBase + 11: {
+      auto self = static_cast<const ::cxx::IfStatementAST*>(
+          reinterpret_cast<const ::cxx::AST*>(handle));
+      return optionalValue(self->constexprValue, [&](const auto& item) {
+        return val(static_cast<double>(item));
+      });
     }
     case ForRangeStatementASTSlotBase + 10: {
       auto self = static_cast<const ::cxx::ForRangeStatementAST*>(
