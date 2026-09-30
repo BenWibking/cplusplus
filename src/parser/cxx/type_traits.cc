@@ -36,11 +36,13 @@
 #include <cxx/symbols.h>
 #include <cxx/template_equivalence.h>
 #include <cxx/translation_unit.h>
+#include <cxx/triple.h>
 #include <cxx/type_checker.h>
 #include <cxx/type_traits.h>
 #include <cxx/types.h>
 #include <cxx/views/symbols.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <optional>
@@ -4763,6 +4765,31 @@ class UniqueObjectRepresentations {
   TypeTraits& traits_;
   const MemoryLayout& memory_;
 
+  [[nodiscard]] static auto usesMicrosoftMultipleInheritanceModel(
+      ClassSymbol* cls) -> bool {
+    while (cls && !cls->baseClasses().empty()) {
+      if (cls->baseClasses().size() > 1) return true;
+      auto base = resolved_base_class(cls->baseClasses().front());
+      if (!base) return false;
+      if (cls->isPolymorphic() && !base->isPolymorphic()) return true;
+      cls = base;
+    }
+    return false;
+  }
+
+  [[nodiscard]] auto memberFunctionPointerHasPadding(
+      const MemberFunctionPointerType* type) const -> bool {
+    const auto target = Triple{memory_.triple()};
+    if (target.os() != TripleOS::kWindows || memory_.sizeOfPointer() != 8)
+      return false;
+
+    auto classType = unqualified_cast<ClassType>(type->classType());
+    if (!classType || !classType->isComplete()) return true;
+    auto cls = classType->definition();
+    if (cls->hasVirtualBaseSubobjects()) return false;
+    return usesMicrosoftMultipleInheritanceModel(cls);
+  }
+
   struct Collect {
     UniqueObjectRepresentations& query;
     std::uint64_t offset;
@@ -4776,10 +4803,15 @@ class UniqueObjectRepresentations {
           return false;
         return add(type);
       }
-      if (query.traits_.is_pointer(type) ||
+      if (query.traits_.is_pointer(type) || query.traits_.is_reference(type) ||
           query.traits_.is_member_pointer(type))
         return add(type);
       return false;
+    }
+
+    [[nodiscard]] auto operator()(const MemberFunctionPointerType* type) const
+        -> bool {
+      return !query.memberFunctionPointerHasPadding(type) && add(type);
     }
 
     [[nodiscard]] auto operator()(const ClassType* type) const -> bool {

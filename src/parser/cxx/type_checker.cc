@@ -7949,6 +7949,27 @@ void TypeChecker::Visitor::operator()(TypeTraitExpressionAST* ast) {
       return;
     }
   }
+
+  if (ast->typeTrait ==
+          BuiltinTypeTraitKind::T___HAS_UNIQUE_OBJECT_REPRESENTATIONS &&
+      ast->typeIdList && ast->typeIdList->value) {
+    auto type = ast->typeIdList->value->type;
+    if (type && !is_dependent_type(type)) {
+      type = traits.remove_cv(traits.remove_all_extents(type));
+      if (auto classType = type_cast<ClassType>(type)) {
+        traits.require_complete_class(classType->symbol());
+      }
+      if (!traits.is_void(type) && !traits.is_complete(type)) {
+        error(ast->typeIdList->value->firstSourceLocation(),
+              std::format("incomplete type '{}' where a complete type is "
+                          "required",
+                          to_diag_string(type, "",
+                                         check.diagnosticPrintOptions())));
+        return;
+      }
+    }
+  }
+
   auto interp = ASTInterpreter{check.unit_, check.scope_};
   auto value = interp.evaluate(ast);
   if (value.has_value()) {
