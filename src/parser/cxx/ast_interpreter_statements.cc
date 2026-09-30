@@ -170,13 +170,18 @@ auto ASTInterpreter::StatementVisitor::operator()(IfStatementAST* ast)
   auto result = [&]() -> StatementResult {
     (void)interp.statement(ast->initializer);
     if (interp.aborted()) return {};
-    if (ast->constexprValue.has_value())
+
+    if (ast->constexprValue.has_value()) {
+      if (ast_cast<ConditionExpressionAST>(ast->condition) &&
+          !evaluateCondition(ast->condition).has_value())
+        return {};
       return interp.statement(*ast->constexprValue ? ast->statement
                                                    : ast->elseStatement);
+    }
+
     auto condition = evaluateCondition(ast->condition);
     if (!condition.has_value()) return {};
-    if (*condition) return interp.statement(ast->statement);
-    return interp.statement(ast->elseStatement);
+    return interp.statement(*condition ? ast->statement : ast->elseStatement);
   }();
 
   if (!interp.endAutomaticScope(mark)) return {};
@@ -216,6 +221,7 @@ auto ASTInterpreter::StatementVisitor::operator()(SwitchStatementAST* ast)
   auto mark = interp.beginAutomaticScope();
   auto switchResult = [&]() -> StatementResult {
     (void)interp.statement(ast->initializer);
+    if (interp.aborted()) return {};
 
     auto condValue = evaluateSwitchCondition(ast->condition);
     if (!condValue.has_value()) return {};
@@ -371,6 +377,7 @@ auto ASTInterpreter::StatementVisitor::operator()(ForStatementAST* ast)
   auto mark = interp.beginAutomaticScope();
   auto loopResult = [&]() -> StatementResult {
     (void)interp.statement(ast->initializer);
+    if (interp.aborted()) return {};
 
     for (;;) {
       if (!interp.tick()) return {};

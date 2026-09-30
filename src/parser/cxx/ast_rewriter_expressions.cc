@@ -1923,10 +1923,6 @@ auto ASTRewriter::ExpressionVisitor::operator()(ConditionExpressionAST* ast)
   copy->declarator = rewrite.declarator(ast->declarator);
 
   auto declaratorDecl = Decl{declSpecifierListCtx, copy->declarator};
-  auto declaratorType = getDeclaratorType(translationUnit(), copy->declarator,
-                                          declSpecifierListCtx.type());
-  copy->initializer = rewrite.expression(ast->initializer);
-
   copy->symbol = binder()->declareVariable(copy->declarator, declaratorDecl,
                                            /*addSymbolToParentScope=*/true);
 
@@ -1934,6 +1930,7 @@ auto ASTRewriter::ExpressionVisitor::operator()(ConditionExpressionAST* ast)
     rewrite.addSymbolRemap(ast->symbol, copy->symbol);
   }
 
+  copy->initializer = rewrite.expression(ast->initializer);
   typeChecker().check_condition_declaration(copy);
 
   return copy;
