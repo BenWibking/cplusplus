@@ -1055,7 +1055,7 @@ const VolatileQualifierASTSlotBase = ConstQualifierASTSlotBase + 1;
 const AtomicQualifierASTSlotBase = VolatileQualifierASTSlotBase + 1;
 const RestrictQualifierASTSlotBase = AtomicQualifierASTSlotBase + 1;
 const EnumSpecifierASTSlotBase = RestrictQualifierASTSlotBase + 1;
-const ClassSpecifierASTSlotBase = EnumSpecifierASTSlotBase + 12;
+const ClassSpecifierASTSlotBase = EnumSpecifierASTSlotBase + 13;
 const TypenameSpecifierASTSlotBase = ClassSpecifierASTSlotBase + 14;
 const SplicerTypeSpecifierASTSlotBase = TypenameSpecifierASTSlotBase + 6;
 const PointerOperatorASTSlotBase = SplicerTypeSpecifierASTSlotBase + 2;
@@ -1147,7 +1147,7 @@ const BaseClassSymbolSlotBase = DeductionGuideSymbolSlotBase + 12;
 const InjectedClassNameSymbolSlotBase = BaseClassSymbolSlotBase + 2;
 const ClassSymbolSlotBase = InjectedClassNameSymbolSlotBase + 1;
 const EnumSymbolSlotBase = ClassSymbolSlotBase + 72;
-const ScopedEnumSymbolSlotBase = EnumSymbolSlotBase + 15;
+const ScopedEnumSymbolSlotBase = EnumSymbolSlotBase + 16;
 const FunctionSymbolSlotBase = ScopedEnumSymbolSlotBase + 13;
 const OverloadSetSymbolSlotBase = FunctionSymbolSlotBase + 84;
 const LambdaSymbolSlotBase = OverloadSetSymbolSlotBase + 4;
@@ -7369,9 +7369,16 @@ export class EnumSpecifierAST extends SpecifierAST {
       this.modelOwner,
     );
   }
+  get trailingAttributeList(): Iterable<AttributeSpecifierAST | undefined> {
+    return listOf(
+      this.modelOwner,
+      cxx.readAST(this.handle, EnumSpecifierASTSlotBase + 11),
+      (item: any) => astOf(item, this.modelOwner),
+    );
+  }
   get symbol(): Symbol | undefined {
     return symbolOf(
-      cxx.readAST(this.handle, EnumSpecifierASTSlotBase + 11),
+      cxx.readAST(this.handle, EnumSpecifierASTSlotBase + 12),
       this.modelOwner,
     );
   }
@@ -10075,6 +10082,9 @@ export class EnumSymbol extends ScopeSymbol {
       cxx.readSymbol(this.handle, EnumSymbolSlotBase + 14),
       this.modelOwner,
     );
+  }
+  get isPacked(): boolean {
+    return cxx.readSymbol(this.handle, EnumSymbolSlotBase + 15) !== 0;
   }
 }
 /** @category Symbols */
@@ -15412,6 +15422,7 @@ const childSlots: Partial<
     [EnumSpecifierASTSlotBase + 4, false, "unqualifiedId"],
     [EnumSpecifierASTSlotBase + 6, true, "typeSpecifierList"],
     [EnumSpecifierASTSlotBase + 8, true, "enumeratorList"],
+    [EnumSpecifierASTSlotBase + 11, true, "trailingAttributeList"],
   ],
   ClassSpecifier: [
     [ClassSpecifierASTSlotBase + 1, true, "attributeList"],

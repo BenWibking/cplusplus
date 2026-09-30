@@ -1973,6 +1973,8 @@ inline constexpr FieldDescriptor kSemanticFieldModelStorage[] = {
      ""},
     {"::cxx::EnumSpecifierAST", "commaLoc", FieldPersistence::kPersisted, ""},
     {"::cxx::EnumSpecifierAST", "rbraceLoc", FieldPersistence::kPersisted, ""},
+    {"::cxx::EnumSpecifierAST", "trailingAttributeList",
+     FieldPersistence::kPersisted, ""},
     {"::cxx::EnumSpecifierAST", "symbol", FieldPersistence::kPersisted, ""},
     {"::cxx::ClassSpecifierAST", "classLoc", FieldPersistence::kPersisted, ""},
     {"::cxx::ClassSpecifierAST", "attributeList", FieldPersistence::kPersisted,

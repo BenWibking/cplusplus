@@ -170,8 +170,7 @@ struct Packet {
   auto packet =
       symbol_cast<ClassSymbol>(findMember(consumer.globalScope(), "Packet"));
   ASSERT_TRUE(packet);
-  ASSERT_TRUE(
-      findAttribute(packet->attributes(), AttributeKind::kPacked));
+  ASSERT_TRUE(findAttribute(packet->attributes(), AttributeKind::kPacked));
   ASSERT_EQ(packet->minimumAlignment(), 16);
   ASSERT_EQ(packet->alignment(), 16);
   ASSERT_EQ(packet->sizeInBytes(), 16);
@@ -182,6 +181,31 @@ struct Packet {
   auto info = packet->layout()->getFieldInfo(value);
   ASSERT_TRUE(info);
   ASSERT_EQ(info->offset, 1u);
+}
+
+TEST(PrecompiledHeader, RestoresPackedEnumSemantics) {
+  Prefix prefix{R"(
+enum Packed { value = 255 } __attribute__((packed));
+)"};
+
+  const auto data = prefix.emit();
+
+  ASSERT_TRUE(prefix.errors().empty());
+  ASSERT_FALSE(data.empty());
+
+  DiagnosticsClient diagnostics;
+  TranslationUnit consumer{&diagnostics};
+  consumer.setSource("", "consumer.cc");
+
+  PrecompiledHeaderReader reader{&consumer, keys()};
+  ASSERT_TRUE(reader(data)) << reader.error();
+
+  auto packed =
+      symbol_cast<EnumSymbol>(findMember(consumer.globalScope(), "Packed"));
+  ASSERT_TRUE(packed);
+  ASSERT_TRUE(findAttribute(packed->attributes(), AttributeKind::kPacked));
+  ASSERT_TRUE(type_cast<UnsignedCharType>(packed->underlyingType()));
+  ASSERT_TRUE(type_cast<IntType>(packed->promotionType()));
 }
 
 TEST(PrecompiledHeader, RestoresScopeLookup) {

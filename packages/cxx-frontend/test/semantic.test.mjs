@@ -67,6 +67,34 @@ test("read-only model exposes symbol identity, types and integer constants", asy
   }
 });
 
+test("packed enum reflection separates representation from promotion", async () => {
+  await using parser = await Parser.parse({
+    path: "/packed-enum.cc",
+    source: "enum Packed { value = 255 } __attribute__((packed));",
+  });
+
+  assert.deepEqual(parser.diagnostics, []);
+  const packed = [...parser.ast.symbol.members].find(
+    (symbol) => symbol.text === "Packed",
+  );
+  assert.ok(packed instanceof S.EnumSymbol);
+  assert.equal(packed.isPacked, true);
+  assert.ok(packed.underlyingType instanceof S.UnsignedCharType);
+  assert.ok(packed.promotionType instanceof S.IntType);
+  const declarations = traverse(
+    parser.ast,
+    {
+      EnumSpecifier(path, found) {
+        found.push(path.node);
+      },
+    },
+    [],
+  );
+  assert.equal(declarations.length, 1);
+  assert.equal(declarations[0].symbol.handle, packed.handle);
+  assert.equal([...declarations[0].trailingAttributeList].length, 1);
+});
+
 test("the AST is traversed by kind, by children and by visitor", async () => {
   await using parser = await Parser.parse({
     path: "/traverse.cc",

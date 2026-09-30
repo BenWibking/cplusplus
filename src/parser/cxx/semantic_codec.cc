@@ -5865,6 +5865,8 @@ void SemanticEncoder::writeAstEnumSpecifierAST(
   out.varU32(static_cast<std::uint32_t>(locationRef(self->commaLoc)));
   // ::cxx::EnumSpecifierAST::rbraceLoc
   out.varU32(static_cast<std::uint32_t>(locationRef(self->rbraceLoc)));
+  // ::cxx::EnumSpecifierAST::trailingAttributeList
+  writeAstList(out, self->trailingAttributeList);
   // ::cxx::EnumSpecifierAST::symbol
   out.varU32(static_cast<std::uint32_t>(symbolRef(self->symbol)));
 }
@@ -15786,9 +15788,13 @@ void SemanticDecoder::readAstEnumSpecifierAST(
   // ::cxx::EnumSpecifierAST::rbraceLoc
   cxx::SourceLocation value11 = locationAt(LocationRef{in.varU32()});
   self->rbraceLoc = std::move(value11);
+  // ::cxx::EnumSpecifierAST::trailingAttributeList
+  cxx::List<cxx::AttributeSpecifierAST*>* value12 =
+      readAstList<cxx::AttributeSpecifierAST>(in);
+  self->trailingAttributeList = std::move(value12);
   // ::cxx::EnumSpecifierAST::symbol
-  cxx::Symbol* value12 = symbolAt(SymbolRef{in.varU32()});
-  self->symbol = std::move(value12);
+  cxx::Symbol* value13 = symbolAt(SymbolRef{in.varU32()});
+  self->symbol = std::move(value13);
 }
 
 void SemanticDecoder::readAstClassSpecifierAST(
