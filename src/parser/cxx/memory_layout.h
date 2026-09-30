@@ -130,6 +130,8 @@ class MemoryLayout {
   [[nodiscard]] auto hasInt128Type() const -> bool;
   [[nodiscard]] auto isDarwin() const -> bool;
   [[nodiscard]] auto usesArmMemberPointerAbi() const -> bool;
+  /** Returns true when record bit-fields use Microsoft ABI allocation rules. */
+  [[nodiscard]] auto usesMicrosoftBitFieldLayout() const -> bool;
   [[nodiscard]] auto unnamedBitFieldAlignsAggregate() const -> bool;
   [[nodiscard]] auto structorsReturnThis() const -> bool;
   [[nodiscard]] auto aliasesStructorVariants() const -> bool;
