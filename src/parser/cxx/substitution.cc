@@ -824,8 +824,6 @@ auto Substitution::CollectRawTemplateArgument::operator()(
   }
 
   auto unit = subst.unit_;
-  auto control = unit->control();
-
   auto interp = ASTInterpreter{unit, ast->evaluationScope};
 
   const auto isDependent = isDependentTemplateArgument(subst.unit_, ast);
@@ -847,7 +845,7 @@ auto Substitution::CollectRawTemplateArgument::operator()(
                                   .initializer = expression};
     }
 
-    if (subst.valueDependsOnParameterType(expression)) {
+    if (expression->type) {
       return NonTypeArgumentValue{.type = expression->type,
                                   .initializer = expression};
     }
@@ -1037,6 +1035,17 @@ void Substitution::doMake() {
     if (isPackParameter(parameter)) {
       if (auto deducedPack = deducedPackAt(argumentIndex)) {
         ++argumentIndex;
+        if (auto nonTypeParam =
+                ast_cast<NonTypeTemplateParameterAST>(parameter)) {
+          std::vector<Symbol*> elements;
+          elements.reserve(deducedPack->elements().size());
+          for (auto element : deducedPack->elements()) {
+            auto normalized = normalizeNonTypeArgument(nonTypeParam, element);
+            if (!normalized || hadError_) return;
+            elements.push_back(normalized);
+          }
+          deducedPack = control->getPackArgumentSymbol(elements);
+        }
         templateArguments_.push_back(deducedPack);
         continue;
       }
@@ -1055,7 +1064,7 @@ void Substitution::doMake() {
         if (!checkArgumentKind(parameter, argumentIndex)) return;
         auto symbol = normalizeNonTypeArgument(
             nonTypeParam, argumentFor(parameter, argumentIndex++));
-        if (hadError_) return;
+        if (!symbol || hadError_) return;
         elements.push_back(symbol);
       }
 
@@ -1070,7 +1079,7 @@ void Substitution::doMake() {
       auto nonTypeParam = ast_cast<NonTypeTemplateParameterAST>(parameter);
       auto symbol = normalizeNonTypeArgument(
           nonTypeParam, argumentFor(parameter, argumentIndex++));
-      if (hadError_) return;
+      if (!symbol || hadError_) return;
       templateArguments_.push_back(symbol);
       continue;
     }
@@ -1304,29 +1313,31 @@ auto Substitution::normalizeNonTypeArgument(
   normalized.type = targetType;
 
   convertNonTypeArgument(normalized, targetType);
+  if (hadError_) return nullptr;
+
+  auto argumentLocation = normalized.initializer
+                              ? normalized.initializer->firstSourceLocation()
+                              : parameter->firstSourceLocation();
 
   if (normalized.value) {
     auto valid = unit_->typeTraits().is_constant_template_argument(
         *normalized.value, normalized.type);
-    auto location = normalized.initializer
-                        ? normalized.initializer->firstSourceLocation()
-                        : parameter->firstSourceLocation();
     if (valid && unqualified_cast<ClassType>(normalized.type)) {
       auto object = initializeTemplateParameterObject(
-          unit_, normalized.type, *normalized.value, location,
+          unit_, normalized.type, *normalized.value, argumentLocation,
           substitutionScope(templateDecl_));
       if (object) return object;
       valid = false;
     }
     if (!valid) {
-      maybeReportInvalidConstantExpression(location);
+      maybeReportInvalidConstantExpression(argumentLocation);
       return nullptr;
     }
   }
 
   if (lacksConvertedValue(normalized)) {
-    maybeReportInvalidConstantExpression(
-        normalized.initializer->firstSourceLocation());
+    maybeReportInvalidConstantExpression(argumentLocation);
+    return nullptr;
   }
 
   return symbolOf(normalized);
@@ -1374,18 +1385,11 @@ auto Substitution::initializeTemplateParameterObject(
   return unit->control()->getTemplateParameterObject(type, *value);
 }
 
-auto Substitution::valueDependsOnParameterType(ExpressionAST* expression) const
-    -> bool {
-  if (!expression->type) return false;
-  if (is_glvalue(expression)) return true;
-  return unit_->typeTraits().is_class_or_union(expression->type);
-}
-
 auto Substitution::lacksConvertedValue(
     const NonTypeArgumentValue& argument) const -> bool {
   if (argument.value) return false;
   auto initializer = argument.initializer;
-  if (!initializer || !valueDependsOnParameterType(initializer)) return false;
+  if (!initializer || !initializer->type) return false;
   return !isDependent(unit_, initializer);
 }
 
@@ -1436,14 +1440,18 @@ void Substitution::bindReferenceArgument(NonTypeArgumentValue& argument,
 
 void Substitution::convertNonTypeArgument(NonTypeArgumentValue& argument,
                                           const Type* targetType) {
-  if (!targetType) return;
+  auto expression = argument.initializer;
+  if (type_cast<AutoType>(targetType) && expression) {
+    targetType = unit_->typeTraits().remove_cv(expression->type);
+  }
+  argument.type = targetType;
+
+  if (!targetType || !expression || !expression->type) return;
 
   auto traits = unit_->typeTraits();
-  if (isDependent(unit_, targetType)) return;
-
-  auto expression = argument.initializer;
-  if (!expression || !expression->type) return;
-  if (isDependent(unit_, expression)) return;
+  if (isDependent(unit_, targetType) || isDependent(unit_, expression)) {
+    return;
+  }
 
   if (traits.is_reference(targetType)) {
     bindReferenceArgument(argument, targetType);
@@ -1451,8 +1459,10 @@ void Substitution::convertNonTypeArgument(NonTypeArgumentValue& argument,
   }
 
   if (traits.is_same(traits.remove_cv(expression->type),
-                     traits.remove_cv(targetType)))
+                     traits.remove_cv(targetType)) &&
+      argument.value) {
     return;
+  }
 
   auto overload = traits.overload_set_operand(expression->type);
   if (argument.value && is_prvalue(expression) && !overload.type)
@@ -1478,7 +1488,7 @@ void Substitution::convertNonTypeArgument(NonTypeArgumentValue& argument,
 
   argument.initializer = *converted;
   argument.isConstexpr = true;
-  argument.value = value;
+  argument.value = std::move(*value);
 }
 
 auto Substitution::getDefaultTemplateArgument(TemplateParameterAST* parameter)

@@ -212,9 +212,6 @@ class Substitution {
   void bindReferenceArgument(NonTypeArgumentValue& argument,
                              const Type* targetType);
 
-  [[nodiscard]] auto valueDependsOnParameterType(
-      ExpressionAST* expression) const -> bool;
-
   [[nodiscard]] auto lacksConvertedValue(
       const NonTypeArgumentValue& argument) const -> bool;
 
