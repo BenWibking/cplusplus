@@ -58,6 +58,20 @@ struct FloatingPointFormatOf {
     return FloatingPointFormat{.exponentBits = 8, .significandDigits = 8};
   }
 
+  [[nodiscard]] auto operator()(const Float8E4M3FNType*) const
+      -> std::optional<FloatingPointFormat> {
+    return FloatingPointFormat{
+        .exponentBits = 4,
+        .significandDigits = 4,
+        .specialValueEncoding =
+            FloatingPointFormat::SpecialValueEncoding::kFiniteOnly};
+  }
+
+  [[nodiscard]] auto operator()(const Float8E5M2Type*) const
+      -> std::optional<FloatingPointFormat> {
+    return FloatingPointFormat{.exponentBits = 5, .significandDigits = 3};
+  }
+
   [[nodiscard]] auto operator()(const FloatType*) const
       -> std::optional<FloatingPointFormat> {
     return FloatingPointFormat{.exponentBits = 8, .significandDigits = 24};
@@ -270,6 +284,16 @@ struct SizeOf {
   auto operator()(const BFloat16Type* type) const
       -> std::optional<std::size_t> {
     return 2;
+  }
+
+  auto operator()(const Float8E4M3FNType* type) const
+      -> std::optional<std::size_t> {
+    return 1;
+  }
+
+  auto operator()(const Float8E5M2Type* type) const
+      -> std::optional<std::size_t> {
+    return 1;
   }
 
   auto operator()(const Float128Type* type) const
@@ -548,7 +572,7 @@ template <typename Float>
   const auto integer =
       static_cast<ConstInt::UWide>(std::ldexp(fraction, kDigits));
   RoundedSignificand rounded;
-  rounded.exponent = std::max(binaryExponent - 1, 1 - format.maxExponent());
+  rounded.exponent = std::max(binaryExponent - 1, 1 - format.exponentBias());
   const int shift =
       (binaryExponent - kDigits) - (rounded.exponent - (digits - 1));
   rounded.significand = shift >= 0 ? ConstInt::UWide(integer) << shift
@@ -707,8 +731,13 @@ auto FloatingPointFormat::fractionBits() const -> int {
   return explicitIntegerBit ? significandDigits : significandDigits - 1;
 }
 
-auto FloatingPointFormat::maxExponent() const -> int {
+auto FloatingPointFormat::exponentBias() const -> int {
   return (1 << (exponentBits - 1)) - 1;
+}
+
+auto FloatingPointFormat::maxExponent() const -> int {
+  return exponentBias() +
+         (specialValueEncoding == SpecialValueEncoding::kFiniteOnly);
 }
 
 auto FloatingPointFormat::representsInteger(std::intmax_t value) const -> bool {
@@ -718,10 +747,33 @@ auto FloatingPointFormat::representsInteger(std::intmax_t value) const -> bool {
   const int width = std::bit_width(magnitude);
   const int significant = width - std::countr_zero(magnitude);
   if (significant > significandDigits) return false;
-  return width - 1 <= maxExponent();
+  if (width - 1 > maxExponent()) return false;
+  return rangeContains(static_cast<double>(magnitude));
 }
 
 namespace {
+[[nodiscard]] auto maximumFiniteSignificand(const FloatingPointFormat& format)
+    -> ConstInt::UWide {
+  const auto integerBit = ConstInt::UWide(1) << (format.significandDigits - 1);
+  const auto terminalOffset =
+      format.specialValueEncoding ==
+              FloatingPointFormat::SpecialValueEncoding::kFiniteOnly
+          ? 2
+          : 1;
+  return (integerBit << 1) - terminalOffset;
+}
+
+[[nodiscard]] auto maximumFiniteRepresentation(
+    const FloatingPointFormat& format) -> ConstInt::UWide {
+  const auto maxBiasedExponent =
+      (ConstInt::UWide(1) << format.exponentBits) - 1;
+  const auto finiteBiasedExponent =
+      maxBiasedExponent - (format.specialValueEncoding ==
+                           FloatingPointFormat::SpecialValueEncoding::kIEEE);
+  return (finiteBiasedExponent << format.fractionBits()) |
+         stored_significand(maximumFiniteSignificand(format), format);
+}
+
 template <typename Float>
 [[nodiscard]] auto floatingRepresentation(Float value,
                                           const FloatingPointFormat& format)
@@ -733,8 +785,17 @@ template <typename Float>
       (ConstInt::UWide(1) << format.exponentBits) - 1;
   const auto infinity = (maxBiasedExponent << format.fractionBits()) |
                         stored_significand(integerBit, format);
+  const auto maximumFinite = maximumFiniteRepresentation(format);
+  const bool finiteOnly =
+      format.specialValueEncoding ==
+      FloatingPointFormat::SpecialValueEncoding::kFiniteOnly;
 
   if (std::isnan(value)) {
+    if (finiteOnly) {
+      const auto fractionMask =
+          (ConstInt::UWide(1) << format.fractionBits()) - 1;
+      return sign | (maxBiasedExponent << format.fractionBits()) | fractionMask;
+    }
     constexpr auto sourceDigits = std::numeric_limits<Float>::digits - 1;
     auto bytes = std::bit_cast<std::array<unsigned char, sizeof(Float)>>(value);
     ConstInt::UWide bits = 0;
@@ -759,15 +820,18 @@ template <typename Float>
     if (targetDigits != sourceDigits || !payload) payload |= integerBit >> 1;
     return sign | infinity | stored_significand(integerBit | payload, format);
   }
-  if (std::isinf(value)) return sign | infinity;
+  if (std::isinf(value)) return sign | (finiteOnly ? maximumFinite : infinity);
   if (value == 0) return sign;
 
   const auto rounded = round_to_format(std::fabs(value), format);
-  if (rounded.exponent > format.maxExponent()) return sign | infinity;
+  if (rounded.exponent > format.maxExponent() ||
+      (rounded.exponent == format.maxExponent() &&
+       rounded.significand > maximumFiniteSignificand(format)))
+    return sign | (finiteOnly ? maximumFinite : infinity);
 
   const bool isNormal = (rounded.significand & integerBit) != 0;
   const auto biasedExponent =
-      isNormal ? ConstInt::UWide(rounded.exponent + format.maxExponent()) : 0;
+      isNormal ? ConstInt::UWide(rounded.exponent + format.exponentBias()) : 0;
   return sign | (biasedExponent << format.fractionBits()) |
          stored_significand(rounded.significand, format);
 }
@@ -800,26 +864,33 @@ auto FloatingPointFormat::value(ConstInt::UWide representation) const
 
   const auto sign = negative ? -1.0 : 1.0;
 
-  if (biasedExponent == maxBiasedExponent) {
+  if (specialValueEncoding == SpecialValueEncoding::kFiniteOnly &&
+      biasedExponent == maxBiasedExponent && significand == fractionMask) {
+    return std::copysign(std::numeric_limits<double>::quiet_NaN(), sign);
+  }
+
+  if (specialValueEncoding == SpecialValueEncoding::kIEEE &&
+      biasedExponent == maxBiasedExponent) {
     if (significand & (integerBit - 1))
-      return std::numeric_limits<double>::quiet_NaN();
+      return std::copysign(std::numeric_limits<double>::quiet_NaN(), sign);
     return sign * std::numeric_limits<double>::infinity();
   }
 
   if (biasedExponent != 0 && !explicitIntegerBit) significand |= integerBit;
 
   const int exponent = biasedExponent != 0
-                           ? static_cast<int>(biasedExponent) - maxExponent()
-                           : 1 - maxExponent();
+                           ? static_cast<int>(biasedExponent) - exponentBias()
+                           : 1 - exponentBias();
 
   return sign * std::ldexp(static_cast<double>(significand),
                            exponent - (significandDigits - 1));
 }
 
 auto FloatingPointFormat::rangeContains(double value) const -> bool {
-  if (!std::isfinite(value)) return true;
-  const auto largest =
-      std::ldexp(2.0 - std::ldexp(1.0, 1 - significandDigits), maxExponent());
+  if (std::isnan(value)) return true;
+  if (std::isinf(value))
+    return specialValueEncoding == SpecialValueEncoding::kIEEE;
+  const auto largest = this->value(maximumFiniteRepresentation(*this));
   return std::fabs(value) <= largest;
 }
 

@@ -116,8 +116,9 @@ namespace {
 [[nodiscard]] auto isSupportedArrayElement(Type element) -> bool {
   if (auto integer = dyn_cast<IntegerType>(element))
     return integer.isSignless();
-  return isa<Float16Type, BFloat16Type, Float32Type, Float64Type, Float80Type,
-             Float128Type, cxx::PointerType>(element);
+  return isa<Float8E4M3FNType, Float8E5M2Type, Float16Type, BFloat16Type,
+             Float32Type, Float64Type, Float80Type, Float128Type,
+             cxx::PointerType>(element);
 }
 
 [[nodiscard]] auto isSupportedScalarElement(Type element) -> bool {
