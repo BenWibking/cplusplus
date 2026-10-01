@@ -675,6 +675,7 @@ export interface EmitterDelegate {
     second: ValueRef,
     mask: readonly number[],
   ): ValueRef;
+  vectorReduction(loc: TokenIndex, op: BinaryOp, vector: ValueRef): ValueRef;
   functionType(
     parameters: readonly TypeRef[],
     results: readonly TypeRef[],

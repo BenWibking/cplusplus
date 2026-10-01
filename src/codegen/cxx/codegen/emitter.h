@@ -749,6 +749,9 @@ class Emitter {
                                            std::span<const std::int64_t> mask)
       -> ValueRef = 0;
 
+  [[nodiscard]] virtual auto vectorReduction(SourceLocation loc, BinaryOp op,
+                                             ValueRef vector) -> ValueRef = 0;
+
   [[nodiscard]] virtual auto functionType(std::span<const TypeRef> parameters,
                                           std::span<const TypeRef> results,
                                           bool isVariadic) -> TypeRef = 0;

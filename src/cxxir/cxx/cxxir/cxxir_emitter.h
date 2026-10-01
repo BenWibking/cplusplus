@@ -153,6 +153,8 @@ class CxxIREmitter final : public Emitter {
                     ValueRef index, bool indexIsSigned) -> ValueRef override;
   auto vectorShuffle(SourceLocation loc, ValueRef first, ValueRef second,
                      std::span<const std::int64_t> mask) -> ValueRef override;
+  auto vectorReduction(SourceLocation loc, BinaryOp op, ValueRef vector)
+      -> ValueRef override;
   auto functionType(std::span<const TypeRef> parameters,
                     std::span<const TypeRef> results, bool isVariadic)
       -> TypeRef override;

@@ -134,6 +134,11 @@ auto cxx::ASTInterpreter::builtinEvaluatesItsOwnArguments(
     case BuiltinFunctionKind::T___BUILTIN_SUBC:
     case BuiltinFunctionKind::T___BUILTIN_SUBCL:
     case BuiltinFunctionKind::T___BUILTIN_SUBCLL:
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_ADD:
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_MUL:
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_AND:
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_OR:
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_XOR:
       return true;
     default:
       return false;
@@ -423,6 +428,21 @@ auto cxx::ASTInterpreter::evaluateBuiltinCall(cxx::BuiltinFunctionKind kind,
 
     case BuiltinFunctionKind::T___BUILTIN_SUBCLL:
       return evaluateBuiltinCarryArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_ADD:
+      return evaluateBuiltinVectorReduce(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_MUL:
+      return evaluateBuiltinVectorReduce(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_AND:
+      return evaluateBuiltinVectorReduce(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_OR:
+      return evaluateBuiltinVectorReduce(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_REDUCE_XOR:
+      return evaluateBuiltinVectorReduce(ast);
 
     case BuiltinFunctionKind::T___BUILTIN_IS_CONSTANT_EVALUATED:
       return ConstValue{std::intmax_t(1)};

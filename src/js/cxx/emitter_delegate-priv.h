@@ -1645,6 +1645,12 @@ class JsEmitter final : public ir::Emitter {
         arrayVal(mask, [](const long long& item) { return toVal(item); })));
   }
 
+  auto vectorReduction(cxx::SourceLocation loc, cxx::ir::BinaryOp op,
+                       cxx::ir::ValueRef vector) -> cxx::ir::ValueRef override {
+    return toHandle<cxx::ir::ValueTag>(delegate_.call<val>(
+        "vectorReduction", toVal(loc), toVal(op), toVal(vector)));
+  }
+
   auto functionType(std::span<const cxx::ir::TypeRef> parameters,
                     std::span<const cxx::ir::TypeRef> results, bool isVariadic)
       -> cxx::ir::TypeRef override {
