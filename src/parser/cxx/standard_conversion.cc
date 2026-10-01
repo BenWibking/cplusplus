@@ -863,7 +863,8 @@ auto StandardConversion::bestConversionTarget(
 }
 
 auto StandardConversion::convertClassOperandForBuiltinOperator(
-    ExpressionAST*& expr, const Type* enumeration) -> bool {
+    ExpressionAST*& expr, BuiltinOperandKind kind, const Type* preferredType)
+    -> bool {
   if (!expr || !expr->type) return false;
 
   auto classType = type_cast<ClassType>(traits.remove_cvref(expr->type));
@@ -874,16 +875,20 @@ auto StandardConversion::convertClassOperandForBuiltinOperator(
 
   traits.require_complete_class(classSymbol);
 
+  const auto accepts = [&](const Type* type) {
+    switch (kind) {
+      case BuiltinOperandKind::kArithmetic:
+        return traits.is_arithmetic_or_unscoped_enum(type);
+      case BuiltinOperandKind::kArithmeticOrPointer:
+        return traits.is_arithmetic_or_unscoped_enum(type) ||
+               traits.is_pointer(type);
+    }
+    return false;
+  };
+
   auto target = bestConversionTarget(
-      expr,
-      conversionTargets(
-          traits, classSymbol,
-          convertedValue(traits,
-                         [&](const Type* type) {
-                           return traits.is_arithmetic_or_unscoped_enum(type) ||
-                                  traits.is_pointer(type);
-                         }),
-          enumeration));
+      expr, conversionTargets(traits, classSymbol,
+                              convertedValue(traits, accepts), preferredType));
 
   if (!target) return false;
 
