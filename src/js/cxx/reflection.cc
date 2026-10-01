@@ -7093,13 +7093,23 @@ auto readASTVal(std::intptr_t handle, int slot) -> val {
                       static_cast<const ::cxx::Literal*>(std::get<1>(item))))));
               break;
             case 2:
-              result.set("value", val(static_cast<double>(std::get<2>(item))));
+              result.set("value", [&]() -> val {
+                auto result = val::object();
+                result.set("format",
+                           static_cast<unsigned>(std::get<2>(item).format()));
+                result.set("bits", std::to_string(std::get<2>(item).bits()));
+                result.set("value", std::get<2>(item).toDouble());
+                return result;
+              }());
               break;
             case 3:
               result.set("value", val(static_cast<double>(std::get<3>(item))));
               break;
             case 4:
-              result.set("value", val(static_cast<double>(std::get<4>(item))));
+              result.set(
+                  "value",
+                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                      std::get<4>(item).get()))));
               break;
             case 5:
               result.set(
@@ -7132,23 +7142,9 @@ auto readASTVal(std::intptr_t handle, int slot) -> val {
                       std::get<9>(item).get()))));
               break;
             case 10:
-              result.set(
-                  "value",
-                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                      std::get<10>(item).get()))));
-              break;
-            case 11:
-              result.set("value", [&]() -> val {
-                auto result = val::object();
-                result.set("bits",
-                           val(static_cast<double>((std::get<11>(item)).bits)));
-                return result;
-              }());
-              break;
-            case 12:
               result.set("value", val::undefined());
               break;
-            case 13:
+            case 11:
               result.set("value", val::undefined());
               break;
           }
@@ -9359,9 +9355,21 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                             std::get<1>(std::get<2>(item)))))));
                             break;
                           case 2:
-                            result.set("value",
-                                       val(static_cast<double>(
-                                           std::get<2>(std::get<2>(item)))));
+                            result.set("value", [&]() -> val {
+                              auto result = val::object();
+                              result.set(
+                                  "format",
+                                  static_cast<unsigned>(
+                                      std::get<2>(std::get<2>(item)).format()));
+                              result.set(
+                                  "bits",
+                                  std::to_string(
+                                      std::get<2>(std::get<2>(item)).bits()));
+                              result.set(
+                                  "value",
+                                  std::get<2>(std::get<2>(item)).toDouble());
+                              return result;
+                            }());
                             break;
                           case 3:
                             result.set("value",
@@ -9371,7 +9379,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                           case 4:
                             result.set("value",
                                        val(static_cast<double>(
-                                           std::get<4>(std::get<2>(item)))));
+                                           reinterpret_cast<std::intptr_t>(
+                                               std::get<4>(std::get<2>(item))
+                                                   .get()))));
                             break;
                           case 5:
                             result.set("value",
@@ -9409,26 +9419,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                                    .get()))));
                             break;
                           case 10:
-                            result.set("value",
-                                       val(static_cast<double>(
-                                           reinterpret_cast<std::intptr_t>(
-                                               std::get<10>(std::get<2>(item))
-                                                   .get()))));
-                            break;
-                          case 11:
-                            result.set("value", [&]() -> val {
-                              auto result = val::object();
-                              result.set(
-                                  "bits",
-                                  val(static_cast<double>(
-                                      (std::get<11>(std::get<2>(item))).bits)));
-                              return result;
-                            }());
-                            break;
-                          case 12:
                             result.set("value", val::undefined());
                             break;
-                          case 13:
+                          case 11:
                             result.set("value", val::undefined());
                             break;
                         }
@@ -9512,9 +9505,21 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                                     std::get<2>(item)))))));
                                 break;
                               case 2:
-                                result.set("value",
-                                           val(static_cast<double>(std::get<2>(
-                                               std::get<2>(item)))));
+                                result.set("value", [&]() -> val {
+                                  auto result = val::object();
+                                  result.set("format",
+                                             static_cast<unsigned>(
+                                                 std::get<2>(std::get<2>(item))
+                                                     .format()));
+                                  result.set("bits",
+                                             std::to_string(
+                                                 std::get<2>(std::get<2>(item))
+                                                     .bits()));
+                                  result.set("value",
+                                             std::get<2>(std::get<2>(item))
+                                                 .toDouble());
+                                  return result;
+                                }());
                                 break;
                               case 3:
                                 result.set("value",
@@ -9522,9 +9527,12 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                                std::get<2>(item)))));
                                 break;
                               case 4:
-                                result.set("value",
-                                           val(static_cast<double>(std::get<4>(
-                                               std::get<2>(item)))));
+                                result.set(
+                                    "value",
+                                    val(static_cast<double>(
+                                        reinterpret_cast<std::intptr_t>(
+                                            std::get<4>(std::get<2>(item))
+                                                .get()))));
                                 break;
                               case 5:
                                 result.set(
@@ -9567,28 +9575,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                                 .get()))));
                                 break;
                               case 10:
-                                result.set(
-                                    "value",
-                                    val(static_cast<double>(
-                                        reinterpret_cast<std::intptr_t>(
-                                            std::get<10>(std::get<2>(item))
-                                                .get()))));
-                                break;
-                              case 11:
-                                result.set("value", [&]() -> val {
-                                  auto result = val::object();
-                                  result.set(
-                                      "bits",
-                                      val(static_cast<double>(
-                                          (std::get<11>(std::get<2>(item)))
-                                              .bits)));
-                                  return result;
-                                }());
-                                break;
-                              case 12:
                                 result.set("value", val::undefined());
                                 break;
-                              case 13:
+                              case 11:
                                 result.set("value", val::undefined());
                                 break;
                             }
@@ -9650,13 +9639,23 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                       static_cast<const ::cxx::Literal*>(std::get<1>(item))))));
               break;
             case 2:
-              result.set("value", val(static_cast<double>(std::get<2>(item))));
+              result.set("value", [&]() -> val {
+                auto result = val::object();
+                result.set("format",
+                           static_cast<unsigned>(std::get<2>(item).format()));
+                result.set("bits", std::to_string(std::get<2>(item).bits()));
+                result.set("value", std::get<2>(item).toDouble());
+                return result;
+              }());
               break;
             case 3:
               result.set("value", val(static_cast<double>(std::get<3>(item))));
               break;
             case 4:
-              result.set("value", val(static_cast<double>(std::get<4>(item))));
+              result.set(
+                  "value",
+                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                      std::get<4>(item).get()))));
               break;
             case 5:
               result.set(
@@ -9689,23 +9688,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                       std::get<9>(item).get()))));
               break;
             case 10:
-              result.set(
-                  "value",
-                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                      std::get<10>(item).get()))));
-              break;
-            case 11:
-              result.set("value", [&]() -> val {
-                auto result = val::object();
-                result.set("bits",
-                           val(static_cast<double>((std::get<11>(item)).bits)));
-                return result;
-              }());
-              break;
-            case 12:
               result.set("value", val::undefined());
               break;
-            case 13:
+            case 11:
               result.set("value", val::undefined());
               break;
           }
@@ -9765,9 +9750,21 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                             std::get<1>(std::get<2>(item)))))));
                             break;
                           case 2:
-                            result.set("value",
-                                       val(static_cast<double>(
-                                           std::get<2>(std::get<2>(item)))));
+                            result.set("value", [&]() -> val {
+                              auto result = val::object();
+                              result.set(
+                                  "format",
+                                  static_cast<unsigned>(
+                                      std::get<2>(std::get<2>(item)).format()));
+                              result.set(
+                                  "bits",
+                                  std::to_string(
+                                      std::get<2>(std::get<2>(item)).bits()));
+                              result.set(
+                                  "value",
+                                  std::get<2>(std::get<2>(item)).toDouble());
+                              return result;
+                            }());
                             break;
                           case 3:
                             result.set("value",
@@ -9777,7 +9774,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                           case 4:
                             result.set("value",
                                        val(static_cast<double>(
-                                           std::get<4>(std::get<2>(item)))));
+                                           reinterpret_cast<std::intptr_t>(
+                                               std::get<4>(std::get<2>(item))
+                                                   .get()))));
                             break;
                           case 5:
                             result.set("value",
@@ -9815,26 +9814,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                                    .get()))));
                             break;
                           case 10:
-                            result.set("value",
-                                       val(static_cast<double>(
-                                           reinterpret_cast<std::intptr_t>(
-                                               std::get<10>(std::get<2>(item))
-                                                   .get()))));
-                            break;
-                          case 11:
-                            result.set("value", [&]() -> val {
-                              auto result = val::object();
-                              result.set(
-                                  "bits",
-                                  val(static_cast<double>(
-                                      (std::get<11>(std::get<2>(item))).bits)));
-                              return result;
-                            }());
-                            break;
-                          case 12:
                             result.set("value", val::undefined());
                             break;
-                          case 13:
+                          case 11:
                             result.set("value", val::undefined());
                             break;
                         }
@@ -9880,13 +9862,23 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                       static_cast<const ::cxx::Literal*>(std::get<1>(item))))));
               break;
             case 2:
-              result.set("value", val(static_cast<double>(std::get<2>(item))));
+              result.set("value", [&]() -> val {
+                auto result = val::object();
+                result.set("format",
+                           static_cast<unsigned>(std::get<2>(item).format()));
+                result.set("bits", std::to_string(std::get<2>(item).bits()));
+                result.set("value", std::get<2>(item).toDouble());
+                return result;
+              }());
               break;
             case 3:
               result.set("value", val(static_cast<double>(std::get<3>(item))));
               break;
             case 4:
-              result.set("value", val(static_cast<double>(std::get<4>(item))));
+              result.set(
+                  "value",
+                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                      std::get<4>(item).get()))));
               break;
             case 5:
               result.set(
@@ -9919,23 +9911,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                       std::get<9>(item).get()))));
               break;
             case 10:
-              result.set(
-                  "value",
-                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                      std::get<10>(item).get()))));
-              break;
-            case 11:
-              result.set("value", [&]() -> val {
-                auto result = val::object();
-                result.set("bits",
-                           val(static_cast<double>((std::get<11>(item)).bits)));
-                return result;
-              }());
-              break;
-            case 12:
               result.set("value", val::undefined());
               break;
-            case 13:
+            case 11:
               result.set("value", val::undefined());
               break;
           }
@@ -9968,13 +9946,23 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                       static_cast<const ::cxx::Literal*>(std::get<1>(item))))));
               break;
             case 2:
-              result.set("value", val(static_cast<double>(std::get<2>(item))));
+              result.set("value", [&]() -> val {
+                auto result = val::object();
+                result.set("format",
+                           static_cast<unsigned>(std::get<2>(item).format()));
+                result.set("bits", std::to_string(std::get<2>(item).bits()));
+                result.set("value", std::get<2>(item).toDouble());
+                return result;
+              }());
               break;
             case 3:
               result.set("value", val(static_cast<double>(std::get<3>(item))));
               break;
             case 4:
-              result.set("value", val(static_cast<double>(std::get<4>(item))));
+              result.set(
+                  "value",
+                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                      std::get<4>(item).get()))));
               break;
             case 5:
               result.set(
@@ -10007,23 +9995,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                       std::get<9>(item).get()))));
               break;
             case 10:
-              result.set(
-                  "value",
-                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                      std::get<10>(item).get()))));
-              break;
-            case 11:
-              result.set("value", [&]() -> val {
-                auto result = val::object();
-                result.set("bits",
-                           val(static_cast<double>((std::get<11>(item)).bits)));
-                return result;
-              }());
-              break;
-            case 12:
               result.set("value", val::undefined());
               break;
-            case 13:
+            case 11:
               result.set("value", val::undefined());
               break;
           }
@@ -10083,9 +10057,21 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                             std::get<1>(std::get<2>(item)))))));
                             break;
                           case 2:
-                            result.set("value",
-                                       val(static_cast<double>(
-                                           std::get<2>(std::get<2>(item)))));
+                            result.set("value", [&]() -> val {
+                              auto result = val::object();
+                              result.set(
+                                  "format",
+                                  static_cast<unsigned>(
+                                      std::get<2>(std::get<2>(item)).format()));
+                              result.set(
+                                  "bits",
+                                  std::to_string(
+                                      std::get<2>(std::get<2>(item)).bits()));
+                              result.set(
+                                  "value",
+                                  std::get<2>(std::get<2>(item)).toDouble());
+                              return result;
+                            }());
                             break;
                           case 3:
                             result.set("value",
@@ -10095,7 +10081,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                           case 4:
                             result.set("value",
                                        val(static_cast<double>(
-                                           std::get<4>(std::get<2>(item)))));
+                                           reinterpret_cast<std::intptr_t>(
+                                               std::get<4>(std::get<2>(item))
+                                                   .get()))));
                             break;
                           case 5:
                             result.set("value",
@@ -10133,26 +10121,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                                    .get()))));
                             break;
                           case 10:
-                            result.set("value",
-                                       val(static_cast<double>(
-                                           reinterpret_cast<std::intptr_t>(
-                                               std::get<10>(std::get<2>(item))
-                                                   .get()))));
-                            break;
-                          case 11:
-                            result.set("value", [&]() -> val {
-                              auto result = val::object();
-                              result.set(
-                                  "bits",
-                                  val(static_cast<double>(
-                                      (std::get<11>(std::get<2>(item))).bits)));
-                              return result;
-                            }());
-                            break;
-                          case 12:
                             result.set("value", val::undefined());
                             break;
-                          case 13:
+                          case 11:
                             result.set("value", val::undefined());
                             break;
                         }
@@ -10265,9 +10236,21 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                             std::get<1>(std::get<2>(item)))))));
                             break;
                           case 2:
-                            result.set("value",
-                                       val(static_cast<double>(
-                                           std::get<2>(std::get<2>(item)))));
+                            result.set("value", [&]() -> val {
+                              auto result = val::object();
+                              result.set(
+                                  "format",
+                                  static_cast<unsigned>(
+                                      std::get<2>(std::get<2>(item)).format()));
+                              result.set(
+                                  "bits",
+                                  std::to_string(
+                                      std::get<2>(std::get<2>(item)).bits()));
+                              result.set(
+                                  "value",
+                                  std::get<2>(std::get<2>(item)).toDouble());
+                              return result;
+                            }());
                             break;
                           case 3:
                             result.set("value",
@@ -10277,7 +10260,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                           case 4:
                             result.set("value",
                                        val(static_cast<double>(
-                                           std::get<4>(std::get<2>(item)))));
+                                           reinterpret_cast<std::intptr_t>(
+                                               std::get<4>(std::get<2>(item))
+                                                   .get()))));
                             break;
                           case 5:
                             result.set("value",
@@ -10315,26 +10300,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                                                    .get()))));
                             break;
                           case 10:
-                            result.set("value",
-                                       val(static_cast<double>(
-                                           reinterpret_cast<std::intptr_t>(
-                                               std::get<10>(std::get<2>(item))
-                                                   .get()))));
-                            break;
-                          case 11:
-                            result.set("value", [&]() -> val {
-                              auto result = val::object();
-                              result.set(
-                                  "bits",
-                                  val(static_cast<double>(
-                                      (std::get<11>(std::get<2>(item))).bits)));
-                              return result;
-                            }());
-                            break;
-                          case 12:
                             result.set("value", val::undefined());
                             break;
-                          case 13:
+                          case 11:
                             result.set("value", val::undefined());
                             break;
                         }
@@ -10380,13 +10348,23 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                       static_cast<const ::cxx::Literal*>(std::get<1>(item))))));
               break;
             case 2:
-              result.set("value", val(static_cast<double>(std::get<2>(item))));
+              result.set("value", [&]() -> val {
+                auto result = val::object();
+                result.set("format",
+                           static_cast<unsigned>(std::get<2>(item).format()));
+                result.set("bits", std::to_string(std::get<2>(item).bits()));
+                result.set("value", std::get<2>(item).toDouble());
+                return result;
+              }());
               break;
             case 3:
               result.set("value", val(static_cast<double>(std::get<3>(item))));
               break;
             case 4:
-              result.set("value", val(static_cast<double>(std::get<4>(item))));
+              result.set(
+                  "value",
+                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                      std::get<4>(item).get()))));
               break;
             case 5:
               result.set(
@@ -10419,23 +10397,9 @@ auto readSymbolVal(std::intptr_t handle, int slot) -> val {
                       std::get<9>(item).get()))));
               break;
             case 10:
-              result.set(
-                  "value",
-                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                      std::get<10>(item).get()))));
-              break;
-            case 11:
-              result.set("value", [&]() -> val {
-                auto result = val::object();
-                result.set("bits",
-                           val(static_cast<double>((std::get<11>(item)).bits)));
-                return result;
-              }());
-              break;
-            case 12:
               result.set("value", val::undefined());
               break;
-            case 13:
+            case 11:
               result.set("value", val::undefined());
               break;
           }
@@ -11062,9 +11026,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -11074,7 +11047,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -11107,24 +11081,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -11187,9 +11146,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -11197,9 +11168,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -11237,26 +11210,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -11340,16 +11296,28 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                 std::get<1>(std::get<2>(item)))))));
                     break;
                   case 2:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<2>(std::get<2>(item)))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set("format",
+                                 static_cast<unsigned>(
+                                     std::get<2>(std::get<2>(item)).format()));
+                      result.set("bits",
+                                 std::to_string(
+                                     std::get<2>(std::get<2>(item)).bits()));
+                      result.set("value",
+                                 std::get<2>(std::get<2>(item)).toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value", val(static_cast<double>(
                                             std::get<3>(std::get<2>(item)))));
                     break;
                   case 4:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<4>(std::get<2>(item)))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>(std::get<2>(item)).get()))));
                     break;
                   case 5:
                     result.set(
@@ -11382,24 +11350,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                             std::get<9>(std::get<2>(item)).get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>(std::get<2>(item)).get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set("bits",
-                                 val(static_cast<double>(
-                                     (std::get<11>(std::get<2>(item))).bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -11455,9 +11408,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -11467,7 +11429,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -11500,24 +11463,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -11580,9 +11528,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -11590,9 +11550,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -11630,26 +11592,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -11733,16 +11678,28 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                 std::get<1>(std::get<2>(item)))))));
                     break;
                   case 2:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<2>(std::get<2>(item)))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set("format",
+                                 static_cast<unsigned>(
+                                     std::get<2>(std::get<2>(item)).format()));
+                      result.set("bits",
+                                 std::to_string(
+                                     std::get<2>(std::get<2>(item)).bits()));
+                      result.set("value",
+                                 std::get<2>(std::get<2>(item)).toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value", val(static_cast<double>(
                                             std::get<3>(std::get<2>(item)))));
                     break;
                   case 4:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<4>(std::get<2>(item)))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>(std::get<2>(item)).get()))));
                     break;
                   case 5:
                     result.set(
@@ -11775,24 +11732,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                             std::get<9>(std::get<2>(item)).get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>(std::get<2>(item)).get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set("bits",
-                                 val(static_cast<double>(
-                                     (std::get<11>(std::get<2>(item))).bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -11848,9 +11790,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -11860,7 +11811,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -11893,24 +11845,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -11973,9 +11910,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -11983,9 +11932,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -12023,26 +11974,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -12126,16 +12060,28 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                 std::get<1>(std::get<2>(item)))))));
                     break;
                   case 2:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<2>(std::get<2>(item)))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set("format",
+                                 static_cast<unsigned>(
+                                     std::get<2>(std::get<2>(item)).format()));
+                      result.set("bits",
+                                 std::to_string(
+                                     std::get<2>(std::get<2>(item)).bits()));
+                      result.set("value",
+                                 std::get<2>(std::get<2>(item)).toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value", val(static_cast<double>(
                                             std::get<3>(std::get<2>(item)))));
                     break;
                   case 4:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<4>(std::get<2>(item)))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>(std::get<2>(item)).get()))));
                     break;
                   case 5:
                     result.set(
@@ -12168,24 +12114,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                             std::get<9>(std::get<2>(item)).get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>(std::get<2>(item)).get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set("bits",
-                                 val(static_cast<double>(
-                                     (std::get<11>(std::get<2>(item))).bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -12241,9 +12172,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -12253,7 +12193,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -12286,24 +12227,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -12366,9 +12292,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -12376,9 +12314,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -12416,26 +12356,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -12500,9 +12423,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -12512,7 +12444,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -12545,24 +12478,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -12617,9 +12535,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -12629,7 +12556,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -12662,24 +12590,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -12742,9 +12655,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -12752,9 +12677,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -12792,26 +12719,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -12895,16 +12805,28 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                 std::get<1>(std::get<2>(item)))))));
                     break;
                   case 2:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<2>(std::get<2>(item)))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set("format",
+                                 static_cast<unsigned>(
+                                     std::get<2>(std::get<2>(item)).format()));
+                      result.set("bits",
+                                 std::to_string(
+                                     std::get<2>(std::get<2>(item)).bits()));
+                      result.set("value",
+                                 std::get<2>(std::get<2>(item)).toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value", val(static_cast<double>(
                                             std::get<3>(std::get<2>(item)))));
                     break;
                   case 4:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<4>(std::get<2>(item)))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>(std::get<2>(item)).get()))));
                     break;
                   case 5:
                     result.set(
@@ -12937,24 +12859,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                             std::get<9>(std::get<2>(item)).get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>(std::get<2>(item)).get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set("bits",
-                                 val(static_cast<double>(
-                                     (std::get<11>(std::get<2>(item))).bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -13010,9 +12917,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -13022,7 +12938,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -13055,24 +12972,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -13135,9 +13037,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -13145,9 +13059,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -13185,26 +13101,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -13288,16 +13187,28 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                 std::get<1>(std::get<2>(item)))))));
                     break;
                   case 2:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<2>(std::get<2>(item)))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set("format",
+                                 static_cast<unsigned>(
+                                     std::get<2>(std::get<2>(item)).format()));
+                      result.set("bits",
+                                 std::to_string(
+                                     std::get<2>(std::get<2>(item)).bits()));
+                      result.set("value",
+                                 std::get<2>(std::get<2>(item)).toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value", val(static_cast<double>(
                                             std::get<3>(std::get<2>(item)))));
                     break;
                   case 4:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<4>(std::get<2>(item)))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>(std::get<2>(item)).get()))));
                     break;
                   case 5:
                     result.set(
@@ -13330,24 +13241,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                             std::get<9>(std::get<2>(item)).get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>(std::get<2>(item)).get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set("bits",
-                                 val(static_cast<double>(
-                                     (std::get<11>(std::get<2>(item))).bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -13403,9 +13299,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -13415,7 +13320,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -13448,24 +13354,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -13528,9 +13419,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -13538,9 +13441,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -13578,26 +13483,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -13681,16 +13569,28 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                 std::get<1>(std::get<2>(item)))))));
                     break;
                   case 2:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<2>(std::get<2>(item)))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set("format",
+                                 static_cast<unsigned>(
+                                     std::get<2>(std::get<2>(item)).format()));
+                      result.set("bits",
+                                 std::to_string(
+                                     std::get<2>(std::get<2>(item)).bits()));
+                      result.set("value",
+                                 std::get<2>(std::get<2>(item)).toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value", val(static_cast<double>(
                                             std::get<3>(std::get<2>(item)))));
                     break;
                   case 4:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<4>(std::get<2>(item)))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>(std::get<2>(item)).get()))));
                     break;
                   case 5:
                     result.set(
@@ -13723,24 +13623,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                             std::get<9>(std::get<2>(item)).get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>(std::get<2>(item)).get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set("bits",
-                                 val(static_cast<double>(
-                                     (std::get<11>(std::get<2>(item))).bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -13804,9 +13689,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -13814,9 +13711,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -13854,26 +13753,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -13936,9 +13818,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -13948,7 +13839,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -13981,24 +13873,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -14061,9 +13938,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -14071,9 +13960,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -14111,26 +14002,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -14214,16 +14088,28 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                 std::get<1>(std::get<2>(item)))))));
                     break;
                   case 2:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<2>(std::get<2>(item)))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set("format",
+                                 static_cast<unsigned>(
+                                     std::get<2>(std::get<2>(item)).format()));
+                      result.set("bits",
+                                 std::to_string(
+                                     std::get<2>(std::get<2>(item)).bits()));
+                      result.set("value",
+                                 std::get<2>(std::get<2>(item)).toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value", val(static_cast<double>(
                                             std::get<3>(std::get<2>(item)))));
                     break;
                   case 4:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<4>(std::get<2>(item)))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>(std::get<2>(item)).get()))));
                     break;
                   case 5:
                     result.set(
@@ -14256,24 +14142,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                             std::get<9>(std::get<2>(item)).get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>(std::get<2>(item)).get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set("bits",
-                                 val(static_cast<double>(
-                                     (std::get<11>(std::get<2>(item))).bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -14329,9 +14200,18 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -14341,7 +14221,8 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -14374,24 +14255,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -14454,9 +14320,21 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                           std::get<1>(std::get<2>(item)))))));
                           break;
                         case 2:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<2>(std::get<2>(item)))));
+                          result.set("value", [&]() -> val {
+                            auto result = val::object();
+                            result.set(
+                                "format",
+                                static_cast<unsigned>(
+                                    std::get<2>(std::get<2>(item)).format()));
+                            result.set(
+                                "bits",
+                                std::to_string(
+                                    std::get<2>(std::get<2>(item)).bits()));
+                            result.set(
+                                "value",
+                                std::get<2>(std::get<2>(item)).toDouble());
+                            return result;
+                          }());
                           break;
                         case 3:
                           result.set("value",
@@ -14464,9 +14342,11 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                          std::get<3>(std::get<2>(item)))));
                           break;
                         case 4:
-                          result.set("value",
-                                     val(static_cast<double>(
-                                         std::get<4>(std::get<2>(item)))));
+                          result.set(
+                              "value",
+                              val(static_cast<double>(
+                                  reinterpret_cast<std::intptr_t>(
+                                      std::get<4>(std::get<2>(item)).get()))));
                           break;
                         case 5:
                           result.set(
@@ -14504,26 +14384,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                       std::get<9>(std::get<2>(item)).get()))));
                           break;
                         case 10:
-                          result.set(
-                              "value",
-                              val(static_cast<double>(
-                                  reinterpret_cast<std::intptr_t>(
-                                      std::get<10>(std::get<2>(item)).get()))));
-                          break;
-                        case 11:
-                          result.set("value", [&]() -> val {
-                            auto result = val::object();
-                            result.set(
-                                "bits",
-                                val(static_cast<double>(
-                                    (std::get<11>(std::get<2>(item))).bits)));
-                            return result;
-                          }());
-                          break;
-                        case 12:
                           result.set("value", val::undefined());
                           break;
-                        case 13:
+                        case 11:
                           result.set("value", val::undefined());
                           break;
                       }
@@ -14607,16 +14470,28 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                                 std::get<1>(std::get<2>(item)))))));
                     break;
                   case 2:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<2>(std::get<2>(item)))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set("format",
+                                 static_cast<unsigned>(
+                                     std::get<2>(std::get<2>(item)).format()));
+                      result.set("bits",
+                                 std::to_string(
+                                     std::get<2>(std::get<2>(item)).bits()));
+                      result.set("value",
+                                 std::get<2>(std::get<2>(item)).toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value", val(static_cast<double>(
                                             std::get<3>(std::get<2>(item)))));
                     break;
                   case 4:
-                    result.set("value", val(static_cast<double>(
-                                            std::get<4>(std::get<2>(item)))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>(std::get<2>(item)).get()))));
                     break;
                   case 5:
                     result.set(
@@ -14649,24 +14524,9 @@ auto readSymbolItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                             std::get<9>(std::get<2>(item)).get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>(std::get<2>(item)).get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set("bits",
-                                 val(static_cast<double>(
-                                     (std::get<11>(std::get<2>(item))).bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -15192,9 +15052,18 @@ auto readTypeItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -15204,7 +15073,8 @@ auto readTypeItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -15237,24 +15107,9 @@ auto readTypeItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -15415,9 +15270,18 @@ auto readNameItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                               std::get<1>(std::get<2>(item)))))));
                   break;
                 case 2:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(std::get<2>(std::get<2>(item)))));
+                  result.set("value", [&]() -> val {
+                    auto result = val::object();
+                    result.set("format",
+                               static_cast<unsigned>(
+                                   std::get<2>(std::get<2>(item)).format()));
+                    result.set(
+                        "bits",
+                        std::to_string(std::get<2>(std::get<2>(item)).bits()));
+                    result.set("value",
+                               std::get<2>(std::get<2>(item)).toDouble());
+                    return result;
+                  }());
                   break;
                 case 3:
                   result.set(
@@ -15427,7 +15291,8 @@ auto readNameItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                 case 4:
                   result.set(
                       "value",
-                      val(static_cast<double>(std::get<4>(std::get<2>(item)))));
+                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                          std::get<4>(std::get<2>(item)).get()))));
                   break;
                 case 5:
                   result.set(
@@ -15460,24 +15325,9 @@ auto readNameItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<9>(std::get<2>(item)).get()))));
                   break;
                 case 10:
-                  result.set(
-                      "value",
-                      val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                          std::get<10>(std::get<2>(item)).get()))));
-                  break;
-                case 11:
-                  result.set("value", [&]() -> val {
-                    auto result = val::object();
-                    result.set("bits",
-                               val(static_cast<double>(
-                                   (std::get<11>(std::get<2>(item))).bits)));
-                    return result;
-                  }());
-                  break;
-                case 12:
                   result.set("value", val::undefined());
                   break;
-                case 13:
+                case 11:
                   result.set("value", val::undefined());
                   break;
               }
@@ -15860,16 +15710,30 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                           std::get<1>(std::get<0>(self->filler())))))));
               break;
             case 2:
-              result.set("value", val(static_cast<double>(std::get<2>(
-                                      std::get<0>(self->filler())))));
+              result.set("value", [&]() -> val {
+                auto result = val::object();
+                result.set(
+                    "format",
+                    static_cast<unsigned>(
+                        std::get<2>(std::get<0>(self->filler())).format()));
+                result.set(
+                    "bits",
+                    std::to_string(
+                        std::get<2>(std::get<0>(self->filler())).bits()));
+                result.set("value",
+                           std::get<2>(std::get<0>(self->filler())).toDouble());
+                return result;
+              }());
               break;
             case 3:
               result.set("value", val(static_cast<double>(std::get<3>(
                                       std::get<0>(self->filler())))));
               break;
             case 4:
-              result.set("value", val(static_cast<double>(std::get<4>(
-                                      std::get<0>(self->filler())))));
+              result.set(
+                  "value",
+                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                      std::get<4>(std::get<0>(self->filler())).get()))));
               break;
             case 5:
               result.set(
@@ -15902,25 +15766,9 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                       std::get<9>(std::get<0>(self->filler())).get()))));
               break;
             case 10:
-              result.set(
-                  "value",
-                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                      std::get<10>(std::get<0>(self->filler())).get()))));
-              break;
-            case 11:
-              result.set("value", [&]() -> val {
-                auto result = val::object();
-                result.set(
-                    "bits",
-                    val(static_cast<double>(
-                        (std::get<11>(std::get<0>(self->filler()))).bits)));
-                return result;
-              }());
-              break;
-            case 12:
               result.set("value", val::undefined());
               break;
-            case 13:
+            case 11:
               result.set("value", val::undefined());
               break;
           }
@@ -15949,8 +15797,15 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                                std::get<1>(self->real()))))));
             break;
           case 2:
-            result.set("value",
-                       val(static_cast<double>(std::get<2>(self->real()))));
+            result.set("value", [&]() -> val {
+              auto result = val::object();
+              result.set("format", static_cast<unsigned>(
+                                       std::get<2>(self->real()).format()));
+              result.set("bits",
+                         std::to_string(std::get<2>(self->real()).bits()));
+              result.set("value", std::get<2>(self->real()).toDouble());
+              return result;
+            }());
             break;
           case 3:
             result.set("value",
@@ -15958,7 +15813,8 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
             break;
           case 4:
             result.set("value",
-                       val(static_cast<double>(std::get<4>(self->real()))));
+                       val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                           std::get<4>(self->real()).get()))));
             break;
           case 5:
             result.set("value",
@@ -15986,23 +15842,9 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                            std::get<9>(self->real()).get()))));
             break;
           case 10:
-            result.set("value",
-                       val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                           std::get<10>(self->real()).get()))));
-            break;
-          case 11:
-            result.set("value", [&]() -> val {
-              auto result = val::object();
-              result.set(
-                  "bits",
-                  val(static_cast<double>((std::get<11>(self->real())).bits)));
-              return result;
-            }());
-            break;
-          case 12:
             result.set("value", val::undefined());
             break;
-          case 13:
+          case 11:
             result.set("value", val::undefined());
             break;
         }
@@ -16025,8 +15867,15 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                                std::get<1>(self->imag()))))));
             break;
           case 2:
-            result.set("value",
-                       val(static_cast<double>(std::get<2>(self->imag()))));
+            result.set("value", [&]() -> val {
+              auto result = val::object();
+              result.set("format", static_cast<unsigned>(
+                                       std::get<2>(self->imag()).format()));
+              result.set("bits",
+                         std::to_string(std::get<2>(self->imag()).bits()));
+              result.set("value", std::get<2>(self->imag()).toDouble());
+              return result;
+            }());
             break;
           case 3:
             result.set("value",
@@ -16034,7 +15883,8 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
             break;
           case 4:
             result.set("value",
-                       val(static_cast<double>(std::get<4>(self->imag()))));
+                       val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                           std::get<4>(self->imag()).get()))));
             break;
           case 5:
             result.set("value",
@@ -16062,23 +15912,9 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                            std::get<9>(self->imag()).get()))));
             break;
           case 10:
-            result.set("value",
-                       val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                           std::get<10>(self->imag()).get()))));
-            break;
-          case 11:
-            result.set("value", [&]() -> val {
-              auto result = val::object();
-              result.set(
-                  "bits",
-                  val(static_cast<double>((std::get<11>(self->imag())).bits)));
-              return result;
-            }());
-            break;
-          case 12:
             result.set("value", val::undefined());
             break;
-          case 13:
+          case 11:
             result.set("value", val::undefined());
             break;
         }
@@ -16101,8 +15937,15 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                                std::get<1>(self->value()))))));
             break;
           case 2:
-            result.set("value",
-                       val(static_cast<double>(std::get<2>(self->value()))));
+            result.set("value", [&]() -> val {
+              auto result = val::object();
+              result.set("format", static_cast<unsigned>(
+                                       std::get<2>(self->value()).format()));
+              result.set("bits",
+                         std::to_string(std::get<2>(self->value()).bits()));
+              result.set("value", std::get<2>(self->value()).toDouble());
+              return result;
+            }());
             break;
           case 3:
             result.set("value",
@@ -16110,7 +15953,8 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
             break;
           case 4:
             result.set("value",
-                       val(static_cast<double>(std::get<4>(self->value()))));
+                       val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                           std::get<4>(self->value()).get()))));
             break;
           case 5:
             result.set("value",
@@ -16138,23 +15982,9 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                            std::get<9>(self->value()).get()))));
             break;
           case 10:
-            result.set("value",
-                       val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                           std::get<10>(self->value()).get()))));
-            break;
-          case 11:
-            result.set("value", [&]() -> val {
-              auto result = val::object();
-              result.set(
-                  "bits",
-                  val(static_cast<double>((std::get<11>(self->value())).bits)));
-              return result;
-            }());
-            break;
-          case 12:
             result.set("value", val::undefined());
             break;
-          case 13:
+          case 11:
             result.set("value", val::undefined());
             break;
         }
@@ -16204,9 +16034,23 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                                 (std::get<2>(self->value)).value))))));
                     break;
                   case 2:
-                    result.set("value",
-                               val(static_cast<double>(std::get<2>(
-                                   (std::get<2>(self->value)).value))));
+                    result.set("value", [&]() -> val {
+                      auto result = val::object();
+                      result.set(
+                          "format",
+                          static_cast<unsigned>(
+                              std::get<2>((std::get<2>(self->value)).value)
+                                  .format()));
+                      result.set(
+                          "bits",
+                          std::to_string(
+                              std::get<2>((std::get<2>(self->value)).value)
+                                  .bits()));
+                      result.set("value",
+                                 std::get<2>((std::get<2>(self->value)).value)
+                                     .toDouble());
+                      return result;
+                    }());
                     break;
                   case 3:
                     result.set("value",
@@ -16214,9 +16058,11 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                                    (std::get<2>(self->value)).value))));
                     break;
                   case 4:
-                    result.set("value",
-                               val(static_cast<double>(std::get<4>(
-                                   (std::get<2>(self->value)).value))));
+                    result.set(
+                        "value",
+                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                            std::get<4>((std::get<2>(self->value)).value)
+                                .get()))));
                     break;
                   case 5:
                     result.set(
@@ -16254,27 +16100,9 @@ auto readMiscVal(std::intptr_t handle, int slot) -> val {
                                 .get()))));
                     break;
                   case 10:
-                    result.set(
-                        "value",
-                        val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                            std::get<10>((std::get<2>(self->value)).value)
-                                .get()))));
-                    break;
-                  case 11:
-                    result.set("value", [&]() -> val {
-                      auto result = val::object();
-                      result.set(
-                          "bits",
-                          val(static_cast<double>(
-                              (std::get<11>((std::get<2>(self->value)).value))
-                                  .bits)));
-                      return result;
-                    }());
-                    break;
-                  case 12:
                     result.set("value", val::undefined());
                     break;
-                  case 13:
+                  case 11:
                     result.set("value", val::undefined());
                     break;
                 }
@@ -16370,9 +16198,16 @@ auto readMiscItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<1>(std::get<0>(item)))))));
               break;
             case 2:
-              result.set(
-                  "value",
-                  val(static_cast<double>(std::get<2>(std::get<0>(item)))));
+              result.set("value", [&]() -> val {
+                auto result = val::object();
+                result.set("format",
+                           static_cast<unsigned>(
+                               std::get<2>(std::get<0>(item)).format()));
+                result.set("bits", std::to_string(
+                                       std::get<2>(std::get<0>(item)).bits()));
+                result.set("value", std::get<2>(std::get<0>(item)).toDouble());
+                return result;
+              }());
               break;
             case 3:
               result.set(
@@ -16382,7 +16217,8 @@ auto readMiscItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
             case 4:
               result.set(
                   "value",
-                  val(static_cast<double>(std::get<4>(std::get<0>(item)))));
+                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                      std::get<4>(std::get<0>(item)).get()))));
               break;
             case 5:
               result.set(
@@ -16415,24 +16251,9 @@ auto readMiscItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                       std::get<9>(std::get<0>(item)).get()))));
               break;
             case 10:
-              result.set(
-                  "value",
-                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                      std::get<10>(std::get<0>(item)).get()))));
-              break;
-            case 11:
-              result.set("value", [&]() -> val {
-                auto result = val::object();
-                result.set("bits",
-                           val(static_cast<double>(
-                               (std::get<11>(std::get<0>(item))).bits)));
-                return result;
-              }());
-              break;
-            case 12:
               result.set("value", val::undefined());
               break;
-            case 13:
+            case 11:
               result.set("value", val::undefined());
               break;
           }
@@ -16468,16 +16289,25 @@ auto readMiscItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                           std::get<1>((item).value))))));
               break;
             case 2:
-              result.set("value",
-                         val(static_cast<double>(std::get<2>((item).value))));
+              result.set("value", [&]() -> val {
+                auto result = val::object();
+                result.set("format", static_cast<unsigned>(
+                                         std::get<2>((item).value).format()));
+                result.set("bits",
+                           std::to_string(std::get<2>((item).value).bits()));
+                result.set("value", std::get<2>((item).value).toDouble());
+                return result;
+              }());
               break;
             case 3:
               result.set("value",
                          val(static_cast<double>(std::get<3>((item).value))));
               break;
             case 4:
-              result.set("value",
-                         val(static_cast<double>(std::get<4>((item).value))));
+              result.set(
+                  "value",
+                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
+                      std::get<4>((item).value).get()))));
               break;
             case 5:
               result.set(
@@ -16510,23 +16340,9 @@ auto readMiscItemVal(std::intptr_t handle, std::intptr_t unit, int slot,
                       std::get<9>((item).value).get()))));
               break;
             case 10:
-              result.set(
-                  "value",
-                  val(static_cast<double>(reinterpret_cast<std::intptr_t>(
-                      std::get<10>((item).value).get()))));
-              break;
-            case 11:
-              result.set("value", [&]() -> val {
-                auto result = val::object();
-                result.set("bits", val(static_cast<double>(
-                                       (std::get<11>((item).value)).bits)));
-                return result;
-              }());
-              break;
-            case 12:
               result.set("value", val::undefined());
               break;
-            case 13:
+            case 11:
               result.set("value", val::undefined());
               break;
           }
