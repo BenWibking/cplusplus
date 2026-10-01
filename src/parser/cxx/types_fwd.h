@@ -58,6 +58,8 @@ using ExceptionSpecification = std::variant<bool, ExpressionAST*>;
   V(Half)                                    \
   V(Float16)                                 \
   V(BFloat16)                                \
+  V(Float8E4M3FN)                            \
+  V(Float8E5M2)                              \
   V(Float128)
 
 #define CXX_FOR_EACH_TYPE_KIND(V)        \

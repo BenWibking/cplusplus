@@ -58,11 +58,25 @@ enum class FramePointerKind {
 [[nodiscard]] auto to_string(FramePointerKind kind) -> std::string_view;
 
 struct FloatingPointFormat {
+  enum class SpecialValueEncoding {
+    kIEEE,
+    kFiniteOnly,
+  };
+
+  // Number of stored exponent bits.
   int exponentBits = 0;
+
+  // Precision including the implicit or explicit integer bit.
   int significandDigits = 0;
+
+  // Whether the integer bit is stored in the representation.
   bool explicitIntegerBit = false;
 
+  // Interpretation of the all-ones exponent field.
+  SpecialValueEncoding specialValueEncoding = SpecialValueEncoding::kIEEE;
+
   [[nodiscard]] auto fractionBits() const -> int;
+  [[nodiscard]] auto exponentBias() const -> int;
   [[nodiscard]] auto maxExponent() const -> int;
   [[nodiscard]] auto representsInteger(std::intmax_t value) const -> bool;
   [[nodiscard]] auto rangeContains(double value) const -> bool;

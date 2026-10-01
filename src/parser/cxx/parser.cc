@@ -7066,6 +7066,8 @@ auto Parser::parse_primitive_type_specifier(SpecifierAST*& yyast,
     case TokenKind::T___FP16:
     case TokenKind::T__FLOAT16:
     case TokenKind::T___BF16:
+    case TokenKind::T___FLOAT8_E4M3FN:
+    case TokenKind::T___FLOAT8_E5M2:
     case TokenKind::T___FLOAT80:
     case TokenKind::T___FLOAT128:
       makeFloatingPointTypeSpecifier();

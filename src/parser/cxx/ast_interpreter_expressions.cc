@@ -314,8 +314,10 @@ struct ASTInterpreter::ExpressionVisitor {
                                         auto&& op) -> ExpressionResult {
     switch (type->kind()) {
       case TypeKind::kBFloat16:
+      case TypeKind::kFloat8E4M3FN:
+      case TypeKind::kFloat8E5M2:
         return interp.toArithmeticType(
-            ConstValue{op(toFloat(*left), toFloat(*right))}, type);
+            ConstValue{op(toLongDouble(*left), toLongDouble(*right))}, type);
       case TypeKind::kFloat:
         return ConstValue{op(toFloat(*left), toFloat(*right))};
       case TypeKind::kLongDouble:
@@ -344,6 +346,8 @@ struct ASTInterpreter::ExpressionVisitor {
       case TypeKind::kFloat16:
         return interp.toArithmeticType(*operand, type);
       case TypeKind::kBFloat16:
+      case TypeKind::kFloat8E4M3FN:
+      case TypeKind::kFloat8E5M2:
         return interp.toArithmeticType(*operand, type);
       case TypeKind::kFloat:
         return ConstValue{toFloat(*operand)};
@@ -386,7 +390,10 @@ struct ASTInterpreter::ExpressionVisitor {
             ConstFloat16{static_cast<std::uint16_t>(value->bits ^ 0x8000)}};
       }
       case TypeKind::kBFloat16:
-        return interp.toArithmeticType(ConstValue{-toFloat(*operand)}, type);
+      case TypeKind::kFloat8E4M3FN:
+      case TypeKind::kFloat8E5M2:
+        return interp.toArithmeticType(ConstValue{-toLongDouble(*operand)},
+                                       type);
       case TypeKind::kFloat:
         return ConstValue{-toFloat(*operand)};
       case TypeKind::kDouble:

@@ -75,6 +75,9 @@ struct Codegen::ConvertDebugType {
   [[nodiscard]] auto operator()(const HalfType* type) -> ir::DebugTypeRef;
   [[nodiscard]] auto operator()(const Float16Type* type) -> ir::DebugTypeRef;
   [[nodiscard]] auto operator()(const BFloat16Type* type) -> ir::DebugTypeRef;
+  [[nodiscard]] auto operator()(const Float8E4M3FNType* type)
+      -> ir::DebugTypeRef;
+  [[nodiscard]] auto operator()(const Float8E5M2Type* type) -> ir::DebugTypeRef;
   [[nodiscard]] auto operator()(const Float128Type* type) -> ir::DebugTypeRef;
   [[nodiscard]] auto operator()(const QualType* type) -> ir::DebugTypeRef;
   [[nodiscard]] auto operator()(const BoundedArrayType* type)
@@ -379,6 +382,16 @@ struct Codegen::ConvertDebugType {
 [[nodiscard]] auto Codegen::ConvertDebugType::operator()(
     const BFloat16Type* type) -> ir::DebugTypeRef {
   return basicType("__bf16", type, ir::DebugEncoding::Float);
+}
+
+[[nodiscard]] auto Codegen::ConvertDebugType::operator()(
+    const Float8E4M3FNType* type) -> ir::DebugTypeRef {
+  return basicType("__float8_e4m3fn", type, ir::DebugEncoding::Float);
+}
+
+[[nodiscard]] auto Codegen::ConvertDebugType::operator()(
+    const Float8E5M2Type* type) -> ir::DebugTypeRef {
+  return basicType("__float8_e5m2", type, ir::DebugEncoding::Float);
 }
 
 [[nodiscard]] auto Codegen::ConvertDebugType::operator()(

@@ -674,6 +674,16 @@ struct ExternalNameEncoder::EncodeType {
     return false;
   }
 
+  auto operator()(const Float8E4M3FNType* type) -> bool {
+    encoder.out("u15__float8_e4m3fn");
+    return false;
+  }
+
+  auto operator()(const Float8E5M2Type* type) -> bool {
+    encoder.out("u13__float8_e5m2");
+    return false;
+  }
+
   auto operator()(const Float128Type* type) -> bool {
     encoder.out("g");
     return false;

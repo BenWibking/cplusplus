@@ -31,6 +31,13 @@ namespace {
 
 const FloatingPointFormat kBinary16{.exponentBits = 5, .significandDigits = 11};
 const FloatingPointFormat kBFloat16{.exponentBits = 8, .significandDigits = 8};
+const FloatingPointFormat kFloat8E4M3FN{
+    .exponentBits = 4,
+    .significandDigits = 4,
+    .specialValueEncoding =
+        FloatingPointFormat::SpecialValueEncoding::kFiniteOnly};
+const FloatingPointFormat kFloat8E5M2{.exponentBits = 5,
+                                      .significandDigits = 3};
 
 auto binary16Bits(long double value) -> std::uint16_t {
   return static_cast<std::uint16_t>(kBinary16.representation(value));
@@ -48,6 +55,22 @@ auto roundToBFloat16(long double value) -> double {
   return kBFloat16.value(bfloat16Bits(value));
 }
 
+auto float8E4M3FNBits(long double value) -> std::uint8_t {
+  return static_cast<std::uint8_t>(kFloat8E4M3FN.representation(value));
+}
+
+auto roundE4M3FN(long double value) -> double {
+  return kFloat8E4M3FN.value(float8E4M3FNBits(value));
+}
+
+auto float8E5M2Bits(long double value) -> std::uint8_t {
+  return static_cast<std::uint8_t>(kFloat8E5M2.representation(value));
+}
+
+auto roundE5M2(long double value) -> double {
+  return kFloat8E5M2.value(float8E5M2Bits(value));
+}
+
 auto positiveBinary16Value(std::uint16_t bits) -> float {
   const auto exponent = (bits >> 10) & 0x1f;
   const auto fraction = bits & 0x3ff;
@@ -60,6 +83,20 @@ auto positiveBFloat16Value(std::uint16_t bits) -> float {
   const auto fraction = bits & 0x7f;
   if (exponent == 0) return std::ldexp(static_cast<float>(fraction), -133);
   return std::ldexp(static_cast<float>(0x80 | fraction), exponent - 134);
+}
+
+auto positiveFloat8E4M3FNValue(std::uint8_t bits) -> float {
+  const auto exponent = (bits >> 3) & 0xf;
+  const auto fraction = bits & 0x7;
+  if (exponent == 0) return std::ldexp(static_cast<float>(fraction), -9);
+  return std::ldexp(static_cast<float>(0x8 | fraction), exponent - 10);
+}
+
+auto positiveFloat8E5M2Value(std::uint8_t bits) -> float {
+  const auto exponent = (bits >> 2) & 0x1f;
+  const auto fraction = bits & 0x3;
+  if (exponent == 0) return std::ldexp(static_cast<float>(fraction), -16);
+  return std::ldexp(static_cast<float>(0x4 | fraction), exponent - 17);
 }
 
 }  // namespace
@@ -172,5 +209,125 @@ TEST(FloatingPointFormat, BFloat16FiniteBoundaries) {
     EXPECT_EQ(upper, roundToBFloat16(std::nextafter(
                          midpoint, static_cast<long double>(upper))));
     EXPECT_EQ(-expectedMidpoint, roundToBFloat16(-midpoint));
+  }
+}
+
+TEST(FloatingPointFormat, Float8E4M3FNSpecialValues) {
+  EXPECT_EQ(0x00, float8E4M3FNBits(0.0L));
+  EXPECT_EQ(0x80, float8E4M3FNBits(-0.0L));
+  EXPECT_EQ(0x7e,
+            float8E4M3FNBits(std::numeric_limits<long double>::infinity()));
+  EXPECT_EQ(0xfe,
+            float8E4M3FNBits(-std::numeric_limits<long double>::infinity()));
+  EXPECT_EQ(0x7f, float8E4M3FNBits(
+                      std::numeric_limits<long double>::quiet_NaN()));
+
+  EXPECT_EQ(0.0f, roundE4M3FN(0.0L));
+  EXPECT_FALSE(std::signbit(roundE4M3FN(0.0L)));
+  EXPECT_EQ(0.0f, roundE4M3FN(-0.0L));
+  EXPECT_TRUE(std::signbit(roundE4M3FN(-0.0L)));
+
+  EXPECT_EQ(448.0f,
+            roundE4M3FN(std::numeric_limits<long double>::infinity()));
+  EXPECT_EQ(-448.0f,
+            roundE4M3FN(-std::numeric_limits<long double>::infinity()));
+  EXPECT_TRUE(std::isnan(
+      roundE4M3FN(std::numeric_limits<long double>::quiet_NaN())));
+
+  EXPECT_TRUE(kFloat8E4M3FN.rangeContains(448.0));
+  EXPECT_FALSE(kFloat8E4M3FN.rangeContains(449.0));
+  EXPECT_FALSE(kFloat8E4M3FN.rangeContains(
+      std::numeric_limits<double>::infinity()));
+  EXPECT_TRUE(kFloat8E4M3FN.representsInteger(448));
+  EXPECT_FALSE(kFloat8E4M3FN.representsInteger(480));
+}
+
+TEST(FloatingPointFormat, Float8E4M3FNValues) {
+  EXPECT_EQ(1.0f, roundE4M3FN(1.0625L));
+  EXPECT_EQ(1.25f, roundE4M3FN(1.1875L));
+  EXPECT_EQ(1.125f, roundE4M3FN(0x1.1000000000001p0L));
+  EXPECT_EQ(-1.25f, roundE4M3FN(-1.1875L));
+
+  EXPECT_EQ(0.0f, roundE4M3FN(0x1p-10L));
+  EXPECT_EQ(0x1p-9f, roundE4M3FN(0x1.0000000000001p-10L));
+  EXPECT_EQ(0x1p-8f, roundE4M3FN(0x1.8p-9L));
+  EXPECT_EQ(0x1p-6f, roundE4M3FN(0x1.fp-7L));
+
+  EXPECT_EQ(448.0f, roundE4M3FN(449.0L));
+  EXPECT_EQ(-448.0f, roundE4M3FN(-449.0L));
+}
+
+TEST(FloatingPointFormat, Float8E4M3FNFiniteBoundaries) {
+  for (std::uint8_t bits = 0; bits < 0x7e; ++bits) {
+    SCOPED_TRACE(static_cast<unsigned>(bits));
+    const auto lower = positiveFloat8E4M3FNValue(bits);
+    const auto upper = positiveFloat8E4M3FNValue(bits + 1);
+    const auto midpoint =
+        (static_cast<long double>(lower) + static_cast<long double>(upper)) / 2;
+    const auto expectedMidpoint = (bits & 1) == 0 ? lower : upper;
+
+    EXPECT_EQ(lower, roundE4M3FN(std::nextafter(
+                         midpoint, static_cast<long double>(lower))));
+    EXPECT_EQ(expectedMidpoint, roundE4M3FN(midpoint));
+    EXPECT_EQ(upper, roundE4M3FN(std::nextafter(
+                         midpoint, static_cast<long double>(upper))));
+    EXPECT_EQ(-expectedMidpoint, roundE4M3FN(-midpoint));
+  }
+}
+
+TEST(FloatingPointFormat, Float8E5M2SpecialValues) {
+  EXPECT_EQ(0x00, float8E5M2Bits(0.0L));
+  EXPECT_EQ(0x80, float8E5M2Bits(-0.0L));
+  EXPECT_EQ(0x7c,
+            float8E5M2Bits(std::numeric_limits<long double>::infinity()));
+  EXPECT_EQ(0xfc,
+            float8E5M2Bits(-std::numeric_limits<long double>::infinity()));
+
+  EXPECT_EQ(0.0f, roundE5M2(0.0L));
+  EXPECT_FALSE(std::signbit(roundE5M2(0.0L)));
+  EXPECT_EQ(0.0f, roundE5M2(-0.0L));
+  EXPECT_TRUE(std::signbit(roundE5M2(-0.0L)));
+
+  EXPECT_EQ(std::numeric_limits<float>::infinity(),
+            roundE5M2(std::numeric_limits<long double>::infinity()));
+  EXPECT_EQ(-std::numeric_limits<float>::infinity(),
+            roundE5M2(-std::numeric_limits<long double>::infinity()));
+  EXPECT_TRUE(std::isnan(
+      roundE5M2(std::numeric_limits<long double>::quiet_NaN())));
+}
+
+TEST(FloatingPointFormat, Float8E5M2Values) {
+  EXPECT_EQ(1.0f, roundE5M2(1.125L));
+  EXPECT_EQ(1.5f, roundE5M2(1.375L));
+  EXPECT_EQ(1.25f, roundE5M2(0x1.2000000000001p0L));
+  EXPECT_EQ(-1.5f, roundE5M2(-1.375L));
+
+  EXPECT_EQ(0.0f, roundE5M2(0x1p-17L));
+  EXPECT_EQ(0x1p-16f, roundE5M2(0x1.0000000000001p-17L));
+  EXPECT_EQ(0x1p-15f, roundE5M2(0x1.8p-16L));
+  EXPECT_EQ(0x1p-14f, roundE5M2(0x1.cp-15L));
+
+  EXPECT_EQ(57344.0f, roundE5M2(61439.0L));
+  EXPECT_EQ(std::numeric_limits<float>::infinity(),
+            roundE5M2(61440.0L));
+  EXPECT_EQ(-std::numeric_limits<float>::infinity(),
+            roundE5M2(-61440.0L));
+}
+
+TEST(FloatingPointFormat, Float8E5M2FiniteBoundaries) {
+  for (std::uint8_t bits = 0; bits < 0x7b; ++bits) {
+    SCOPED_TRACE(static_cast<unsigned>(bits));
+    const auto lower = positiveFloat8E5M2Value(bits);
+    const auto upper = positiveFloat8E5M2Value(bits + 1);
+    const auto midpoint =
+        (static_cast<long double>(lower) + static_cast<long double>(upper)) / 2;
+    const auto expectedMidpoint = (bits & 1) == 0 ? lower : upper;
+
+    EXPECT_EQ(lower, roundE5M2(std::nextafter(
+                         midpoint, static_cast<long double>(lower))));
+    EXPECT_EQ(expectedMidpoint, roundE5M2(midpoint));
+    EXPECT_EQ(upper, roundE5M2(std::nextafter(
+                         midpoint, static_cast<long double>(upper))));
+    EXPECT_EQ(-expectedMidpoint, roundE5M2(-midpoint));
   }
 }

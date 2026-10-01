@@ -251,6 +251,8 @@ struct Control::Private {
   HalfType halfType;
   Float16Type float16Type;
   BFloat16Type bfloat16Type;
+  Float8E4M3FNType float8E4M3FNType;
+  Float8E5M2Type float8E5M2Type;
   Float128Type float128Type;
 
   TypeSet<QualType> qualTypes;
@@ -768,6 +770,14 @@ auto Control::getFloat16Type() -> const Float16Type* { return &d->float16Type; }
 
 auto Control::getBFloat16Type() -> const BFloat16Type* {
   return &d->bfloat16Type;
+}
+
+auto Control::getFloat8E4M3FNType() -> const Float8E4M3FNType* {
+  return &d->float8E4M3FNType;
+}
+
+auto Control::getFloat8E5M2Type() -> const Float8E5M2Type* {
+  return &d->float8E5M2Type;
 }
 
 auto Control::getFloat128Type() -> const Float128Type* {

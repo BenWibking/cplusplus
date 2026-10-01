@@ -11345,6 +11345,10 @@ export class Float16Type extends Type {}
 /** @category Types */
 export class BFloat16Type extends Type {}
 /** @category Types */
+export class Float8E4M3FNType extends Type {}
+/** @category Types */
+export class Float8E5M2Type extends Type {}
+/** @category Types */
 export class Float128Type extends Type {}
 /** @category Types */
 export class QualType extends Type {
@@ -12389,6 +12393,8 @@ export type TypeKind =
   | "Half"
   | "Float16"
   | "BFloat16"
+  | "Float8E4M3FN"
+  | "Float8E5M2"
   | "Float128"
   | "Qual"
   | "BoundedArray"
@@ -12453,41 +12459,43 @@ const typeKindNames: Record<number, TypeKind> = {
   25: "Half",
   26: "Float16",
   27: "BFloat16",
-  28: "Float128",
-  29: "Qual",
-  30: "BoundedArray",
-  31: "UnboundedArray",
-  32: "Pointer",
-  33: "LvalueReference",
-  34: "RvalueReference",
-  35: "Function",
-  36: "Class",
-  37: "Enum",
-  38: "ScopedEnum",
-  39: "MemberObjectPointer",
-  40: "MemberFunctionPointer",
-  41: "Namespace",
-  42: "TypeParameter",
-  43: "TemplateTypeParameter",
-  44: "TemplateTypeParameterSpecialization",
-  45: "PackExpansion",
-  46: "Decltype",
-  47: "UnresolvedName",
-  48: "UnresolvedBoundedArray",
-  49: "UnresolvedUnderlying",
-  50: "UnresolvedPackIndex",
-  51: "UnresolvedBuiltin",
-  52: "OverloadSet",
-  53: "BuiltinVaList",
-  54: "BuiltinMetaInfo",
-  55: "BitInt",
-  56: "UnsignedBitInt",
-  57: "UnresolvedBitInt",
-  58: "Vector",
-  59: "UnresolvedVector",
-  60: "Complex",
-  61: "Atomic",
-  62: "Sve",
+  28: "Float8E4M3FN",
+  29: "Float8E5M2",
+  30: "Float128",
+  31: "Qual",
+  32: "BoundedArray",
+  33: "UnboundedArray",
+  34: "Pointer",
+  35: "LvalueReference",
+  36: "RvalueReference",
+  37: "Function",
+  38: "Class",
+  39: "Enum",
+  40: "ScopedEnum",
+  41: "MemberObjectPointer",
+  42: "MemberFunctionPointer",
+  43: "Namespace",
+  44: "TypeParameter",
+  45: "TemplateTypeParameter",
+  46: "TemplateTypeParameterSpecialization",
+  47: "PackExpansion",
+  48: "Decltype",
+  49: "UnresolvedName",
+  50: "UnresolvedBoundedArray",
+  51: "UnresolvedUnderlying",
+  52: "UnresolvedPackIndex",
+  53: "UnresolvedBuiltin",
+  54: "OverloadSet",
+  55: "BuiltinVaList",
+  56: "BuiltinMetaInfo",
+  57: "BitInt",
+  58: "UnsignedBitInt",
+  59: "UnresolvedBitInt",
+  60: "Vector",
+  61: "UnresolvedVector",
+  62: "Complex",
+  63: "Atomic",
+  64: "Sve",
 };
 /** @category Enumerations */
 export type NameKind =
@@ -14823,6 +14831,8 @@ const typeConstructors: Record<
   Half: HalfType,
   Float16: Float16Type,
   BFloat16: BFloat16Type,
+  Float8E4M3FN: Float8E4M3FNType,
+  Float8E5M2: Float8E5M2Type,
   Float128: Float128Type,
   Qual: QualType,
   BoundedArray: BoundedArrayType,
