@@ -926,11 +926,21 @@ inline constexpr BuiltinSignature kBuiltinSignatures[] = {
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_powf
     {1693, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_powl
-    {1697, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_add
-    {1700, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_and
-    {1703, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_mul
-    {1706, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_or
-    {1709, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_xor
+    {1697, 1,
+     BuiltinFlags::kConstexpr |
+         BuiltinFlags::kNoexcept},  // __builtin_reduce_add
+    {1700, 1,
+     BuiltinFlags::kConstexpr |
+         BuiltinFlags::kNoexcept},  // __builtin_reduce_and
+    {1703, 1,
+     BuiltinFlags::kConstexpr |
+         BuiltinFlags::kNoexcept},  // __builtin_reduce_mul
+    {1706, 1,
+     BuiltinFlags::kConstexpr |
+         BuiltinFlags::kNoexcept},  // __builtin_reduce_or
+    {1709, 1,
+     BuiltinFlags::kConstexpr |
+         BuiltinFlags::kNoexcept},  // __builtin_reduce_xor
     {1712, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_remainder

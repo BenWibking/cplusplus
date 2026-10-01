@@ -193,6 +193,9 @@ class MlirEmitter final : public Emitter {
   [[nodiscard]] auto vectorPosition(mlir::Location loc, ValueRef index,
                                     bool indexIsSigned) -> mlir::Value;
 
+  [[nodiscard]] auto vectorReduction(SourceLocation loc, BinaryOp op,
+                                     ValueRef vector) -> ValueRef override;
+
   [[nodiscard]] auto functionType(std::span<const TypeRef> parameters,
                                   std::span<const TypeRef> results,
                                   bool isVariadic) -> TypeRef override;

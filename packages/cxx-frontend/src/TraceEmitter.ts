@@ -684,6 +684,11 @@ export class TraceEmitter implements EmitterDelegate {
     );
   }
 
+  vectorReduction(loc: TokenIndex, op: BinaryOp, vector: ValueRef): ValueRef {
+    const resultType = this.elementType(this.typeOf(vector));
+    return this.#define(resultType, `reduce.${op} %${vector}`);
+  }
+
   todo(loc: TokenIndex, kind: TodoKind, message: string): ValueRef {
     return this.#define(
       this.unresolvedType(),

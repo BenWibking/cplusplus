@@ -734,6 +734,65 @@ auto ASTInterpreter::evaluateBuiltinFloatComparison(CallExpressionAST* ast)
   }
 }
 
+auto ASTInterpreter::evaluateBuiltinVectorReduce(CallExpressionAST* ast)
+    -> std::optional<ConstValue> {
+  auto argument = argumentAt(ast, 0);
+  if (!argument) return std::nullopt;
+
+  auto value = evaluate(argument);
+  if (!value) return std::nullopt;
+
+  // Reduction arithmetic uses the vector element value representation. In
+  // particular, bool lanes are one bit even when bool object storage is a byte.
+  auto vector = unqualified_cast<VectorType>(argument->type);
+  auto representation = vector
+                            ? traits.value_representation(vector->elementType())
+                            : std::nullopt;
+  if (!representation) return std::nullopt;
+
+  auto elements = std::get_if<std::shared_ptr<InitializerList>>(&*value);
+  if (!elements || !*elements || !(*elements)->size()) return std::nullopt;
+
+  auto kind = resolveBuiltinFunctionKind(
+      ast_cast<IdExpressionAST>(ast->baseExpression));
+  std::optional<ConstInt> result;
+  for (std::size_t index = 0; index < (*elements)->size(); ++index) {
+    auto integer =
+        std::get_if<ConstInt>(&std::get<0>((*elements)->element(index)));
+    if (!integer) return std::nullopt;
+    auto lane = ConstInt::make(integer->toWideValue(), representation->bits,
+                               representation->isSigned);
+    if (!lane) return std::nullopt;
+    if (!result) {
+      result = *lane;
+      continue;
+    }
+
+    switch (kind) {
+      case BuiltinFunctionKind::T___BUILTIN_REDUCE_ADD:
+        result = checkedAdd(*result, *lane);
+        break;
+      case BuiltinFunctionKind::T___BUILTIN_REDUCE_AND:
+        result = *result & *lane;
+        break;
+      case BuiltinFunctionKind::T___BUILTIN_REDUCE_MUL:
+        result = checkedMul(*result, *lane);
+        break;
+      case BuiltinFunctionKind::T___BUILTIN_REDUCE_OR:
+        result = *result | *lane;
+        break;
+      case BuiltinFunctionKind::T___BUILTIN_REDUCE_XOR:
+        result = *result ^ *lane;
+        break;
+      default:
+        return std::nullopt;
+    }
+    if (!result) return std::nullopt;
+  }
+
+  return ConstValue{*result};
+}
+
 auto ASTInterpreter::evaluateBuiltinAddressof(CallExpressionAST* ast)
     -> std::optional<ConstValue> {
   return evaluateAddress(argumentAt(ast, 0));

@@ -857,7 +857,8 @@ struct ASTInterpreter::ExpressionVisitor {
                                  const VectorType* vector)
       -> std::optional<std::vector<ConstValue>>;
 
-  [[nodiscard]] auto convertLane(const ConstValue& value, const Type* type)
+  [[nodiscard]] auto convertLane(const ConstValue& value,
+                                 const Type* sourceType, const Type* targetType)
       -> ExpressionResult;
 
   [[nodiscard]] auto makeVector(std::vector<ConstValue> lanes,
@@ -3661,8 +3662,26 @@ auto ASTInterpreter::ExpressionVisitor::operator()(
 }
 
 auto ASTInterpreter::ExpressionVisitor::operator()(
-    BuiltinConvertVectorExpressionAST*) -> ExpressionResult {
-  return std::nullopt;
+    BuiltinConvertVectorExpressionAST* ast) -> ExpressionResult {
+  auto targetType = unqualified_cast<VectorType>(ast->type);
+  if (!targetType) return std::nullopt;
+
+  auto value = interp.expression(ast->expression);
+  if (!value) return std::nullopt;
+
+  auto sourceType = unqualified_cast<VectorType>(ast->expression->type);
+  if (!sourceType || sourceType->elementCount() != targetType->elementCount())
+    return std::nullopt;
+
+  auto lanes = vectorLanes(*value, sourceType);
+  if (!lanes) return std::nullopt;
+  for (auto& lane : *lanes) {
+    auto converted =
+        convertLane(lane, sourceType->elementType(), targetType->elementType());
+    if (!converted) return std::nullopt;
+    lane = std::move(*converted);
+  }
+  return makeVector(std::move(*lanes), targetType);
 }
 
 auto ASTInterpreter::ExpressionVisitor::operator()(
@@ -4419,70 +4438,15 @@ auto ASTInterpreter::ExpressionVisitor::operator()(
   if (unqualified_cast<VectorType>(ast->type))
     return evaluateVectorCast(ast, *value);
 
-  switch (ast->type->kind()) {
-    case TypeKind::kBool: {
-      auto result = interp.toBool(*value);
-      if (!result.has_value()) return std::nullopt;
-      return result.value();
-    }
+  auto traits = unit()->typeTraits();
+  if (traits.is_arithmetic(ast->type) || traits.is_enum(ast->type))
+    return interp.convertArithmetic(*value, ast->expression->type, ast->type);
 
-    case TypeKind::kFloat: {
-      if (ast->expression && ast->expression->type &&
-          unit()->typeTraits().is_unsigned(ast->expression->type)) {
-        auto result = interp.toUInt(*value);
-        if (!result.has_value()) return std::nullopt;
-        return static_cast<float>(result.value());
-      }
-      auto result = interp.toFloat(*value);
-      if (!result.has_value()) return std::nullopt;
-      return result.value();
-    }
+  if (unit()->language() == LanguageKind::kCXX &&
+      traits.is_pointer(ast->type) && isNonNullInteger(*value))
+    return std::nullopt;
 
-    case TypeKind::kDouble: {
-      if (ast->expression && ast->expression->type &&
-          unit()->typeTraits().is_unsigned(ast->expression->type)) {
-        auto result = interp.toUInt(*value);
-        if (!result.has_value()) return std::nullopt;
-        return static_cast<double>(result.value());
-      }
-      auto result = interp.toDouble(*value);
-      if (!result.has_value()) return std::nullopt;
-      return result.value();
-    }
-
-    case TypeKind::kLongDouble: {
-      if (ast->expression && ast->expression->type &&
-          unit()->typeTraits().is_unsigned(ast->expression->type)) {
-        auto result = interp.toUInt(*value);
-        if (!result.has_value()) return std::nullopt;
-        return static_cast<long double>(result.value());
-      }
-      auto result = interp.toLongDouble(*value);
-      if (!result.has_value()) return std::nullopt;
-      return result.value();
-    }
-
-    case TypeKind::kComplex:
-      return interp.toArithmeticType(*value, ast->type);
-
-    default:
-      if (unit()->typeTraits().is_floating_point(ast->type)) {
-        return interp.toArithmeticType(*value, ast->type);
-      }
-
-      if (unit()->typeTraits().is_integral_or_enum(ast->type)) {
-        return interp.toIntegralType(*value, ast->type);
-      }
-
-      if (unit()->language() == LanguageKind::kCXX &&
-          unit()->typeTraits().is_pointer(ast->type) &&
-          isNonNullInteger(*value))
-        return std::nullopt;
-
-      return value;
-  }
-
-  return std::nullopt;
+  return value;
 }
 
 auto ASTInterpreter::ExpressionVisitor::applyBinaryOp(
@@ -4696,8 +4660,8 @@ auto ASTInterpreter::ExpressionVisitor::vectorLanes(const ConstValue& value,
   std::vector<ConstValue> lanes;
   lanes.reserve(vector->elementCount());
   for (std::size_t index = 0; index < (*list)->size(); ++index) {
-    const auto& element = std::get<0>((*list)->element(index));
-    auto lane = convertLane(element, vector->elementType());
+    const auto& [element, sourceType] = (*list)->element(index);
+    auto lane = convertLane(element, sourceType, vector->elementType());
     if (!lane) return std::nullopt;
     lanes.push_back(std::move(*lane));
   }
@@ -4710,13 +4674,14 @@ auto ASTInterpreter::ExpressionVisitor::vectorLanes(const ConstValue& value,
 }
 
 auto ASTInterpreter::ExpressionVisitor::convertLane(const ConstValue& value,
-                                                    const Type* type)
+                                                    const Type* sourceType,
+                                                    const Type* targetType)
     -> ExpressionResult {
-  if (unit()->typeTraits().is_floating_point(type))
-    return interp.toArithmeticType(value, type);
-  if (unit()->typeTraits().is_integral_or_enum(type))
-    return interp.toIntegralType(value, type);
-  return std::nullopt;
+  auto traits = unit()->typeTraits();
+  if ((!traits.is_arithmetic(sourceType) && !traits.is_enum(sourceType)) ||
+      (!traits.is_arithmetic(targetType) && !traits.is_enum(targetType)))
+    return std::nullopt;
+  return interp.convertArithmetic(value, sourceType, targetType);
 }
 
 auto ASTInterpreter::ExpressionVisitor::makeVector(
@@ -4732,7 +4697,8 @@ auto ASTInterpreter::ExpressionVisitor::evaluateVectorCast(
     -> ExpressionResult {
   auto target = unqualified_cast<VectorType>(ast->type);
   if (ast->castKind == ImplicitCastKind::kVectorSplat) {
-    auto lane = convertLane(value, target->elementType());
+    auto lane =
+        convertLane(value, ast->expression->type, target->elementType());
     if (!lane) return std::nullopt;
     return makeVector(std::vector<ConstValue>(target->elementCount(), *lane),
                       target);
@@ -4742,7 +4708,8 @@ auto ASTInterpreter::ExpressionVisitor::evaluateVectorCast(
     auto lanes = vectorLanes(value, source);
     if (!lanes) return std::nullopt;
     for (auto& lane : *lanes) {
-      auto converted = convertLane(lane, target->elementType());
+      auto converted =
+          convertLane(lane, source->elementType(), target->elementType());
       if (!converted) return std::nullopt;
       lane = std::move(*converted);
     }
@@ -4803,7 +4770,11 @@ auto ASTInterpreter::ExpressionVisitor::applyVectorBinaryOp(
                                           ExpressionResult{rightLane});
     if (lane && (isComparison || isLogical)) lane = laneMask(toBool(*lane));
     if (!lane) return std::nullopt;
-    auto converted = convertLane(*lane, result->elementType());
+    auto converted =
+        convertLane(*lane,
+                    (isComparison || isLogical) ? result->elementType()
+                                                : operand->elementType(),
+                    result->elementType());
     if (!converted) return std::nullopt;
     lanes.push_back(std::move(*converted));
   }
@@ -4845,7 +4816,11 @@ auto ASTInterpreter::ExpressionVisitor::applyVectorUnaryOp(
         return std::nullopt;
     }
     if (!result) return std::nullopt;
-    auto converted = convertLane(*result, resultVector->elementType());
+    auto converted =
+        convertLane(*result,
+                    op == TokenKind::T_EXCLAIM ? resultVector->elementType()
+                                               : vector->elementType(),
+                    resultVector->elementType());
     if (!converted) return std::nullopt;
     lane = std::move(*converted);
   }

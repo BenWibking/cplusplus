@@ -968,6 +968,11 @@ auto CxxIREmitter::Private::OperationFormatter::format() -> std::string {
     return finish(valueNames(operands) + " [" + indices + "]",
                   " : " + ir.operandTypes(operands));
   }
+  if (name == "vector.reduction") {
+    auto kind = enumText(attributes.take("kind"));
+    return finish(std::string(kind) + ", " + value(0),
+                  " : " + operandType(0) + " into " + resultType());
+  }
   if (name == "vector.extract" || name == "vector.insert") {
     bool insert = name == "vector.insert";
     auto positions = arrayElements(attributes.take("static_position"));
@@ -1401,11 +1406,30 @@ auto CxxIREmitter::integerType(unsigned bits) -> TypeRef {
 }
 
 auto CxxIREmitter::floatingType(FloatKind kind) -> TypeRef {
-  static constexpr unsigned widths[] = {16, 32, 64, 80, 128};
-  auto bits = widths[static_cast<int>(kind)];
-  auto text = std::format("f{}", bits);
-  return priv_->intern(
-      text, {.kind = TypeKind::Floating, .text = text, .width = bits});
+  auto makeType = [this](std::string_view text, unsigned bits) {
+    return priv_->intern(
+        std::string{text},
+        {.kind = TypeKind::Floating, .text = std::string{text}, .width = bits});
+  };
+  switch (kind) {
+    case FloatKind::Half:
+      return makeType("f16", 16);
+    case FloatKind::BFloat:
+      return makeType("bf16", 16);
+    case FloatKind::Float8E4M3FN:
+      return makeType("f8E4M3FN", 8);
+    case FloatKind::Float8E5M2:
+      return makeType("f8E5M2", 8);
+    case FloatKind::Single:
+      return makeType("f32", 32);
+    case FloatKind::Double:
+      return makeType("f64", 64);
+    case FloatKind::X87DoubleExtended:
+      return makeType("f80", 80);
+    case FloatKind::Quad:
+      return makeType("f128", 128);
+  }
+  cxx_runtime_error("invalid floating type kind");
 }
 
 auto CxxIREmitter::pointerType(TypeRef element,
@@ -1700,6 +1724,33 @@ auto CxxIREmitter::vectorShuffle(SourceLocation loc, ValueRef first,
   auto type = vectorType(elementType(typeOf(first)), mask.size());
   return priv_->one(loc, "vector.shuffle", type, {first, second},
                     "mask = " + denseArray("i64", mask));
+}
+
+auto CxxIREmitter::vectorReduction(SourceLocation loc, BinaryOp op,
+                                   ValueRef vector) -> ValueRef {
+  std::string_view kind;
+  switch (op) {
+    case BinaryOp::AddInt:
+      kind = "add";
+      break;
+    case BinaryOp::AndInt:
+      kind = "and";
+      break;
+    case BinaryOp::MulInt:
+      kind = "mul";
+      break;
+    case BinaryOp::OrInt:
+      kind = "or";
+      break;
+    case BinaryOp::XorInt:
+      kind = "xor";
+      break;
+    default:
+      cxx_runtime_error("invalid integer vector reduction operation");
+  }
+  auto resultType = elementType(typeOf(vector));
+  return priv_->one(loc, "vector.reduction", resultType, {vector},
+                    std::format("kind = #vector.kind<{}>", kind));
 }
 
 auto CxxIREmitter::allocate(SourceLocation loc, TypeRef type, ValueRef size,
