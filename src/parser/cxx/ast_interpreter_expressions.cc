@@ -4259,6 +4259,7 @@ auto ASTInterpreter::ExpressionVisitor::allocatedArrayType(
 auto ASTInterpreter::ExpressionVisitor::newObjectValue(
     NewExpressionAST* ast, const Type* type,
     std::shared_ptr<ConstAddress> address) -> ExpressionResult {
+  BackingArrayFullExpressionScope backingArrayLifetime{interp, address};
   auto paren = ast_cast<NewParenInitializerAST>(ast->newInitalizer);
   if (paren && !paren->expressionList && !ast->constructorSymbol)
     return interp.zeroInitialize(type);
@@ -4945,6 +4946,7 @@ auto ASTInterpreter::ExpressionVisitor::operator()(ThrowExpressionAST* ast)
   auto address = std::make_shared<ConstAddress>();
   address->setStorage(object);
   interp.exceptionObjects_.push_back(object);
+  BackingArrayFullExpressionScope backingArrayLifetime{interp, address};
   auto value = interp.expression(ast->expression, address);
   if (!value) {
     std::erase(interp.exceptionObjects_, object);
@@ -5414,6 +5416,10 @@ auto ASTInterpreter::ExpressionVisitor::aggregateObject(
   auto object = interp.constructionObject(type, destination);
   if (!object) return std::nullopt;
 
+  std::optional<BackingArrayFullExpressionScope> aggregateLifetime;
+  if (form == InitializerForm::kParen)
+    aggregateLifetime.emplace(interp, destination);
+
   std::size_t elementIndex = 0;
   for (auto node : ListView{elementList}) {
     auto clause = node;
@@ -5449,6 +5455,9 @@ auto ASTInterpreter::ExpressionVisitor::aggregateObject(
     auto address = interp.traits.is_scalar(elementType)
                        ? nullptr
                        : interp.subobjectDestination(destination, element);
+    std::optional<BackingArrayFullExpressionScope> defaultMemberLifetime;
+    if (ast_cast<DefaultInitializerExpressionAST>(clause))
+      defaultMemberLifetime.emplace(interp, address);
     if (subobjectDesignators)
       value = interp.evaluate(clause);
     else if (interp.traits.is_reference(elementType) &&
@@ -5534,10 +5543,13 @@ auto ASTInterpreter::ExpressionVisitor::initializerListFromBackingArray(
   auto array = std::make_shared<ConstAddress>();
   array->setStorage(storage);
   interp.backingArrays_.push_back(storage);
-  if (destination)
-    destination->storage()->setBackingArray(storage);
-  else
+  if (destination && destination->storage() &&
+      destination->storage().get() !=
+          interp.fullExpressionBackingArrayDestination_) {
+    destination->storage()->addBackingArray(storage);
+  } else {
     interp.temporaries_.push_back({nullptr, storage});
+  }
 
   std::size_t index = 0;
   for (auto clause : clauses) {
