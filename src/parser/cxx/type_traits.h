@@ -395,6 +395,11 @@ class TypeTraits {
   auto is_destructible(const Type* type) -> bool;
   auto is_nothrow_destructible(const Type* type) -> bool;
   [[nodiscard]] auto has_trivial_default_constructor(const Type* type) -> bool;
+  [[nodiscard]] auto has_trivial_copy_constructor(const Type* type) -> bool;
+  [[nodiscard]] auto has_trivial_move_constructor(const Type* type) -> bool;
+  [[nodiscard]] auto has_trivial_copy_assignment(const Type* type) -> bool;
+  [[nodiscard]] auto has_trivial_move_assignment(const Type* type) -> bool;
+  [[nodiscard]] auto has_trivial_value_operations(const Type* type) -> bool;
   auto has_trivial_destructor(const Type* type) -> bool;
   auto is_trivially_destructible(const Type* type) -> bool;
   auto has_virtual_destructor(const Type* type) -> bool;

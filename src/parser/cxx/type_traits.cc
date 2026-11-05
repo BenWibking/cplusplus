@@ -1045,7 +1045,7 @@ struct IsSameVisitor {
   }
 };
 
-enum class TrivialCopyKind { kCopyable, kForCalls };
+enum class TrivialCopyKind { kCopyable, kForCalls, kValueOperations };
 
 [[nodiscard]] auto eligibleSpecialMembers(TranslationUnit* unit,
                                           std::vector<FunctionSymbol*> members)
@@ -1106,12 +1106,14 @@ auto has_trivial_copy_members(TypeTraits& traits, ClassSymbol* cls,
   if (!cls || !cls->isComplete()) return false;
 
   auto unit = traits.unit();
-  auto destructors = prospectiveDestructors(cls);
-  auto eligibleDestructors = eligibleSpecialMembers(unit, destructors);
-  if (!destructors.empty() && eligibleDestructors.empty()) return false;
-  for (auto dtor : eligibleDestructors) {
-    if (isUserProvided(dtor)) return false;
-    if (dtor->isVirtual()) return false;
+  if (kind != TrivialCopyKind::kValueOperations) {
+    auto destructors = prospectiveDestructors(cls);
+    auto eligibleDestructors = eligibleSpecialMembers(unit, destructors);
+    if (!destructors.empty() && eligibleDestructors.empty()) return false;
+    for (auto dtor : eligibleDestructors) {
+      if (isUserProvided(dtor)) return false;
+      if (dtor->isVirtual()) return false;
+    }
   }
 
   auto declaredConstructors = cls->declaredConstructors();
@@ -1124,7 +1126,7 @@ auto has_trivial_copy_members(TypeTraits& traits, ClassSymbol* cls,
                                      &ClassSymbol::isMoveConstructor)))
     return false;
 
-  if (kind == TrivialCopyKind::kCopyable) {
+  if (kind != TrivialCopyKind::kForCalls) {
     auto assignments = declaredAssignmentOperators(cls);
     if (hasUserProvidedEligibleMember(
             unit, specialMembersOfKind(cls, assignments,
@@ -4003,6 +4005,62 @@ auto TypeTraits::has_trivial_default_constructor(const Type* type) -> bool {
     requireCompleteClass(cls);
     return has_trivial_constructor(*this, cls, TrivialConstructorKind::kDefault,
                                    true);
+  }
+  return false;
+}
+
+auto TypeTraits::has_trivial_copy_constructor(const Type* type) -> bool {
+  auto unqual = remove_cv(remove_all_extents(type));
+  if (is_scalar_or_vector(unqual)) return true;
+  if (auto classType = type_cast<ClassType>(unqual)) {
+    auto cls = classType->definition();
+    requireCompleteClass(cls);
+    return has_trivial_constructor(*this, cls, TrivialConstructorKind::kCopy);
+  }
+  return false;
+}
+
+auto TypeTraits::has_trivial_move_constructor(const Type* type) -> bool {
+  auto unqual = remove_cv(remove_all_extents(type));
+  if (is_scalar_or_vector(unqual)) return true;
+  if (auto classType = type_cast<ClassType>(unqual)) {
+    auto cls = classType->definition();
+    requireCompleteClass(cls);
+    return has_trivial_constructor(*this, cls, TrivialConstructorKind::kMove);
+  }
+  return false;
+}
+
+auto TypeTraits::has_trivial_copy_assignment(const Type* type) -> bool {
+  auto unqual = remove_cv(remove_all_extents(type));
+  if (is_scalar_or_vector(unqual)) return true;
+  if (auto classType = type_cast<ClassType>(unqual)) {
+    auto cls = classType->definition();
+    requireCompleteClass(cls);
+    return has_trivial_assignment(*this, cls, TrivialAssignmentKind::kCopy);
+  }
+  return false;
+}
+
+auto TypeTraits::has_trivial_move_assignment(const Type* type) -> bool {
+  auto unqual = remove_cv(remove_all_extents(type));
+  if (is_scalar_or_vector(unqual)) return true;
+  if (auto classType = type_cast<ClassType>(unqual)) {
+    auto cls = classType->definition();
+    requireCompleteClass(cls);
+    return has_trivial_assignment(*this, cls, TrivialAssignmentKind::kMove);
+  }
+  return false;
+}
+
+auto TypeTraits::has_trivial_value_operations(const Type* type) -> bool {
+  auto unqual = remove_cv(remove_all_extents(type));
+  if (is_scalar_or_vector(unqual)) return true;
+  if (auto classType = type_cast<ClassType>(unqual)) {
+    auto cls = classType->definition();
+    requireCompleteClass(cls);
+    return has_trivial_copy_members(*this, cls,
+                                    TrivialCopyKind::kValueOperations);
   }
   return false;
 }
