@@ -1298,7 +1298,7 @@ namespace {
     return true;
   if (is_unnamed_namespace_scope_type(classSymbol)) return true;
   if (is_local_entity_with_internal_linkage(classSymbol)) return true;
-  return is_specialized_on_internal_type(classSymbol);
+  return has_internal_template_argument(classSymbol);
 }
 
 [[nodiscard]] auto enum_has_internal_linkage(Symbol* enumSymbol) -> bool {
@@ -1353,10 +1353,78 @@ struct TypeHasInternalLinkage {
   [[nodiscard]] auto operator()(const Type*) const -> bool { return false; }
 };
 
+[[nodiscard]] auto constant_has_internal_linkage(const ConstValue& value)
+    -> bool;
+
+[[nodiscard]] auto symbol_identity_has_internal_linkage(Symbol* symbol)
+    -> bool {
+  if (!symbol) return false;
+  if (has_internal_linkage(symbol) || type_has_internal_linkage(symbol->type()))
+    return true;
+
+  if (auto enclosingClass = symbol->enclosingClass();
+      enclosingClass && type_has_internal_linkage(enclosingClass->type()))
+    return true;
+
+  if (auto enclosingFunction = symbol->enclosingFunction())
+    return symbol_identity_has_internal_linkage(enclosingFunction);
+
+  return symbol_cast<FunctionSymbol>(symbol) &&
+         has_internal_template_argument(symbol);
+}
+
+[[nodiscard]] auto constant_has_internal_linkage(const ConstValue& value)
+    -> bool {
+  if (auto address = std::get_if<std::shared_ptr<ConstAddress>>(&value)) {
+    if (!*address) return false;
+    if (auto type = (*address)->typeInfoFor())
+      return type_has_internal_linkage(type);
+    return symbol_identity_has_internal_linkage((*address)->rootSymbol());
+  }
+
+  if (auto object = std::get_if<std::shared_ptr<ConstObject>>(&value)) {
+    if (!*object) return false;
+    if (type_has_internal_linkage((*object)->type())) return true;
+    return std::ranges::any_of((*object)->members(), [](const auto& member) {
+      return constant_has_internal_linkage(member.value);
+    });
+  }
+
+  if (auto elements = std::get_if<std::shared_ptr<InitializerList>>(&value)) {
+    if (!*elements) return false;
+    return std::ranges::any_of((*elements)->elements, [](const auto& element) {
+      return type_has_internal_linkage(std::get<1>(element)) ||
+             constant_has_internal_linkage(std::get<0>(element));
+    });
+  }
+
+  if (auto complex = std::get_if<std::shared_ptr<ConstComplex>>(&value)) {
+    return *complex && (constant_has_internal_linkage((*complex)->real()) ||
+                        constant_has_internal_linkage((*complex)->imag()));
+  }
+
+  if (auto meta = std::get_if<std::shared_ptr<Meta>>(&value)) {
+    if (!*meta) return false;
+    if (auto type = std::get_if<const Type*>(&(*meta)->value))
+      return type_has_internal_linkage(*type);
+    if (auto symbol = std::get_if<const Symbol*>(&(*meta)->value))
+      return symbol_identity_has_internal_linkage(const_cast<Symbol*>(*symbol));
+    auto expression = std::get_if<Meta::ConstExpr>(&(*meta)->value);
+    return expression && constant_has_internal_linkage(expression->value);
+  }
+
+  return false;
+}
+
 [[nodiscard]] auto argument_has_internal_linkage(
     const TemplateArgument& argument) -> bool {
   if (auto type = std::get_if<const Type*>(&argument))
     return type_has_internal_linkage(*type);
+  if (auto value = std::get_if<ConstValue>(&argument))
+    return constant_has_internal_linkage(*value);
+  if (auto expression = std::get_if<ExpressionAST*>(&argument))
+    return *expression && type_has_internal_linkage((*expression)->type);
+
   auto symbol = std::get_if<Symbol*>(&argument);
   if (!symbol || !*symbol) return false;
   if (auto pack = symbol_cast<ParameterPackSymbol>(*symbol)) {
@@ -1364,8 +1432,10 @@ struct TypeHasInternalLinkage {
       return argument_has_internal_linkage(TemplateArgument{element});
     });
   }
-  if (!symbol_cast<TypeAliasSymbol>(*symbol)) return false;
-  return type_has_internal_linkage((*symbol)->type());
+  if (symbol_identity_has_internal_linkage(*symbol)) return true;
+  auto variable = symbol_cast<VariableSymbol>(*symbol);
+  return variable && variable->constValue() &&
+         constant_has_internal_linkage(*variable->constValue());
 }
 
 }  // namespace
@@ -1393,7 +1463,7 @@ auto is_declared_with_internal_type(Symbol* symbol) -> bool {
                              type_has_internal_linkage);
 }
 
-auto is_specialized_on_internal_type(Symbol* symbol) -> bool {
+auto has_internal_template_argument(Symbol* symbol) -> bool {
   for (auto scope = symbol; scope; scope = scope->parent()) {
     auto arguments = visit(GetTemplateArguments{}, scope);
     if (std::ranges::any_of(arguments, argument_has_internal_linkage))

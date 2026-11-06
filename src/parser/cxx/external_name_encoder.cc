@@ -2941,7 +2941,8 @@ auto ExternalNameEncoder::isZeroValue(const ConstValue& value) const -> bool {
   if (auto integer = std::get_if<ConstInt>(&value)) return integer->isZero();
   if (auto real = std::get_if<ConstFloat>(&value)) return real->bits() == 0;
   if (auto address = std::get_if<std::shared_ptr<ConstAddress>>(&value))
-    return *address && !(*address)->symbol() && !(*address)->stringLiteral();
+    return *address && (*address)->sameTarget(ConstAddress{}) &&
+           (*address)->offset() == 0;
   if (auto object = std::get_if<std::shared_ptr<ConstObject>>(&value)) {
     return *object && std::ranges::all_of((*object)->members(),
                                           [&](const ConstObject::Member& m) {
