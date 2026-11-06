@@ -84,6 +84,11 @@ export function gen_ast_h({ ast, output }: { ast: AST; output: string }) {
             emit(`  List<SourceLocation>* ${m.name} = nullptr;`);
             break;
           case "attribute": {
+            if (m.name === "vectorComponentKind") {
+              emit(
+                `  // Canonical vector selector family established by semantic analysis.`,
+              );
+            }
             let s = "  ";
             if (m.cv) s = `${s}${m.cv} `;
             s = `${s}${m.type}${m.ptrOps} ${m.name}`;

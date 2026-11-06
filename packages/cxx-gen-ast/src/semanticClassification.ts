@@ -149,6 +149,10 @@ export const bindings: Record<string, ClassBindings> = {
       cls: "P",
       why: "member lookup selected these exact base and anonymous subobjects",
     },
+    vectorComponentKind: {
+      cls: "P",
+      why: "vector component validation selected this canonical accessor family",
+    },
   },
 
   "::cxx::ImplicitCastExpressionAST": {

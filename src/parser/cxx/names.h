@@ -25,6 +25,7 @@
 #include <cxx/source_location.h>
 #include <cxx/token_fwd.h>
 
+#include <cstddef>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -32,6 +33,23 @@
 namespace cxx {
 
 class TranslationUnit;
+
+enum class VectorComponentError {
+  kNone,
+  kInvalidName,
+  kOutOfRange,
+};
+
+struct VectorComponentSelection {
+  // Canonical selector family retained on the member expression.
+  VectorComponentKind kind = VectorComponentKind::kNone;
+  // Classification failure, if the spelling is not valid for the source.
+  VectorComponentError error = VectorComponentError::kNone;
+  // Number of scalar elements produced by the selector.
+  std::size_t elementCount = 0;
+  // Whether multiple result positions select the same source element.
+  bool hasRepeatedElements = false;
+};
 
 class IdentifierInfo {
  public:
@@ -287,6 +305,22 @@ auto name_cast(const Name* name) -> const T* {
 
 [[nodiscard]] auto resolveBuiltinFunctionKind(IdExpressionAST* idExpr)
     -> BuiltinFunctionKind;
+
+// Classifies a Clang extended-vector component name for a source lane count.
+// A successful selection retains its canonical family without allocating an
+// index array; consumers can recover each already-validated lane in O(1).
+[[nodiscard]] auto classify_vector_component(const Identifier* identifier,
+                                             std::size_t sourceElementCount)
+    -> VectorComponentSelection;
+
+// Returns one lane selected by a previously classified vector component. Odd
+// source widths give hi and odd one trailing padding lane whose index equals
+// sourceElementCount.
+[[nodiscard]] auto vector_component_index(VectorComponentKind kind,
+                                          const Identifier* identifier,
+                                          std::size_t sourceElementCount,
+                                          std::size_t resultPosition)
+    -> std::size_t;
 
 }  // namespace cxx
 

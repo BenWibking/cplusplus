@@ -138,6 +138,65 @@ TEST(Control, get_identifier) {
   EXPECT_NE(name_cast<Identifier>(id), nullptr);
 }
 
+TEST(VectorComponents, ClassifiesAndDecodesSelectors) {
+  struct Case {
+    std::string_view spelling;
+    std::size_t sourceElementCount;
+    VectorComponentKind kind;
+    bool hasRepeatedElements;
+    std::initializer_list<std::size_t> indices;
+  };
+
+  Control control;
+  for (const auto& test : {
+           Case{"wzyx", 4, VectorComponentKind::kXyzw, false, {3, 2, 1, 0}},
+           Case{"argb", 4, VectorComponentKind::kRgba, false, {3, 0, 1, 2}},
+           Case{"s0aF",
+                16,
+                VectorComponentKind::kHexadecimal,
+                false,
+                {0, 10, 15}},
+           Case{"S00", 4, VectorComponentKind::kHexadecimal, true, {0, 0}},
+           Case{"lo", 3, VectorComponentKind::kLow, false, {0, 1}},
+           Case{"hi", 3, VectorComponentKind::kHigh, false, {2, 3}},
+           Case{"even", 3, VectorComponentKind::kEven, false, {0, 2}},
+           Case{"odd", 3, VectorComponentKind::kOdd, false, {1, 3}},
+       }) {
+    const auto identifier = control.getIdentifier(test.spelling);
+    const auto selection =
+        classify_vector_component(identifier, test.sourceElementCount);
+    EXPECT_EQ(selection.error, VectorComponentError::kNone);
+    EXPECT_EQ(selection.kind, test.kind);
+    EXPECT_EQ(selection.elementCount, test.indices.size());
+    EXPECT_EQ(selection.hasRepeatedElements, test.hasRepeatedElements);
+
+    std::size_t position = 0;
+    for (const auto expected : test.indices) {
+      EXPECT_EQ(vector_component_index(selection.kind, identifier,
+                                       test.sourceElementCount, position),
+                expected);
+      ++position;
+    }
+  }
+}
+
+TEST(VectorComponents, RejectsInvalidAndOutOfRangeSelectors) {
+  Control control;
+  for (const auto spelling : {"xg", "s", "A1"}) {
+    const auto selection =
+        classify_vector_component(control.getIdentifier(spelling), 4);
+    EXPECT_EQ(selection.error, VectorComponentError::kInvalidName);
+    EXPECT_EQ(selection.kind, VectorComponentKind::kNone);
+  }
+
+  for (const auto spelling : {"w", "s3"}) {
+    const auto selection =
+        classify_vector_component(control.getIdentifier(spelling), 3);
+    EXPECT_EQ(selection.error, VectorComponentError::kOutOfRange);
+    EXPECT_EQ(selection.kind, VectorComponentKind::kNone);
+  }
+}
+
 TEST(Control, get_operator_id) {
   Control control;
 

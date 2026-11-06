@@ -65,6 +65,17 @@ enum class ImplicitCastKind {
   kUserDefinedConversion,
 };
 
+enum class VectorComponentKind {
+  kNone,
+  kXyzw,
+  kRgba,
+  kHexadecimal,
+  kLow,
+  kHigh,
+  kEven,
+  kOdd,
+};
+
 class AttributeSpecifierAST;
 class AttributeTokenAST;
 class CoreDeclaratorAST;

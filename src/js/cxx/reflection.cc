@@ -300,7 +300,7 @@ constexpr int SpliceMemberExpressionASTSlotBase =
 constexpr int MemberExpressionASTSlotBase =
     SpliceMemberExpressionASTSlotBase + 7;
 
-constexpr int PostIncrExpressionASTSlotBase = MemberExpressionASTSlotBase + 9;
+constexpr int PostIncrExpressionASTSlotBase = MemberExpressionASTSlotBase + 10;
 
 constexpr int CppCastExpressionASTSlotBase = PostIncrExpressionASTSlotBase + 5;
 
@@ -3904,9 +3904,14 @@ auto readAST(std::intptr_t handle, int slot) -> double {
     case MemberExpressionASTSlotBase + 7: {
       auto self = static_cast<const ::cxx::MemberExpressionAST*>(
           reinterpret_cast<const ::cxx::AST*>(handle));
-      return static_cast<double>(self->accessOp);
+      return static_cast<double>(self->vectorComponentKind);
     }
     case MemberExpressionASTSlotBase + 8: {
+      auto self = static_cast<const ::cxx::MemberExpressionAST*>(
+          reinterpret_cast<const ::cxx::AST*>(handle));
+      return static_cast<double>(self->accessOp);
+    }
+    case MemberExpressionASTSlotBase + 9: {
       auto self = static_cast<const ::cxx::MemberExpressionAST*>(
           reinterpret_cast<const ::cxx::AST*>(handle));
       return static_cast<double>(self->isTemplateIntroduced);

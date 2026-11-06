@@ -4562,6 +4562,8 @@ void SemanticEncoder::writeAstMemberExpressionAST(
   for (const auto& element1 : cxx::ListView(self->subobjectPath)) {
     out.varU32(static_cast<std::uint32_t>(symbolRef(element1)));
   }
+  // ::cxx::MemberExpressionAST::vectorComponentKind
+  out.varU32(static_cast<std::uint32_t>(self->vectorComponentKind));
   // ::cxx::MemberExpressionAST::accessOp
   out.varU32(static_cast<std::uint32_t>(self->accessOp));
   // ::cxx::MemberExpressionAST::isTemplateIntroduced
@@ -13519,12 +13521,18 @@ void SemanticDecoder::readAstMemberExpressionAST(
     }
   }
   self->subobjectPath = std::move(value7);
+  // ::cxx::MemberExpressionAST::vectorComponentKind
+  static_assert(
+      static_cast<std::uint32_t>(::cxx::VectorComponentKind::kOdd) + 1 == 8);
+  ::cxx::VectorComponentKind value12 =
+      static_cast<::cxx::VectorComponentKind>(readEnum(in, 8));
+  self->vectorComponentKind = std::move(value12);
   // ::cxx::MemberExpressionAST::accessOp
-  ::cxx::TokenKind value12 = static_cast<::cxx::TokenKind>(readEnum(in, 236));
-  self->accessOp = std::move(value12);
+  ::cxx::TokenKind value13 = static_cast<::cxx::TokenKind>(readEnum(in, 236));
+  self->accessOp = std::move(value13);
   // ::cxx::MemberExpressionAST::isTemplateIntroduced
-  bool value13 = in.boolean();
-  self->isTemplateIntroduced = std::move(value13);
+  bool value14 = in.boolean();
+  self->isTemplateIntroduced = std::move(value14);
 }
 
 void SemanticDecoder::readAstPostIncrExpressionAST(

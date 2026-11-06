@@ -9280,6 +9280,7 @@ auto MemberExpressionAST::clone(Arena* arena) -> MemberExpressionAST* {
 
   node->symbol = symbol;
   node->subobjectPath = clone_symbol_path(arena, subobjectPath);
+  node->vectorComponentKind = vectorComponentKind;
   node->accessOp = accessOp;
   node->isTemplateIntroduced = isTemplateIntroduced;
   node->valueCategory = valueCategory;
@@ -9296,7 +9297,8 @@ auto MemberExpressionAST::create(Arena* arena) -> MemberExpressionAST* {
 auto MemberExpressionAST::create(
     Arena* arena, ExpressionAST* baseExpression, SourceLocation accessLoc,
     NestedNameSpecifierAST* nestedNameSpecifier, SourceLocation templateLoc,
-    UnqualifiedIdAST* unqualifiedId, Symbol* symbol, TokenKind accessOp,
+    UnqualifiedIdAST* unqualifiedId, Symbol* symbol,
+    VectorComponentKind vectorComponentKind, TokenKind accessOp,
     bool isTemplateIntroduced, ValueCategory valueCategory, const Type* type)
     -> MemberExpressionAST* {
   auto node = new (arena) MemberExpressionAST();
@@ -9306,6 +9308,7 @@ auto MemberExpressionAST::create(
   node->templateLoc = templateLoc;
   node->unqualifiedId = unqualifiedId;
   node->symbol = symbol;
+  node->vectorComponentKind = vectorComponentKind;
   node->accessOp = accessOp;
   node->isTemplateIntroduced = isTemplateIntroduced;
   node->valueCategory = valueCategory;
@@ -9316,8 +9319,9 @@ auto MemberExpressionAST::create(
 auto MemberExpressionAST::create(Arena* arena, ExpressionAST* baseExpression,
                                  NestedNameSpecifierAST* nestedNameSpecifier,
                                  UnqualifiedIdAST* unqualifiedId,
-                                 Symbol* symbol, TokenKind accessOp,
-                                 bool isTemplateIntroduced,
+                                 Symbol* symbol,
+                                 VectorComponentKind vectorComponentKind,
+                                 TokenKind accessOp, bool isTemplateIntroduced,
                                  ValueCategory valueCategory, const Type* type)
     -> MemberExpressionAST* {
   auto node = new (arena) MemberExpressionAST();
@@ -9325,6 +9329,7 @@ auto MemberExpressionAST::create(Arena* arena, ExpressionAST* baseExpression,
   node->nestedNameSpecifier = nestedNameSpecifier;
   node->unqualifiedId = unqualifiedId;
   node->symbol = symbol;
+  node->vectorComponentKind = vectorComponentKind;
   node->accessOp = accessOp;
   node->isTemplateIntroduced = isTemplateIntroduced;
   node->valueCategory = valueCategory;

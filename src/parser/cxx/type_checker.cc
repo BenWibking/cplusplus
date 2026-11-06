@@ -711,6 +711,9 @@ struct TypeChecker::Visitor {
   void requireStaticFieldValue(FieldSymbol* field);
 
   [[nodiscard]] auto check_member_access(MemberExpressionAST* ast) -> bool;
+  [[nodiscard]] auto check_vector_component_access(MemberExpressionAST* ast,
+                                                   const Type* objectType)
+      -> bool;
   [[nodiscard]] auto check_pseudo_destructor_access(MemberExpressionAST* ast)
       -> bool;
 
@@ -2253,7 +2256,8 @@ auto TypeChecker::Visitor::ResolveCallOperator::applySelection(
 
   ast->baseExpression = MemberExpressionAST::create(
       arena, ast->baseExpression, nullptr, operatorId, operatorFunction,
-      TokenKind::T_DOT, false, ValueCategory::kLValue, functionType);
+      VectorComponentKind::kNone, TokenKind::T_DOT, false,
+      ValueCategory::kLValue, functionType);
 
   return functionType;
 }
@@ -2314,8 +2318,9 @@ auto TypeChecker::Visitor::resolve_arrow_operator(MemberExpressionAST* ast)
   auto opId = OperatorFunctionIdAST::create(ar, TokenKind::T_MINUS_GREATER);
 
   auto memberAccess = MemberExpressionAST::create(
-      ar, ast->baseExpression, nullptr, opId, operatorFunc, TokenKind::T_DOT,
-      false, ValueCategory::kLValue, functionType);
+      ar, ast->baseExpression, nullptr, opId, operatorFunc,
+      VectorComponentKind::kNone, TokenKind::T_DOT, false,
+      ValueCategory::kLValue, functionType);
 
   auto callExpr = CallExpressionAST::create(
       ar, memberAccess, /*expressionList=*/nullptr,
@@ -3565,6 +3570,44 @@ void TypeChecker::Visitor::operator()(MemberExpressionAST* ast) {
   error(ast->firstSourceLocation(),
         std::format("invalid member access into expression of type '{}'",
                     to_string(ast->baseExpression->type)));
+}
+
+auto TypeChecker::Visitor::check_vector_component_access(
+    MemberExpressionAST* ast, const Type* objectType) -> bool {
+  auto vector = unqualified_cast<VectorType>(traits.remove_cv(objectType));
+  if (!vector || vector->vectorKind() != VectorKind::kExt) return false;
+
+  auto nameId = ast_cast<NameIdAST>(ast->unqualifiedId);
+  auto identifier = nameId ? nameId->identifier : nullptr;
+  auto selection =
+      classify_vector_component(identifier, vector->elementCount());
+  if (selection.error != VectorComponentError::kNone) {
+    const auto spelling = identifier ? identifier->name() : std::string{};
+    if (selection.error == VectorComponentError::kOutOfRange) {
+      error(get_name_location(ast),
+            std::format("vector component '{}' exceeds {} source elements",
+                        spelling, vector->elementCount()));
+    } else {
+      error(get_name_location(ast),
+            std::format("invalid vector component '{}'", spelling));
+    }
+    return true;
+  }
+
+  ast->vectorComponentKind = selection.kind;
+  const Type* resultType = vector->elementType();
+  if (selection.elementCount > 1) {
+    resultType = control()->getVectorType(resultType, selection.elementCount,
+                                          VectorKind::kExt);
+  }
+  ast->type = traits.add_cv(resultType, cv_qualifiers(objectType));
+  ast->valueCategory = ast->accessOp == TokenKind::T_MINUS_GREATER
+                           ? ValueCategory::kLValue
+                           : ast->baseExpression->valueCategory;
+  if (selection.hasRepeatedElements) {
+    ast->valueCategory = ValueCategory::kPrValue;
+  }
+  return true;
 }
 
 void TypeChecker::Visitor::operator()(PostIncrExpressionAST* ast) {
@@ -8329,7 +8372,7 @@ struct TypeChecker::Visitor::CheckMemberAccess {
   [[nodiscard]] auto operator()() -> bool;
 
   [[nodiscard]] static auto namesResolvedMember(Symbol* symbol) -> bool;
-  [[nodiscard]] auto bindObjectClass() -> bool;
+  [[nodiscard]] auto bindObject() -> bool;
   [[nodiscard]] auto dereferenceObject() -> bool;
   [[nodiscard]] auto checkDestructorId(DestructorIdAST* dtor) -> bool;
   [[nodiscard]] auto lookupMember(const Name* memberName, Symbol*& lookupScope)
@@ -8355,7 +8398,16 @@ auto TypeChecker::Visitor::CheckMemberAccess::namesResolvedMember(
 }
 
 auto TypeChecker::Visitor::CheckMemberAccess::operator()() -> bool {
-  if (!bindObjectClass()) return false;
+  if (!bindObject()) return false;
+
+  if (visitor.check_vector_component_access(
+          ast, traits.add_cv(objectType, objectCv))) {
+    return true;
+  }
+
+  auto classType = unqualified_cast<ClassType>(objectType);
+  if (!classType) return false;
+  classSymbol = classType->symbol();
 
   traits.requireCompleteClass(classSymbol);
 
@@ -8413,19 +8465,13 @@ auto TypeChecker::Visitor::CheckMemberAccess::dereferenceObject() -> bool {
   return true;
 }
 
-auto TypeChecker::Visitor::CheckMemberAccess::bindObjectClass() -> bool {
+auto TypeChecker::Visitor::CheckMemberAccess::bindObject() -> bool {
   objectType = ast->baseExpression->type;
   objectCv = cv_qualifiers(objectType);
   objectType = unqualified_type(objectType);
 
   if (ast->accessOp == TokenKind::T_MINUS_GREATER && !dereferenceObject())
     return false;
-
-  auto classType = unqualified_cast<ClassType>(objectType);
-  if (!classType) return false;
-
-  classSymbol = classType->symbol();
-
   return true;
 }
 

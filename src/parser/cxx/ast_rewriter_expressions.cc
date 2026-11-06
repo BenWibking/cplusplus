@@ -1133,6 +1133,7 @@ auto ASTRewriter::ExpressionVisitor::operator()(MemberExpressionAST* ast)
       rewrite.nestedNameSpecifier(ast->nestedNameSpecifier);
   copy->templateLoc = ast->templateLoc;
   copy->unqualifiedId = rewrite.unqualifiedId(ast->unqualifiedId);
+  copy->vectorComponentKind = ast->vectorComponentKind;
   copy->accessOp = ast->accessOp;
   copy->isTemplateIntroduced = ast->isTemplateIntroduced;
 

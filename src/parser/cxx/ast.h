@@ -3897,6 +3897,8 @@ class MemberExpressionAST final : public ExpressionAST {
   Symbol* symbol = nullptr;
   // Ordered storage subobjects selected by semantic resolution.
   List<Symbol*>* subobjectPath = nullptr;
+  // Canonical vector selector family established by semantic analysis.
+  VectorComponentKind vectorComponentKind = VectorComponentKind::kNone;
   TokenKind accessOp = TokenKind::T_EOF_SYMBOL;
   bool isTemplateIntroduced = false;
 
@@ -3912,14 +3914,17 @@ class MemberExpressionAST final : public ExpressionAST {
   [[nodiscard]] static auto create(
       Arena* arena, ExpressionAST* baseExpression, SourceLocation accessLoc,
       NestedNameSpecifierAST* nestedNameSpecifier, SourceLocation templateLoc,
-      UnqualifiedIdAST* unqualifiedId, Symbol* symbol, TokenKind accessOp,
+      UnqualifiedIdAST* unqualifiedId, Symbol* symbol,
+      VectorComponentKind vectorComponentKind, TokenKind accessOp,
       bool isTemplateIntroduced, ValueCategory valueCategory, const Type* type)
       -> MemberExpressionAST*;
 
   [[nodiscard]] static auto create(Arena* arena, ExpressionAST* baseExpression,
                                    NestedNameSpecifierAST* nestedNameSpecifier,
                                    UnqualifiedIdAST* unqualifiedId,
-                                   Symbol* symbol, TokenKind accessOp,
+                                   Symbol* symbol,
+                                   VectorComponentKind vectorComponentKind,
+                                   TokenKind accessOp,
                                    bool isTemplateIntroduced,
                                    ValueCategory valueCategory,
                                    const Type* type) -> MemberExpressionAST*;

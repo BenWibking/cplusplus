@@ -29,7 +29,9 @@
 #include <cxx/translation_unit.h>
 #include <cxx/util.h>
 
+#include <cstdint>
 #include <cstring>
+#include <string_view>
 
 namespace cxx {
 
@@ -224,6 +226,130 @@ auto resolveBuiltinFunctionKind(IdExpressionAST* idExpr)
   }
 
   return BuiltinFunctionKind::T_NONE;
+}
+
+namespace {
+
+[[nodiscard]] auto point_component_index(char component) -> int {
+  switch (component) {
+    case 'x':
+    case 'r':
+      return 0;
+    case 'y':
+    case 'g':
+      return 1;
+    case 'z':
+    case 'b':
+      return 2;
+    case 'w':
+    case 'a':
+      return 3;
+    default:
+      return -1;
+  }
+}
+
+[[nodiscard]] auto hexadecimal_component_index(char component) -> int {
+  if (component >= '0' && component <= '9') return component - '0';
+  if (component >= 'A' && component <= 'F') return component - 'A' + 10;
+  if (component >= 'a' && component <= 'f') return component - 'a' + 10;
+  return -1;
+}
+
+[[nodiscard]] auto is_rgba_component(char component) -> bool {
+  return component == 'r' || component == 'g' || component == 'b' ||
+         component == 'a';
+}
+
+}  // namespace
+
+auto classify_vector_component(const Identifier* identifier,
+                               std::size_t sourceElementCount)
+    -> VectorComponentSelection {
+  VectorComponentSelection selection;
+  if (!identifier || identifier->name().empty()) {
+    selection.error = VectorComponentError::kInvalidName;
+    return selection;
+  }
+
+  const std::string_view name = identifier->name();
+  if (name == "lo" || name == "hi" || name == "even" || name == "odd") {
+    selection.kind = name == "lo"     ? VectorComponentKind::kLow
+                     : name == "hi"   ? VectorComponentKind::kHigh
+                     : name == "even" ? VectorComponentKind::kEven
+                                      : VectorComponentKind::kOdd;
+    selection.elementCount = (sourceElementCount + 1) / 2;
+    return selection;
+  }
+
+  std::string_view components = name;
+  const bool hasHexadecimalPrefix =
+      components.size() > 1 &&
+      (components.front() == 's' || components.front() == 'S');
+  if (hasHexadecimalPrefix) components.remove_prefix(1);
+
+  const int firstPoint = point_component_index(components.front());
+  const bool pointAccessor = !hasHexadecimalPrefix && firstPoint >= 0;
+  if (!pointAccessor && !hasHexadecimalPrefix) {
+    selection.error = VectorComponentError::kInvalidName;
+    return selection;
+  }
+  const bool rgba = pointAccessor && is_rgba_component(components.front());
+  selection.kind = pointAccessor ? (rgba ? VectorComponentKind::kRgba
+                                         : VectorComponentKind::kXyzw)
+                                 : VectorComponentKind::kHexadecimal;
+
+  std::uint16_t selectedElements = 0;
+  for (char component : components) {
+    int index = pointAccessor ? point_component_index(component)
+                              : hexadecimal_component_index(component);
+    if (index < 0 || (pointAccessor && is_rgba_component(component) != rgba)) {
+      selection.kind = VectorComponentKind::kNone;
+      selection.error = VectorComponentError::kInvalidName;
+      return selection;
+    }
+    if (static_cast<std::size_t>(index) >= sourceElementCount) {
+      selection.kind = VectorComponentKind::kNone;
+      selection.error = VectorComponentError::kOutOfRange;
+      return selection;
+    }
+    const std::uint16_t element = std::uint16_t{1} << index;
+    selection.hasRepeatedElements |= (selectedElements & element) != 0;
+    selectedElements |= element;
+  }
+
+  selection.elementCount = components.size();
+  return selection;
+}
+
+auto vector_component_index(VectorComponentKind kind,
+                            const Identifier* identifier,
+                            std::size_t sourceElementCount,
+                            std::size_t resultPosition) -> std::size_t {
+  const std::string_view name = identifier->name();
+  switch (kind) {
+    case VectorComponentKind::kXyzw:
+    case VectorComponentKind::kRgba:
+      return static_cast<std::size_t>(
+          point_component_index(name[resultPosition]));
+    case VectorComponentKind::kHexadecimal: {
+      const std::size_t prefix =
+          name.size() > 1 && (name.front() == 's' || name.front() == 'S');
+      return static_cast<std::size_t>(
+          hexadecimal_component_index(name[resultPosition + prefix]));
+    }
+    case VectorComponentKind::kLow:
+      return resultPosition;
+    case VectorComponentKind::kHigh:
+      return (sourceElementCount + 1) / 2 + resultPosition;
+    case VectorComponentKind::kEven:
+      return 2 * resultPosition;
+    case VectorComponentKind::kOdd:
+      return 2 * resultPosition + 1;
+    case VectorComponentKind::kNone:
+      cxx_runtime_error("invalid vector component kind");
+  }
+  cxx_runtime_error("invalid vector component kind");
 }
 
 Name::~Name() = default;
