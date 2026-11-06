@@ -174,7 +174,8 @@ struct [[nodiscard]] Binder::DeclareFunction {
 
   auto declare() -> FunctionSymbol*;
 
-  void checkRedeclaration();
+  void checkRedeclaration(
+      const std::optional<NamedTemplateSpecialization>& specialization);
   void checkConstructor();
 
   void inheritAbiTags(FunctionSymbol* canonical);
@@ -279,7 +280,8 @@ auto Binder::DeclareFunction::declare() -> FunctionSymbol* {
     rejectDefaultArguments();
   }
 
-  if (addSymbolToParentScope && !instantiatesExplicitly) checkRedeclaration();
+  if (addSymbolToParentScope && !instantiatesExplicitly)
+    checkRedeclaration(namedSpecialization);
 
   if (instantiatesExplicitly) {
     instantiateExplicitly(*namedSpecialization);
@@ -420,9 +422,7 @@ auto Binder::DeclareFunction::namedTemplateSpecialization() const
   if (auto templateId = ast_cast<SimpleTemplateIdAST>(declaratorName)) {
     if (hasDependentTemplateArguments(binder.unit_, templateId))
       return std::nullopt;
-    return deducedSpecializationOf(
-        symbol_cast<FunctionSymbol>(templateId->symbol), functionType,
-        templateId->templateArgumentList);
+    return findSpecialization(functionType, templateId->templateArgumentList);
   }
 
   if (isOperatorTemplateId(declaratorName)) {
@@ -625,7 +625,8 @@ void Binder::DeclareFunction::reportMemberRedeclaration(
               "previous declaration is here");
 }
 
-void Binder::DeclareFunction::checkRedeclaration() {
+void Binder::DeclareFunction::checkRedeclaration(
+    const std::optional<NamedTemplateSpecialization>& specialization) {
   if (auto id = ast_cast<IdDeclaratorAST>(declarator->coreDeclarator)) {
     if (auto nns = id->nestedNameSpecifier) {
       if (!nns->symbol && !binder.declaringScope()->isClass()) return;
@@ -644,6 +645,18 @@ void Binder::DeclareFunction::checkRedeclaration() {
   }
 
   reportDifferentKindOfSymbol(declaringScope);
+
+  if (specialization && !decl.specs.isFriend) {
+    auto previous =
+        symbol_cast<FunctionSymbol>(specialization->primary->findSpecialization(
+            binder.unit_, specialization->arguments));
+    if (previous) {
+      binder.addRedeclaration(previous->canonical(), functionSymbol);
+      mergeRedeclaration();
+      checkDefaultArgumentOrder();
+      return;
+    }
+  }
 
   auto overloadSet = binder.overloadSetFor(
       declaringScope, functionSymbol->name(), functionSymbol->location());
