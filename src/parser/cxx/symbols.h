@@ -2271,5 +2271,5 @@ inline auto symbol_cast(Symbol* symbol) -> ScopeSymbol* {
 [[nodiscard]] auto isDeclaredConstant(Symbol* symbol) -> bool;
 
 [[nodiscard]] auto isUsableInConstantExpressions(const TypeTraits& traits,
-                                                  Symbol* symbol) -> bool;
+                                                 Symbol* symbol) -> bool;
 }  // namespace cxx

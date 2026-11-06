@@ -631,7 +631,7 @@ function decodeSourceLocationRange(
 const ConstComplexSlotBase = 0;
 const ConstObjectSlotBase = ConstComplexSlotBase + 2;
 const ConstAddressSlotBase = ConstObjectSlotBase + 4;
-const ConstLabelAddressSlotBase = ConstAddressSlotBase + 8;
+const ConstLabelAddressSlotBase = ConstAddressSlotBase + 12;
 const ASTSlotBase = 0;
 const AttributeSpecifierASTSlotBase = ASTSlotBase + 3;
 const ExpressionASTSlotBase = AttributeSpecifierASTSlotBase + 1;
@@ -934,7 +934,7 @@ const LiteralOperatorIdSlotBase = DestructorIdSlotBase + 1;
 const ConversionFunctionIdSlotBase = LiteralOperatorIdSlotBase + 1;
 const TemplateIdSlotBase = ConversionFunctionIdSlotBase + 1;
 const SymbolSlotBase = 0;
-const ScopeSymbolSlotBase = SymbolSlotBase + 58;
+const ScopeSymbolSlotBase = SymbolSlotBase + 59;
 const NamespaceSymbolSlotBase = ScopeSymbolSlotBase + 4;
 const ConceptSymbolSlotBase = NamespaceSymbolSlotBase + 4;
 const DeductionGuideSymbolSlotBase = ConceptSymbolSlotBase + 9;
@@ -996,6 +996,7 @@ const UnresolvedVectorTypeSlotBase = VectorTypeSlotBase + 3;
 const ComplexTypeSlotBase = UnresolvedVectorTypeSlotBase + 4;
 const AtomicTypeSlotBase = ComplexTypeSlotBase + 1;
 const SveTypeSlotBase = AtomicTypeSlotBase + 1;
+const AlignedTypeSlotBase = SveTypeSlotBase + 1;
 /** @category Constant Values */
 export class DefaultInitializerContext extends ModelObject {}
 /** @category Constant Values */
@@ -1061,31 +1062,43 @@ export class ConstAddress extends ModelObject {
       ConstObject,
     );
   }
+  get hasExpiredLifetimeStorage(): boolean {
+    return cxx.readMisc(this.handle, ConstAddressSlotBase + 3) !== 0;
+  }
+  get hasStaticStorageDuration(): boolean {
+    return cxx.readMisc(this.handle, ConstAddressSlotBase + 4) !== 0;
+  }
+  get persistentReadsRestricted(): boolean {
+    return cxx.readMisc(this.handle, ConstAddressSlotBase + 5) !== 0;
+  }
   get stringLiteral(): StringLiteral | undefined {
     return objOf(
-      cxx.readMisc(this.handle, ConstAddressSlotBase + 3),
+      cxx.readMisc(this.handle, ConstAddressSlotBase + 6),
       this.modelOwner,
       StringLiteral,
     );
   }
   get offset(): bigint {
-    return cxx.readMiscBigInt(this.handle, ConstAddressSlotBase + 4) as bigint;
+    return cxx.readMiscBigInt(this.handle, ConstAddressSlotBase + 7) as bigint;
   }
   get parent(): ConstAddress | undefined {
     return objOf(
-      cxx.readMisc(this.handle, ConstAddressSlotBase + 5),
+      cxx.readMisc(this.handle, ConstAddressSlotBase + 8),
       this.modelOwner,
       ConstAddress,
     );
   }
   get rootSymbol(): Symbol | undefined {
     return symbolOf(
-      cxx.readMisc(this.handle, ConstAddressSlotBase + 6),
+      cxx.readMisc(this.handle, ConstAddressSlotBase + 9),
       this.modelOwner,
     );
   }
+  get isArrayElement(): boolean {
+    return cxx.readMisc(this.handle, ConstAddressSlotBase + 10) !== 0;
+  }
   get denotesWholeOwner(): boolean {
-    return cxx.readMisc(this.handle, ConstAddressSlotBase + 7) !== 0;
+    return cxx.readMisc(this.handle, ConstAddressSlotBase + 11) !== 0;
   }
 }
 /** @category Constant Values */
@@ -8763,59 +8776,62 @@ export abstract class Symbol extends ModelObject {
       this.modelOwner,
     );
   }
-  get enclosingFunction(): FunctionSymbol | undefined {
-    return symbolOf(
-      cxx.readSymbol(this.handle, SymbolSlotBase + 6),
-      this.modelOwner,
-    );
+  get enclosingSymbols(): number {
+    return cxx.readSymbol(this.handle, SymbolSlotBase + 6);
   }
-  get enclosingFunctionOrSelf(): FunctionSymbol | undefined {
+  get enclosingFunction(): FunctionSymbol | undefined {
     return symbolOf(
       cxx.readSymbol(this.handle, SymbolSlotBase + 7),
       this.modelOwner,
     );
   }
-  get next(): Symbol | undefined {
+  get enclosingFunctionOrSelf(): FunctionSymbol | undefined {
     return symbolOf(
       cxx.readSymbol(this.handle, SymbolSlotBase + 8),
       this.modelOwner,
     );
   }
+  get next(): Symbol | undefined {
+    return symbolOf(
+      cxx.readSymbol(this.handle, SymbolSlotBase + 9),
+      this.modelOwner,
+    );
+  }
   get isHidden(): boolean {
-    return cxx.readSymbol(this.handle, SymbolSlotBase + 9) !== 0;
+    return cxx.readSymbol(this.handle, SymbolSlotBase + 10) !== 0;
   }
   get accessSpecifier(): AccessSpecifier {
     return accessSpecifierNames[
-      cxx.readSymbol(this.handle, SymbolSlotBase + 10)
+      cxx.readSymbol(this.handle, SymbolSlotBase + 11)
     ]!;
   }
   get abiTags(): Iterable<Identifier | undefined> {
     return symbolItems(
       this.modelOwner,
       this.handle,
-      SymbolSlotBase + 11,
+      SymbolSlotBase + 12,
       (item: any) => nameOf(item, this.modelOwner),
     );
   }
   get abiTagList(): ReadonlyArray<Identifier | undefined> | undefined {
     return optionalOf(
-      cxx.readSymbolVal(this.handle, SymbolSlotBase + 12),
+      cxx.readSymbolVal(this.handle, SymbolSlotBase + 13),
       (item: any) =>
         (item as any[]).map((element: any) => nameOf(element, this.modelOwner)),
     );
   }
   get isWeak(): boolean {
-    return cxx.readSymbol(this.handle, SymbolSlotBase + 13) !== 0;
-  }
-  get isNoInline(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 14) !== 0;
   }
-  get isAlwaysInline(): boolean {
+  get isNoInline(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 15) !== 0;
+  }
+  get isAlwaysInline(): boolean {
+    return cxx.readSymbol(this.handle, SymbolSlotBase + 16) !== 0;
   }
   get attributes(): ReadonlyArray<Attribute> | undefined {
     return optionalOf(
-      cxx.readSymbolVal(this.handle, SymbolSlotBase + 16),
+      cxx.readSymbolVal(this.handle, SymbolSlotBase + 17),
       (item: any) =>
         (item as any[]).map((element: any) =>
           decodeAttribute(element, this.modelOwner),
@@ -8823,136 +8839,136 @@ export abstract class Symbol extends ModelObject {
     );
   }
   get isNodiscard(): boolean {
-    return cxx.readSymbol(this.handle, SymbolSlotBase + 17) !== 0;
-  }
-  get isUsed(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 18) !== 0;
   }
-  get isExcludedFromExplicitInstantiation(): boolean {
+  get isUsed(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 19) !== 0;
   }
-  get isTrivialAbi(): boolean {
+  get isExcludedFromExplicitInstantiation(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 20) !== 0;
   }
-  get hasDeducedReturnType(): boolean {
+  get isTrivialAbi(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 21) !== 0;
   }
-  get canonical(): Symbol | undefined {
-    return symbolOf(
-      cxx.readSymbol(this.handle, SymbolSlotBase + 22),
-      this.modelOwner,
-    );
+  get hasDeducedReturnType(): boolean {
+    return cxx.readSymbol(this.handle, SymbolSlotBase + 22) !== 0;
   }
-  get definition(): Symbol | undefined {
+  get canonical(): Symbol | undefined {
     return symbolOf(
       cxx.readSymbol(this.handle, SymbolSlotBase + 23),
       this.modelOwner,
     );
   }
-  get instantiationPattern(): Symbol | undefined {
+  get definition(): Symbol | undefined {
     return symbolOf(
       cxx.readSymbol(this.handle, SymbolSlotBase + 24),
       this.modelOwner,
     );
   }
-  get isNamespace(): boolean {
-    return cxx.readSymbol(this.handle, SymbolSlotBase + 25) !== 0;
+  get instantiationPattern(): Symbol | undefined {
+    return symbolOf(
+      cxx.readSymbol(this.handle, SymbolSlotBase + 25),
+      this.modelOwner,
+    );
   }
-  get isNamespaceAlias(): boolean {
+  get isNamespace(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 26) !== 0;
   }
-  get isConcept(): boolean {
+  get isNamespaceAlias(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 27) !== 0;
   }
-  get isDeductionGuide(): boolean {
+  get isConcept(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 28) !== 0;
   }
-  get isClass(): boolean {
+  get isDeductionGuide(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 29) !== 0;
   }
-  get isEnum(): boolean {
+  get isClass(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 30) !== 0;
   }
-  get isScopedEnum(): boolean {
+  get isEnum(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 31) !== 0;
   }
-  get isFunction(): boolean {
+  get isScopedEnum(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 32) !== 0;
   }
-  get isTypeAlias(): boolean {
+  get isFunction(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 33) !== 0;
   }
-  get isVariable(): boolean {
+  get isTypeAlias(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 34) !== 0;
   }
-  get isField(): boolean {
+  get isVariable(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 35) !== 0;
   }
-  get isParameter(): boolean {
+  get isField(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 36) !== 0;
   }
-  get isParameterPack(): boolean {
+  get isParameter(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 37) !== 0;
   }
-  get isEnumerator(): boolean {
+  get isParameterPack(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 38) !== 0;
   }
-  get isFunctionParameters(): boolean {
+  get isEnumerator(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 39) !== 0;
   }
-  get isTemplateParameters(): boolean {
+  get isFunctionParameters(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 40) !== 0;
   }
-  get isBlock(): boolean {
+  get isTemplateParameters(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 41) !== 0;
   }
-  get isLambda(): boolean {
+  get isBlock(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 42) !== 0;
   }
-  get isTypeParameter(): boolean {
+  get isLambda(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 43) !== 0;
   }
-  get isNonTypeParameter(): boolean {
+  get isTypeParameter(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 44) !== 0;
   }
-  get isTemplateTypeParameter(): boolean {
+  get isNonTypeParameter(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 45) !== 0;
   }
-  get isConstraintTypeParameter(): boolean {
+  get isTemplateTypeParameter(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 46) !== 0;
   }
-  get isOverloadSet(): boolean {
+  get isConstraintTypeParameter(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 47) !== 0;
   }
-  get isBaseClass(): boolean {
+  get isOverloadSet(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 48) !== 0;
   }
-  get isInjectedClassName(): boolean {
+  get isBaseClass(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 49) !== 0;
   }
-  get isUnresolved(): boolean {
+  get isInjectedClassName(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 50) !== 0;
   }
-  get isUsingDeclaration(): boolean {
+  get isUnresolved(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 51) !== 0;
   }
-  get isClassOrNamespace(): boolean {
+  get isUsingDeclaration(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 52) !== 0;
   }
-  get isNamespaceName(): boolean {
+  get isClassOrNamespace(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 53) !== 0;
   }
-  get isEnumOrScopedEnum(): boolean {
+  get isNamespaceName(): boolean {
     return cxx.readSymbol(this.handle, SymbolSlotBase + 54) !== 0;
   }
+  get isEnumOrScopedEnum(): boolean {
+    return cxx.readSymbol(this.handle, SymbolSlotBase + 55) !== 0;
+  }
   get internalId(): number {
-    return cxx.readSymbol(this.handle, SymbolSlotBase + 55);
+    return cxx.readSymbol(this.handle, SymbolSlotBase + 56);
   }
   get text(): string {
-    return cxx.readSymbolString(this.handle, SymbolSlotBase + 56) as string;
+    return cxx.readSymbolString(this.handle, SymbolSlotBase + 57) as string;
   }
   get isType(): boolean {
-    return cxx.readSymbol(this.handle, SymbolSlotBase + 57) !== 0;
+    return cxx.readSymbol(this.handle, SymbolSlotBase + 58) !== 0;
   }
 }
 /** @category Symbols */
@@ -8968,10 +8984,13 @@ export abstract class ScopeSymbol extends Symbol {
       (item: any) => symbolOf(item, this.modelOwner),
     );
   }
-  get usingDirectives(): ReadonlyArray<ScopeSymbol | undefined> {
-    return (
-      cxx.readSymbolVal(this.handle, ScopeSymbolSlotBase + 2) as any[]
-    ).map((element: any) => symbolOf(element, this.modelOwner));
+  get usingDirectives(): Iterable<ScopeSymbol | undefined> {
+    return symbolItems(
+      this.modelOwner,
+      this.handle,
+      ScopeSymbolSlotBase + 2,
+      (item: any) => symbolOf(item, this.modelOwner),
+    );
   }
   get isTransparent(): boolean {
     return cxx.readSymbol(this.handle, ScopeSymbolSlotBase + 3) !== 0;
@@ -10962,6 +10981,18 @@ export class SveType extends Type {
     return sveTypeKindNames[cxx.readType(this.handle, SveTypeSlotBase + 0)]!;
   }
 }
+/** @category Types */
+export class AlignedType extends Type {
+  get elementType(): Type | undefined {
+    return typeOf(
+      cxx.readType(this.handle, AlignedTypeSlotBase + 0),
+      this.modelOwner,
+    );
+  }
+  get alignment(): number {
+    return cxx.readType(this.handle, AlignedTypeSlotBase + 1);
+  }
+}
 /** @category Enumerations */
 export type ASTKind =
   | "TranslationUnit"
@@ -11579,7 +11610,8 @@ export type TypeKind =
   | "UnresolvedVector"
   | "Complex"
   | "Atomic"
-  | "Sve";
+  | "Sve"
+  | "Aligned";
 const typeKindNames: Record<number, TypeKind> = {
   0: "Void",
   1: "Nullptr",
@@ -11643,6 +11675,7 @@ const typeKindNames: Record<number, TypeKind> = {
   59: "Complex",
   60: "Atomic",
   61: "Sve",
+  62: "Aligned",
 };
 /** @category Enumerations */
 export type NameKind =
@@ -11991,6 +12024,11 @@ export type BuiltinFunctionKind =
   | "__builtin_acoshl"
   | "__builtin_acosl"
   | "__builtin_add_overflow"
+  | "__builtin_addc"
+  | "__builtin_addcb"
+  | "__builtin_addcl"
+  | "__builtin_addcll"
+  | "__builtin_addcs"
   | "__builtin_addressof"
   | "__builtin_aligned_alloc"
   | "__builtin_alloca"
@@ -12355,6 +12393,11 @@ export type BuiltinFunctionKind =
   | "__builtin_strtoull"
   | "__builtin_strxfrm"
   | "__builtin_sub_overflow"
+  | "__builtin_subc"
+  | "__builtin_subcb"
+  | "__builtin_subcl"
+  | "__builtin_subcll"
+  | "__builtin_subcs"
   | "__builtin_tan"
   | "__builtin_tanf"
   | "__builtin_tanh"
@@ -12451,413 +12494,423 @@ const builtinFunctionKindNames: Record<number, BuiltinFunctionKind> = {
   49: "__builtin_acoshl",
   50: "__builtin_acosl",
   51: "__builtin_add_overflow",
-  52: "__builtin_addressof",
-  53: "__builtin_aligned_alloc",
-  54: "__builtin_alloca",
-  55: "__builtin_asin",
-  56: "__builtin_asinf",
-  57: "__builtin_asinh",
-  58: "__builtin_asinhf",
-  59: "__builtin_asinhl",
-  60: "__builtin_asinl",
-  61: "__builtin_assume_aligned",
-  62: "__builtin_atan",
-  63: "__builtin_atan2",
-  64: "__builtin_atan2f",
-  65: "__builtin_atan2l",
-  66: "__builtin_atanf",
-  67: "__builtin_atanh",
-  68: "__builtin_atanhf",
-  69: "__builtin_atanhl",
-  70: "__builtin_atanl",
-  71: "__builtin_bcmp",
-  72: "__builtin_bcopy",
-  73: "__builtin_bswap16",
-  74: "__builtin_bswap32",
-  75: "__builtin_bswap64",
-  76: "__builtin_bzero",
-  77: "__builtin_c23_va_start",
-  78: "__builtin_cabs",
-  79: "__builtin_cabsf",
-  80: "__builtin_cabsl",
-  81: "__builtin_cacos",
-  82: "__builtin_cacosf",
-  83: "__builtin_cacosh",
-  84: "__builtin_cacoshf",
-  85: "__builtin_cacoshl",
-  86: "__builtin_cacosl",
-  87: "__builtin_carg",
-  88: "__builtin_cargf",
-  89: "__builtin_cargl",
-  90: "__builtin_casin",
-  91: "__builtin_casinf",
-  92: "__builtin_casinh",
-  93: "__builtin_casinhf",
-  94: "__builtin_casinhl",
-  95: "__builtin_casinl",
-  96: "__builtin_catan",
-  97: "__builtin_catanf",
-  98: "__builtin_catanh",
-  99: "__builtin_catanhf",
-  100: "__builtin_catanhl",
-  101: "__builtin_catanl",
-  102: "__builtin_cbrt",
-  103: "__builtin_cbrtf",
-  104: "__builtin_cbrtl",
-  105: "__builtin_ccos",
-  106: "__builtin_ccosf",
-  107: "__builtin_ccosh",
-  108: "__builtin_ccoshf",
-  109: "__builtin_ccoshl",
-  110: "__builtin_ccosl",
-  111: "__builtin_ceil",
-  112: "__builtin_ceilf",
-  113: "__builtin_ceill",
-  114: "__builtin_cexp",
-  115: "__builtin_cexpf",
-  116: "__builtin_cexpl",
-  117: "__builtin_cimag",
-  118: "__builtin_cimagf",
-  119: "__builtin_cimagl",
-  120: "__builtin_clog",
-  121: "__builtin_clogf",
-  122: "__builtin_clogl",
-  123: "__builtin_clrsb",
-  124: "__builtin_clrsbl",
-  125: "__builtin_clrsbll",
-  126: "__builtin_clz",
-  127: "__builtin_clzg",
-  128: "__builtin_clzl",
-  129: "__builtin_clzll",
-  130: "__builtin_clzs",
-  131: "__builtin_complex",
-  132: "__builtin_conj",
-  133: "__builtin_conjf",
-  134: "__builtin_conjl",
-  135: "__builtin_constant_p",
-  136: "__builtin_copysign",
-  137: "__builtin_copysignf",
-  138: "__builtin_copysignl",
-  139: "__builtin_coro_destroy",
-  140: "__builtin_coro_done",
-  141: "__builtin_coro_noop",
-  142: "__builtin_coro_promise",
-  143: "__builtin_coro_resume",
-  144: "__builtin_cos",
-  145: "__builtin_cosf",
-  146: "__builtin_cosh",
-  147: "__builtin_coshf",
-  148: "__builtin_coshl",
-  149: "__builtin_cosl",
-  150: "__builtin_cpow",
-  151: "__builtin_cpowf",
-  152: "__builtin_cpowl",
-  153: "__builtin_cproj",
-  154: "__builtin_cprojf",
-  155: "__builtin_cprojl",
-  156: "__builtin_creal",
-  157: "__builtin_crealf",
-  158: "__builtin_creall",
-  159: "__builtin_csin",
-  160: "__builtin_csinf",
-  161: "__builtin_csinh",
-  162: "__builtin_csinhf",
-  163: "__builtin_csinhl",
-  164: "__builtin_csinl",
-  165: "__builtin_csqrt",
-  166: "__builtin_csqrtf",
-  167: "__builtin_csqrtl",
-  168: "__builtin_ctan",
-  169: "__builtin_ctanf",
-  170: "__builtin_ctanh",
-  171: "__builtin_ctanhf",
-  172: "__builtin_ctanhl",
-  173: "__builtin_ctanl",
-  174: "__builtin_ctz",
-  175: "__builtin_ctzg",
-  176: "__builtin_ctzl",
-  177: "__builtin_ctzll",
-  178: "__builtin_ctzs",
-  179: "__builtin_erf",
-  180: "__builtin_erfc",
-  181: "__builtin_erfcf",
-  182: "__builtin_erfcl",
-  183: "__builtin_erff",
-  184: "__builtin_erfl",
-  185: "__builtin_exit",
-  186: "__builtin_exp",
-  187: "__builtin_exp2",
-  188: "__builtin_exp2f",
-  189: "__builtin_exp2l",
-  190: "__builtin_expect",
-  191: "__builtin_expf",
-  192: "__builtin_expl",
-  193: "__builtin_expm1",
-  194: "__builtin_expm1f",
-  195: "__builtin_expm1l",
-  196: "__builtin_fabs",
-  197: "__builtin_fabsf",
-  198: "__builtin_fabsl",
-  199: "__builtin_fdim",
-  200: "__builtin_fdimf",
-  201: "__builtin_fdiml",
-  202: "__builtin_ffs",
-  203: "__builtin_ffsl",
-  204: "__builtin_ffsll",
-  205: "__builtin_finite",
-  206: "__builtin_finitef",
-  207: "__builtin_finitel",
-  208: "__builtin_floor",
-  209: "__builtin_floorf",
-  210: "__builtin_floorl",
-  211: "__builtin_fma",
-  212: "__builtin_fmaf",
-  213: "__builtin_fmal",
-  214: "__builtin_fmax",
-  215: "__builtin_fmaxf",
-  216: "__builtin_fmaximum_num",
-  217: "__builtin_fmaximum_numf",
-  218: "__builtin_fmaximum_numl",
-  219: "__builtin_fmaxl",
-  220: "__builtin_fmin",
-  221: "__builtin_fminf",
-  222: "__builtin_fminimum_num",
-  223: "__builtin_fminimum_numf",
-  224: "__builtin_fminimum_numl",
-  225: "__builtin_fminl",
-  226: "__builtin_fmod",
-  227: "__builtin_fmodf",
-  228: "__builtin_fmodl",
-  229: "__builtin_fpclassify",
-  230: "__builtin_frexp",
-  231: "__builtin_frexpf",
-  232: "__builtin_frexpl",
-  233: "__builtin_huge_val",
-  234: "__builtin_huge_valf",
-  235: "__builtin_huge_vall",
-  236: "__builtin_hypot",
-  237: "__builtin_hypotf",
-  238: "__builtin_hypotl",
-  239: "__builtin_ilogb",
-  240: "__builtin_ilogbf",
-  241: "__builtin_ilogbl",
-  242: "__builtin_index",
-  243: "__builtin_inf",
-  244: "__builtin_inff",
-  245: "__builtin_infl",
-  246: "__builtin_invoke",
-  247: "__builtin_is_constant_evaluated",
-  248: "__builtin_isalnum",
-  249: "__builtin_isalpha",
-  250: "__builtin_isblank",
-  251: "__builtin_iscntrl",
-  252: "__builtin_isdigit",
-  253: "__builtin_isfinite",
-  254: "__builtin_isgraph",
-  255: "__builtin_isgreater",
-  256: "__builtin_isgreaterequal",
-  257: "__builtin_isinf",
-  258: "__builtin_isless",
-  259: "__builtin_islessequal",
-  260: "__builtin_islessgreater",
-  261: "__builtin_islower",
-  262: "__builtin_isnan",
-  263: "__builtin_isnormal",
-  264: "__builtin_isprint",
-  265: "__builtin_ispunct",
-  266: "__builtin_isspace",
-  267: "__builtin_isunordered",
-  268: "__builtin_isupper",
-  269: "__builtin_isxdigit",
-  270: "__builtin_labs",
-  271: "__builtin_ldexp",
-  272: "__builtin_ldexpf",
-  273: "__builtin_ldexpl",
-  274: "__builtin_lgamma",
-  275: "__builtin_lgammaf",
-  276: "__builtin_lgammal",
-  277: "__builtin_llabs",
-  278: "__builtin_llrint",
-  279: "__builtin_llrintf",
-  280: "__builtin_llrintl",
-  281: "__builtin_llround",
-  282: "__builtin_llroundf",
-  283: "__builtin_llroundl",
-  284: "__builtin_log",
-  285: "__builtin_log10",
-  286: "__builtin_log10f",
-  287: "__builtin_log10l",
-  288: "__builtin_log1p",
-  289: "__builtin_log1pf",
-  290: "__builtin_log1pl",
-  291: "__builtin_log2",
-  292: "__builtin_log2f",
-  293: "__builtin_log2l",
-  294: "__builtin_logb",
-  295: "__builtin_logbf",
-  296: "__builtin_logbl",
-  297: "__builtin_logf",
-  298: "__builtin_logl",
-  299: "__builtin_lrint",
-  300: "__builtin_lrintf",
-  301: "__builtin_lrintl",
-  302: "__builtin_lround",
-  303: "__builtin_lroundf",
-  304: "__builtin_lroundl",
-  305: "__builtin_memccpy",
-  306: "__builtin_memchr",
-  307: "__builtin_memcmp",
-  308: "__builtin_memcpy",
-  309: "__builtin_memmove",
-  310: "__builtin_mempcpy",
-  311: "__builtin_memset",
-  312: "__builtin_modf",
-  313: "__builtin_modff",
-  314: "__builtin_modfl",
-  315: "__builtin_mul_overflow",
-  316: "__builtin_nan",
-  317: "__builtin_nanf",
-  318: "__builtin_nanl",
-  319: "__builtin_nans",
-  320: "__builtin_nansf",
-  321: "__builtin_nansl",
-  322: "__builtin_nearbyint",
-  323: "__builtin_nearbyintf",
-  324: "__builtin_nearbyintl",
-  325: "__builtin_nextafter",
-  326: "__builtin_nextafterf",
-  327: "__builtin_nextafterl",
-  328: "__builtin_nexttoward",
-  329: "__builtin_nexttowardf",
-  330: "__builtin_nexttowardl",
-  331: "__builtin_operator_delete",
-  332: "__builtin_operator_new",
-  333: "__builtin_parity",
-  334: "__builtin_parityl",
-  335: "__builtin_parityll",
-  336: "__builtin_popcount",
-  337: "__builtin_popcountg",
-  338: "__builtin_popcountl",
-  339: "__builtin_popcountll",
-  340: "__builtin_pow",
-  341: "__builtin_powf",
-  342: "__builtin_powl",
-  343: "__builtin_reduce_add",
-  344: "__builtin_reduce_and",
-  345: "__builtin_reduce_mul",
-  346: "__builtin_reduce_or",
-  347: "__builtin_reduce_xor",
-  348: "__builtin_remainder",
-  349: "__builtin_remainderf",
-  350: "__builtin_remainderl",
-  351: "__builtin_remquo",
-  352: "__builtin_remquof",
-  353: "__builtin_remquol",
-  354: "__builtin_rindex",
-  355: "__builtin_rint",
-  356: "__builtin_rintf",
-  357: "__builtin_rintl",
-  358: "__builtin_round",
-  359: "__builtin_roundeven",
-  360: "__builtin_roundevenf",
-  361: "__builtin_roundevenl",
-  362: "__builtin_roundf",
-  363: "__builtin_roundl",
-  364: "__builtin_scalbln",
-  365: "__builtin_scalblnf",
-  366: "__builtin_scalblnl",
-  367: "__builtin_scalbn",
-  368: "__builtin_scalbnf",
-  369: "__builtin_scalbnl",
-  370: "__builtin_signbit",
-  371: "__builtin_sin",
-  372: "__builtin_sincos",
-  373: "__builtin_sincosf",
-  374: "__builtin_sincosl",
-  375: "__builtin_sinf",
-  376: "__builtin_sinh",
-  377: "__builtin_sinhf",
-  378: "__builtin_sinhl",
-  379: "__builtin_sinl",
-  380: "__builtin_source_location",
-  381: "__builtin_sqrt",
-  382: "__builtin_sqrtf",
-  383: "__builtin_sqrtl",
-  384: "__builtin_stpcpy",
-  385: "__builtin_stpncpy",
-  386: "__builtin_strcasecmp",
-  387: "__builtin_strcat",
-  388: "__builtin_strchr",
-  389: "__builtin_strcmp",
-  390: "__builtin_strcpy",
-  391: "__builtin_strcspn",
-  392: "__builtin_strdup",
-  393: "__builtin_strerror",
-  394: "__builtin_strlcat",
-  395: "__builtin_strlcpy",
-  396: "__builtin_strlen",
-  397: "__builtin_strncasecmp",
-  398: "__builtin_strncat",
-  399: "__builtin_strncmp",
-  400: "__builtin_strncpy",
-  401: "__builtin_strndup",
-  402: "__builtin_strpbrk",
-  403: "__builtin_strrchr",
-  404: "__builtin_strspn",
-  405: "__builtin_strstr",
-  406: "__builtin_strtod",
-  407: "__builtin_strtof",
-  408: "__builtin_strtok",
-  409: "__builtin_strtol",
-  410: "__builtin_strtold",
-  411: "__builtin_strtoll",
-  412: "__builtin_strtoul",
-  413: "__builtin_strtoull",
-  414: "__builtin_strxfrm",
-  415: "__builtin_sub_overflow",
-  416: "__builtin_tan",
-  417: "__builtin_tanf",
-  418: "__builtin_tanh",
-  419: "__builtin_tanhf",
-  420: "__builtin_tanhl",
-  421: "__builtin_tanl",
-  422: "__builtin_tgamma",
-  423: "__builtin_tgammaf",
-  424: "__builtin_tgammal",
-  425: "__builtin_tolower",
-  426: "__builtin_toupper",
-  427: "__builtin_trap",
-  428: "__builtin_trunc",
-  429: "__builtin_truncf",
-  430: "__builtin_truncl",
-  431: "__builtin_unreachable",
-  432: "__builtin_va_copy",
-  433: "__builtin_va_end",
-  434: "__builtin_va_start",
-  435: "__builtin_vsnprintf",
-  436: "__builtin_wcschr",
-  437: "__builtin_wcscmp",
-  438: "__builtin_wcslen",
-  439: "__builtin_wcsncmp",
-  440: "__builtin_wmemchr",
-  441: "__builtin_wmemcmp",
-  442: "__builtin_wmemcpy",
-  443: "__builtin_wmemmove",
-  444: "__c11_atomic_compare_exchange_strong",
-  445: "__c11_atomic_compare_exchange_weak",
-  446: "__c11_atomic_exchange",
-  447: "__c11_atomic_fetch_add",
-  448: "__c11_atomic_fetch_and",
-  449: "__c11_atomic_fetch_nand",
-  450: "__c11_atomic_fetch_or",
-  451: "__c11_atomic_fetch_sub",
-  452: "__c11_atomic_fetch_xor",
-  453: "__c11_atomic_init",
-  454: "__c11_atomic_is_lock_free",
-  455: "__c11_atomic_load",
-  456: "__c11_atomic_signal_fence",
-  457: "__c11_atomic_store",
-  458: "__c11_atomic_thread_fence",
+  52: "__builtin_addc",
+  53: "__builtin_addcb",
+  54: "__builtin_addcl",
+  55: "__builtin_addcll",
+  56: "__builtin_addcs",
+  57: "__builtin_addressof",
+  58: "__builtin_aligned_alloc",
+  59: "__builtin_alloca",
+  60: "__builtin_asin",
+  61: "__builtin_asinf",
+  62: "__builtin_asinh",
+  63: "__builtin_asinhf",
+  64: "__builtin_asinhl",
+  65: "__builtin_asinl",
+  66: "__builtin_assume_aligned",
+  67: "__builtin_atan",
+  68: "__builtin_atan2",
+  69: "__builtin_atan2f",
+  70: "__builtin_atan2l",
+  71: "__builtin_atanf",
+  72: "__builtin_atanh",
+  73: "__builtin_atanhf",
+  74: "__builtin_atanhl",
+  75: "__builtin_atanl",
+  76: "__builtin_bcmp",
+  77: "__builtin_bcopy",
+  78: "__builtin_bswap16",
+  79: "__builtin_bswap32",
+  80: "__builtin_bswap64",
+  81: "__builtin_bzero",
+  82: "__builtin_c23_va_start",
+  83: "__builtin_cabs",
+  84: "__builtin_cabsf",
+  85: "__builtin_cabsl",
+  86: "__builtin_cacos",
+  87: "__builtin_cacosf",
+  88: "__builtin_cacosh",
+  89: "__builtin_cacoshf",
+  90: "__builtin_cacoshl",
+  91: "__builtin_cacosl",
+  92: "__builtin_carg",
+  93: "__builtin_cargf",
+  94: "__builtin_cargl",
+  95: "__builtin_casin",
+  96: "__builtin_casinf",
+  97: "__builtin_casinh",
+  98: "__builtin_casinhf",
+  99: "__builtin_casinhl",
+  100: "__builtin_casinl",
+  101: "__builtin_catan",
+  102: "__builtin_catanf",
+  103: "__builtin_catanh",
+  104: "__builtin_catanhf",
+  105: "__builtin_catanhl",
+  106: "__builtin_catanl",
+  107: "__builtin_cbrt",
+  108: "__builtin_cbrtf",
+  109: "__builtin_cbrtl",
+  110: "__builtin_ccos",
+  111: "__builtin_ccosf",
+  112: "__builtin_ccosh",
+  113: "__builtin_ccoshf",
+  114: "__builtin_ccoshl",
+  115: "__builtin_ccosl",
+  116: "__builtin_ceil",
+  117: "__builtin_ceilf",
+  118: "__builtin_ceill",
+  119: "__builtin_cexp",
+  120: "__builtin_cexpf",
+  121: "__builtin_cexpl",
+  122: "__builtin_cimag",
+  123: "__builtin_cimagf",
+  124: "__builtin_cimagl",
+  125: "__builtin_clog",
+  126: "__builtin_clogf",
+  127: "__builtin_clogl",
+  128: "__builtin_clrsb",
+  129: "__builtin_clrsbl",
+  130: "__builtin_clrsbll",
+  131: "__builtin_clz",
+  132: "__builtin_clzg",
+  133: "__builtin_clzl",
+  134: "__builtin_clzll",
+  135: "__builtin_clzs",
+  136: "__builtin_complex",
+  137: "__builtin_conj",
+  138: "__builtin_conjf",
+  139: "__builtin_conjl",
+  140: "__builtin_constant_p",
+  141: "__builtin_copysign",
+  142: "__builtin_copysignf",
+  143: "__builtin_copysignl",
+  144: "__builtin_coro_destroy",
+  145: "__builtin_coro_done",
+  146: "__builtin_coro_noop",
+  147: "__builtin_coro_promise",
+  148: "__builtin_coro_resume",
+  149: "__builtin_cos",
+  150: "__builtin_cosf",
+  151: "__builtin_cosh",
+  152: "__builtin_coshf",
+  153: "__builtin_coshl",
+  154: "__builtin_cosl",
+  155: "__builtin_cpow",
+  156: "__builtin_cpowf",
+  157: "__builtin_cpowl",
+  158: "__builtin_cproj",
+  159: "__builtin_cprojf",
+  160: "__builtin_cprojl",
+  161: "__builtin_creal",
+  162: "__builtin_crealf",
+  163: "__builtin_creall",
+  164: "__builtin_csin",
+  165: "__builtin_csinf",
+  166: "__builtin_csinh",
+  167: "__builtin_csinhf",
+  168: "__builtin_csinhl",
+  169: "__builtin_csinl",
+  170: "__builtin_csqrt",
+  171: "__builtin_csqrtf",
+  172: "__builtin_csqrtl",
+  173: "__builtin_ctan",
+  174: "__builtin_ctanf",
+  175: "__builtin_ctanh",
+  176: "__builtin_ctanhf",
+  177: "__builtin_ctanhl",
+  178: "__builtin_ctanl",
+  179: "__builtin_ctz",
+  180: "__builtin_ctzg",
+  181: "__builtin_ctzl",
+  182: "__builtin_ctzll",
+  183: "__builtin_ctzs",
+  184: "__builtin_erf",
+  185: "__builtin_erfc",
+  186: "__builtin_erfcf",
+  187: "__builtin_erfcl",
+  188: "__builtin_erff",
+  189: "__builtin_erfl",
+  190: "__builtin_exit",
+  191: "__builtin_exp",
+  192: "__builtin_exp2",
+  193: "__builtin_exp2f",
+  194: "__builtin_exp2l",
+  195: "__builtin_expect",
+  196: "__builtin_expf",
+  197: "__builtin_expl",
+  198: "__builtin_expm1",
+  199: "__builtin_expm1f",
+  200: "__builtin_expm1l",
+  201: "__builtin_fabs",
+  202: "__builtin_fabsf",
+  203: "__builtin_fabsl",
+  204: "__builtin_fdim",
+  205: "__builtin_fdimf",
+  206: "__builtin_fdiml",
+  207: "__builtin_ffs",
+  208: "__builtin_ffsl",
+  209: "__builtin_ffsll",
+  210: "__builtin_finite",
+  211: "__builtin_finitef",
+  212: "__builtin_finitel",
+  213: "__builtin_floor",
+  214: "__builtin_floorf",
+  215: "__builtin_floorl",
+  216: "__builtin_fma",
+  217: "__builtin_fmaf",
+  218: "__builtin_fmal",
+  219: "__builtin_fmax",
+  220: "__builtin_fmaxf",
+  221: "__builtin_fmaximum_num",
+  222: "__builtin_fmaximum_numf",
+  223: "__builtin_fmaximum_numl",
+  224: "__builtin_fmaxl",
+  225: "__builtin_fmin",
+  226: "__builtin_fminf",
+  227: "__builtin_fminimum_num",
+  228: "__builtin_fminimum_numf",
+  229: "__builtin_fminimum_numl",
+  230: "__builtin_fminl",
+  231: "__builtin_fmod",
+  232: "__builtin_fmodf",
+  233: "__builtin_fmodl",
+  234: "__builtin_fpclassify",
+  235: "__builtin_frexp",
+  236: "__builtin_frexpf",
+  237: "__builtin_frexpl",
+  238: "__builtin_huge_val",
+  239: "__builtin_huge_valf",
+  240: "__builtin_huge_vall",
+  241: "__builtin_hypot",
+  242: "__builtin_hypotf",
+  243: "__builtin_hypotl",
+  244: "__builtin_ilogb",
+  245: "__builtin_ilogbf",
+  246: "__builtin_ilogbl",
+  247: "__builtin_index",
+  248: "__builtin_inf",
+  249: "__builtin_inff",
+  250: "__builtin_infl",
+  251: "__builtin_invoke",
+  252: "__builtin_is_constant_evaluated",
+  253: "__builtin_isalnum",
+  254: "__builtin_isalpha",
+  255: "__builtin_isblank",
+  256: "__builtin_iscntrl",
+  257: "__builtin_isdigit",
+  258: "__builtin_isfinite",
+  259: "__builtin_isgraph",
+  260: "__builtin_isgreater",
+  261: "__builtin_isgreaterequal",
+  262: "__builtin_isinf",
+  263: "__builtin_isless",
+  264: "__builtin_islessequal",
+  265: "__builtin_islessgreater",
+  266: "__builtin_islower",
+  267: "__builtin_isnan",
+  268: "__builtin_isnormal",
+  269: "__builtin_isprint",
+  270: "__builtin_ispunct",
+  271: "__builtin_isspace",
+  272: "__builtin_isunordered",
+  273: "__builtin_isupper",
+  274: "__builtin_isxdigit",
+  275: "__builtin_labs",
+  276: "__builtin_ldexp",
+  277: "__builtin_ldexpf",
+  278: "__builtin_ldexpl",
+  279: "__builtin_lgamma",
+  280: "__builtin_lgammaf",
+  281: "__builtin_lgammal",
+  282: "__builtin_llabs",
+  283: "__builtin_llrint",
+  284: "__builtin_llrintf",
+  285: "__builtin_llrintl",
+  286: "__builtin_llround",
+  287: "__builtin_llroundf",
+  288: "__builtin_llroundl",
+  289: "__builtin_log",
+  290: "__builtin_log10",
+  291: "__builtin_log10f",
+  292: "__builtin_log10l",
+  293: "__builtin_log1p",
+  294: "__builtin_log1pf",
+  295: "__builtin_log1pl",
+  296: "__builtin_log2",
+  297: "__builtin_log2f",
+  298: "__builtin_log2l",
+  299: "__builtin_logb",
+  300: "__builtin_logbf",
+  301: "__builtin_logbl",
+  302: "__builtin_logf",
+  303: "__builtin_logl",
+  304: "__builtin_lrint",
+  305: "__builtin_lrintf",
+  306: "__builtin_lrintl",
+  307: "__builtin_lround",
+  308: "__builtin_lroundf",
+  309: "__builtin_lroundl",
+  310: "__builtin_memccpy",
+  311: "__builtin_memchr",
+  312: "__builtin_memcmp",
+  313: "__builtin_memcpy",
+  314: "__builtin_memmove",
+  315: "__builtin_mempcpy",
+  316: "__builtin_memset",
+  317: "__builtin_modf",
+  318: "__builtin_modff",
+  319: "__builtin_modfl",
+  320: "__builtin_mul_overflow",
+  321: "__builtin_nan",
+  322: "__builtin_nanf",
+  323: "__builtin_nanl",
+  324: "__builtin_nans",
+  325: "__builtin_nansf",
+  326: "__builtin_nansl",
+  327: "__builtin_nearbyint",
+  328: "__builtin_nearbyintf",
+  329: "__builtin_nearbyintl",
+  330: "__builtin_nextafter",
+  331: "__builtin_nextafterf",
+  332: "__builtin_nextafterl",
+  333: "__builtin_nexttoward",
+  334: "__builtin_nexttowardf",
+  335: "__builtin_nexttowardl",
+  336: "__builtin_operator_delete",
+  337: "__builtin_operator_new",
+  338: "__builtin_parity",
+  339: "__builtin_parityl",
+  340: "__builtin_parityll",
+  341: "__builtin_popcount",
+  342: "__builtin_popcountg",
+  343: "__builtin_popcountl",
+  344: "__builtin_popcountll",
+  345: "__builtin_pow",
+  346: "__builtin_powf",
+  347: "__builtin_powl",
+  348: "__builtin_reduce_add",
+  349: "__builtin_reduce_and",
+  350: "__builtin_reduce_mul",
+  351: "__builtin_reduce_or",
+  352: "__builtin_reduce_xor",
+  353: "__builtin_remainder",
+  354: "__builtin_remainderf",
+  355: "__builtin_remainderl",
+  356: "__builtin_remquo",
+  357: "__builtin_remquof",
+  358: "__builtin_remquol",
+  359: "__builtin_rindex",
+  360: "__builtin_rint",
+  361: "__builtin_rintf",
+  362: "__builtin_rintl",
+  363: "__builtin_round",
+  364: "__builtin_roundeven",
+  365: "__builtin_roundevenf",
+  366: "__builtin_roundevenl",
+  367: "__builtin_roundf",
+  368: "__builtin_roundl",
+  369: "__builtin_scalbln",
+  370: "__builtin_scalblnf",
+  371: "__builtin_scalblnl",
+  372: "__builtin_scalbn",
+  373: "__builtin_scalbnf",
+  374: "__builtin_scalbnl",
+  375: "__builtin_signbit",
+  376: "__builtin_sin",
+  377: "__builtin_sincos",
+  378: "__builtin_sincosf",
+  379: "__builtin_sincosl",
+  380: "__builtin_sinf",
+  381: "__builtin_sinh",
+  382: "__builtin_sinhf",
+  383: "__builtin_sinhl",
+  384: "__builtin_sinl",
+  385: "__builtin_source_location",
+  386: "__builtin_sqrt",
+  387: "__builtin_sqrtf",
+  388: "__builtin_sqrtl",
+  389: "__builtin_stpcpy",
+  390: "__builtin_stpncpy",
+  391: "__builtin_strcasecmp",
+  392: "__builtin_strcat",
+  393: "__builtin_strchr",
+  394: "__builtin_strcmp",
+  395: "__builtin_strcpy",
+  396: "__builtin_strcspn",
+  397: "__builtin_strdup",
+  398: "__builtin_strerror",
+  399: "__builtin_strlcat",
+  400: "__builtin_strlcpy",
+  401: "__builtin_strlen",
+  402: "__builtin_strncasecmp",
+  403: "__builtin_strncat",
+  404: "__builtin_strncmp",
+  405: "__builtin_strncpy",
+  406: "__builtin_strndup",
+  407: "__builtin_strpbrk",
+  408: "__builtin_strrchr",
+  409: "__builtin_strspn",
+  410: "__builtin_strstr",
+  411: "__builtin_strtod",
+  412: "__builtin_strtof",
+  413: "__builtin_strtok",
+  414: "__builtin_strtol",
+  415: "__builtin_strtold",
+  416: "__builtin_strtoll",
+  417: "__builtin_strtoul",
+  418: "__builtin_strtoull",
+  419: "__builtin_strxfrm",
+  420: "__builtin_sub_overflow",
+  421: "__builtin_subc",
+  422: "__builtin_subcb",
+  423: "__builtin_subcl",
+  424: "__builtin_subcll",
+  425: "__builtin_subcs",
+  426: "__builtin_tan",
+  427: "__builtin_tanf",
+  428: "__builtin_tanh",
+  429: "__builtin_tanhf",
+  430: "__builtin_tanhl",
+  431: "__builtin_tanl",
+  432: "__builtin_tgamma",
+  433: "__builtin_tgammaf",
+  434: "__builtin_tgammal",
+  435: "__builtin_tolower",
+  436: "__builtin_toupper",
+  437: "__builtin_trap",
+  438: "__builtin_trunc",
+  439: "__builtin_truncf",
+  440: "__builtin_truncl",
+  441: "__builtin_unreachable",
+  442: "__builtin_va_copy",
+  443: "__builtin_va_end",
+  444: "__builtin_va_start",
+  445: "__builtin_vsnprintf",
+  446: "__builtin_wcschr",
+  447: "__builtin_wcscmp",
+  448: "__builtin_wcslen",
+  449: "__builtin_wcsncmp",
+  450: "__builtin_wmemchr",
+  451: "__builtin_wmemcmp",
+  452: "__builtin_wmemcpy",
+  453: "__builtin_wmemmove",
+  454: "__c11_atomic_compare_exchange_strong",
+  455: "__c11_atomic_compare_exchange_weak",
+  456: "__c11_atomic_exchange",
+  457: "__c11_atomic_fetch_add",
+  458: "__c11_atomic_fetch_and",
+  459: "__c11_atomic_fetch_nand",
+  460: "__c11_atomic_fetch_or",
+  461: "__c11_atomic_fetch_sub",
+  462: "__c11_atomic_fetch_xor",
+  463: "__c11_atomic_init",
+  464: "__c11_atomic_is_lock_free",
+  465: "__c11_atomic_load",
+  466: "__c11_atomic_signal_fence",
+  467: "__c11_atomic_store",
+  468: "__c11_atomic_thread_fence",
 };
 /** @category Enumerations */
 export type BuiltinTemplateKind =
@@ -13371,6 +13424,7 @@ const typeConstructors: Record<
   Complex: ComplexType,
   Atomic: AtomicType,
   Sve: SveType,
+  Aligned: AlignedType,
 };
 const nameConstructors: Record<
   NameKind,

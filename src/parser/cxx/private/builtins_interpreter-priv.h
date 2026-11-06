@@ -89,6 +89,16 @@ auto cxx::ASTInterpreter::builtinEvaluatesItsOwnArguments(
     case BuiltinFunctionKind::T___BUILTIN_ISLESSEQUAL:
     case BuiltinFunctionKind::T___BUILTIN_ISLESSGREATER:
     case BuiltinFunctionKind::T___BUILTIN_ISUNORDERED:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCB:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCS:
+    case BuiltinFunctionKind::T___BUILTIN_ADDC:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCL:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCLL:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCB:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCS:
+    case BuiltinFunctionKind::T___BUILTIN_SUBC:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCL:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCLL:
     case BuiltinFunctionKind::T___BUILTIN_ADD_OVERFLOW:
     case BuiltinFunctionKind::T___BUILTIN_SUB_OVERFLOW:
     case BuiltinFunctionKind::T___BUILTIN_REDUCE_AND:
@@ -251,6 +261,36 @@ auto cxx::ASTInterpreter::evaluateBuiltinCall(cxx::BuiltinFunctionKind kind,
 
     case BuiltinFunctionKind::T___BUILTIN_ISUNORDERED:
       return evaluateBuiltinFloatComparison(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDCB:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDCS:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDC:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDCL:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDCLL:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBCB:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBCS:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBC:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBCL:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBCLL:
+      return evaluateBuiltinMultiprecisionArithmetic(ast);
 
     case BuiltinFunctionKind::T___BUILTIN_ADD_OVERFLOW:
       return evaluateBuiltinArithmeticOverflow(ast);

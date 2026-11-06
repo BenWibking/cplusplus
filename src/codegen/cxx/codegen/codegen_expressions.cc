@@ -332,6 +332,8 @@ struct [[nodiscard]] Codegen::ExpressionVisitor {
   auto codegenBuiltinBzero(CallExpressionAST* ast) -> ExpressionResult;
   auto codegenBuiltinArithmeticOverflow(CallExpressionAST* ast)
       -> ExpressionResult;
+  auto codegenBuiltinMultiprecisionArithmetic(CallExpressionAST* ast)
+      -> ExpressionResult;
   auto codegenBuiltinFloatComparison(CallExpressionAST* ast)
       -> ExpressionResult;
 
@@ -6169,6 +6171,63 @@ auto Codegen::ExpressionVisitor::codegenBuiltinArithmeticOverflow(
                                           product, restored);
   gen.emitter_.store(loc, result, output.value, gen.getAlignment(outputType));
   return {overflow};
+}
+
+auto Codegen::ExpressionVisitor::codegenBuiltinMultiprecisionArithmetic(
+    CallExpressionAST* ast) -> ExpressionResult {
+  std::vector<ExpressionAST*> arguments;
+  for (auto argument : ListView{ast->expressionList})
+    arguments.push_back(argument);
+  if (arguments.size() != 4) return {};
+
+  auto left = gen.expression(arguments[0]);
+  auto right = gen.expression(arguments[1]);
+  auto carry = gen.expression(arguments[2]);
+  auto output = gen.expression(arguments[3]);
+  if (!left.value || !right.value || !carry.value || !output.value) return {};
+
+  auto pointer = type_cast<PointerType>(arguments[3]->type);
+  auto resultType =
+      gen.emitter_.asType(ir::TypeKind::Integer, gen.convertType(ast->type));
+  if (!pointer || !resultType) return {};
+
+  bool isAddition = false;
+  switch (resolveBuiltinFunctionKind(
+      ast_cast<IdExpressionAST>(ast->baseExpression))) {
+    case BuiltinFunctionKind::T___BUILTIN_ADDCB:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCS:
+    case BuiltinFunctionKind::T___BUILTIN_ADDC:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCL:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCLL:
+      isAddition = true;
+      break;
+    case BuiltinFunctionKind::T___BUILTIN_SUBCB:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCS:
+    case BuiltinFunctionKind::T___BUILTIN_SUBC:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCL:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCLL:
+      break;
+    default:
+      return {};
+  }
+
+  auto loc = ast->firstSourceLocation();
+  auto operation = isAddition ? ir::BinaryOp::AddInt : ir::BinaryOp::SubInt;
+  auto first = gen.emitter_.binaryOp(loc, operation, left.value, right.value);
+  auto firstOverflow = gen.emitter_.compareInt(
+      loc, ir::IntPredicate::UnsignedLess, isAddition ? first : left.value,
+      isAddition ? left.value : right.value);
+  auto result = gen.emitter_.binaryOp(loc, operation, first, carry.value);
+  auto secondOverflow = gen.emitter_.compareInt(
+      loc, ir::IntPredicate::UnsignedLess, isAddition ? result : first,
+      isAddition ? first : carry.value);
+  auto overflow = gen.emitter_.binaryOp(loc, ir::BinaryOp::OrInt, firstOverflow,
+                                        secondOverflow);
+  auto storedOverflow = gen.emitter_.zeroExtend(loc, overflow, resultType);
+  auto outputType = pointer->elementType();
+  gen.emitter_.store(loc, storedOverflow, output.value,
+                     gen.getAlignment(outputType));
+  return {result};
 }
 
 auto Codegen::ExpressionVisitor::codegenBuiltinAddressof(CallExpressionAST* ast)

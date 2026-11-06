@@ -4433,6 +4433,86 @@
     "libcall": true
   },
   {
+    "name": "__builtin_addcb",
+    "prototype": "constexpr unsigned char __builtin_addcb(unsigned char, unsigned char, unsigned char, unsigned char*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_addcs",
+    "prototype": "constexpr unsigned short __builtin_addcs(unsigned short, unsigned short, unsigned short, unsigned short*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_addc",
+    "prototype": "constexpr unsigned int __builtin_addc(unsigned int, unsigned int, unsigned int, unsigned int*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_addcl",
+    "prototype": "constexpr unsigned long __builtin_addcl(unsigned long, unsigned long, unsigned long, unsigned long*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_addcll",
+    "prototype": "constexpr unsigned long long __builtin_addcll(unsigned long long, unsigned long long, unsigned long long, unsigned long long*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_subcb",
+    "prototype": "constexpr unsigned char __builtin_subcb(unsigned char, unsigned char, unsigned char, unsigned char*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_subcs",
+    "prototype": "constexpr unsigned short __builtin_subcs(unsigned short, unsigned short, unsigned short, unsigned short*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_subc",
+    "prototype": "constexpr unsigned int __builtin_subc(unsigned int, unsigned int, unsigned int, unsigned int*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_subcl",
+    "prototype": "constexpr unsigned long __builtin_subcl(unsigned long, unsigned long, unsigned long, unsigned long*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
+    "name": "__builtin_subcll",
+    "prototype": "constexpr unsigned long long __builtin_subcll(unsigned long long, unsigned long long, unsigned long long, unsigned long long*)",
+    "constexpr": true,
+    "noexcept": true,
+    "eval": "evaluateBuiltinMultiprecisionArithmetic",
+    "codegen": "codegenBuiltinMultiprecisionArithmetic"
+  },
+  {
     "name": "__builtin_add_overflow",
     "prototype": "constexpr bool __builtin_add_overflow(...)",
     "constexpr": true,

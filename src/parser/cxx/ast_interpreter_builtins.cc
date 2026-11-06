@@ -576,6 +576,85 @@ auto ASTInterpreter::evaluateBuiltinArithmeticOverflow(CallExpressionAST* ast)
   return ConstValue{overflow};
 }
 
+auto ASTInterpreter::evaluateBuiltinMultiprecisionArithmetic(
+    CallExpressionAST* ast) -> std::optional<ConstValue> {
+  auto leftExpression = argumentAt(ast, 0);
+  auto rightExpression = argumentAt(ast, 1);
+  auto carryExpression = argumentAt(ast, 2);
+  auto outputExpression = argumentAt(ast, 3);
+  if (!leftExpression || !rightExpression || !carryExpression ||
+      !outputExpression)
+    return std::nullopt;
+
+  auto leftValue = evaluate(leftExpression);
+  auto rightValue = evaluate(rightExpression);
+  auto carryValue = evaluate(carryExpression);
+  auto outputValue = evaluate(outputExpression);
+  if (!leftValue || !rightValue || !carryValue || !outputValue)
+    return std::nullopt;
+
+  auto left = toUInt(*leftValue);
+  auto right = toUInt(*rightValue);
+  auto carry = toUInt(*carryValue);
+  auto address = std::get_if<std::shared_ptr<ConstAddress>>(&*outputValue);
+  if (!left || !right || !carry || !address || !*address) return std::nullopt;
+
+  auto slot = addressSlot(**address, 0);
+  auto representation = traits.integral_representation(ast->type);
+  if (!slot || !representation || representation->isSigned ||
+      !ConstInt::isRepresentableWidth(representation->bits))
+    return std::nullopt;
+
+  bool isAddition = false;
+  switch (resolveBuiltinFunctionKind(
+      ast_cast<IdExpressionAST>(ast->baseExpression))) {
+    case BuiltinFunctionKind::T___BUILTIN_ADDCB:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCS:
+    case BuiltinFunctionKind::T___BUILTIN_ADDC:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCL:
+    case BuiltinFunctionKind::T___BUILTIN_ADDCLL:
+      isAddition = true;
+      break;
+    case BuiltinFunctionKind::T___BUILTIN_SUBCB:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCS:
+    case BuiltinFunctionKind::T___BUILTIN_SUBC:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCL:
+    case BuiltinFunctionKind::T___BUILTIN_SUBCLL:
+      break;
+    default:
+      return std::nullopt;
+  }
+
+  const auto width = representation->bits;
+  const auto mask = width >= ConstInt::maxWidth
+                        ? ~ConstInt::UWide{0}
+                        : (ConstInt::UWide{1} << width) - 1;
+  const auto leftBits = static_cast<ConstInt::UWide>(*left);
+  const auto rightBits = static_cast<ConstInt::UWide>(*right);
+  const auto carryBits = static_cast<ConstInt::UWide>(*carry);
+  ConstInt::UWide first;
+  ConstInt::UWide result;
+  bool firstOverflow;
+  bool secondOverflow;
+  if (isAddition) {
+    first = (leftBits + rightBits) & mask;
+    firstOverflow = first < leftBits;
+    result = (first + carryBits) & mask;
+    secondOverflow = result < first;
+  } else {
+    first = (leftBits - rightBits) & mask;
+    firstOverflow = leftBits < rightBits;
+    result = (first - carryBits) & mask;
+    secondOverflow = first < carryBits;
+  }
+
+  auto typedResult = ConstInt::make(static_cast<ConstInt::Wide>(result), width,
+                                    /*isSigned=*/false);
+  if (!typedResult) return std::nullopt;
+  *slot = static_cast<std::intmax_t>(firstOverflow || secondOverflow);
+  return ConstValue{typedResult->toIntMax()};
+}
+
 auto ASTInterpreter::evaluateBuiltinFloatComparison(CallExpressionAST* ast)
     -> std::optional<ConstValue> {
   auto leftExpression = argumentAt(ast, 0);

@@ -214,6 +214,12 @@ static inline auto classifyBuiltinFunction14(const char* s)
                               return cxx::BuiltinFunctionKind::T___BUILTIN_ACOS;
                             }
                           }
+                        } else if (s[11] == 'd') {
+                          if (s[12] == 'd') {
+                            if (s[13] == 'c') {
+                              return cxx::BuiltinFunctionKind::T___BUILTIN_ADDC;
+                            }
+                          }
                         } else if (s[11] == 's') {
                           if (s[12] == 'i') {
                             if (s[13] == 'n') {
@@ -472,6 +478,12 @@ static inline auto classifyBuiltinFunction14(const char* s)
                               return cxx::BuiltinFunctionKind::T___BUILTIN_SQRT;
                             }
                           }
+                        } else if (s[11] == 'u') {
+                          if (s[12] == 'b') {
+                            if (s[13] == 'c') {
+                              return cxx::BuiltinFunctionKind::T___BUILTIN_SUBC;
+                            }
+                          }
                         }
                       } else if (s[10] == 't') {
                         if (s[11] == 'a') {
@@ -577,6 +589,21 @@ static inline auto classifyBuiltinFunction15(const char* s)
                               } else if (s[14] == 'l') {
                                 return cxx::BuiltinFunctionKind::
                                     T___BUILTIN_ACOSL;
+                              }
+                            }
+                          }
+                        } else if (s[11] == 'd') {
+                          if (s[12] == 'd') {
+                            if (s[13] == 'c') {
+                              if (s[14] == 'b') {
+                                return cxx::BuiltinFunctionKind::
+                                    T___BUILTIN_ADDCB;
+                              } else if (s[14] == 'l') {
+                                return cxx::BuiltinFunctionKind::
+                                    T___BUILTIN_ADDCL;
+                              } else if (s[14] == 's') {
+                                return cxx::BuiltinFunctionKind::
+                                    T___BUILTIN_ADDCS;
                               }
                             }
                           }
@@ -1153,6 +1180,21 @@ static inline auto classifyBuiltinFunction15(const char* s)
                               }
                             }
                           }
+                        } else if (s[11] == 'u') {
+                          if (s[12] == 'b') {
+                            if (s[13] == 'c') {
+                              if (s[14] == 'b') {
+                                return cxx::BuiltinFunctionKind::
+                                    T___BUILTIN_SUBCB;
+                              } else if (s[14] == 'l') {
+                                return cxx::BuiltinFunctionKind::
+                                    T___BUILTIN_SUBCL;
+                              } else if (s[14] == 's') {
+                                return cxx::BuiltinFunctionKind::
+                                    T___BUILTIN_SUBCS;
+                              }
+                            }
+                          }
                         }
                       } else if (s[10] == 't') {
                         if (s[11] == 'a') {
@@ -1256,6 +1298,17 @@ static inline auto classifyBuiltinFunction16(const char* s)
                                 } else if (s[15] == 'l') {
                                   return cxx::BuiltinFunctionKind::
                                       T___BUILTIN_ACOSHL;
+                                }
+                              }
+                            }
+                          }
+                        } else if (s[11] == 'd') {
+                          if (s[12] == 'd') {
+                            if (s[13] == 'c') {
+                              if (s[14] == 'l') {
+                                if (s[15] == 'l') {
+                                  return cxx::BuiltinFunctionKind::
+                                      T___BUILTIN_ADDCLL;
                                 }
                               }
                             }
@@ -1842,6 +1895,17 @@ static inline auto classifyBuiltinFunction16(const char* s)
                                 } else if (s[15] == 'l') {
                                   return cxx::BuiltinFunctionKind::
                                       T___BUILTIN_STRTOL;
+                                }
+                              }
+                            }
+                          }
+                        } else if (s[11] == 'u') {
+                          if (s[12] == 'b') {
+                            if (s[13] == 'c') {
+                              if (s[14] == 'l') {
+                                if (s[15] == 'l') {
+                                  return cxx::BuiltinFunctionKind::
+                                      T___BUILTIN_SUBCLL;
                                 }
                               }
                             }

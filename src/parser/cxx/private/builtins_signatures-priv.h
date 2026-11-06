@@ -153,114 +153,118 @@ inline constexpr std::uint8_t kBuiltinSignatureOps[] = {
     5,  10, 0,  2,  5,  10, 0,  16, 0,  8,  15, 0,  24, 24, 0,  23, 23, 0,  24,
     24, 0,  23, 23, 0,  15, 24, 0,  15, 23, 0,  15, 25, 0,  24, 24, 0,  23, 23,
     0,  24, 24, 0,  23, 23, 0,  8,  0,  15, 15, 0,  24, 24, 0,  23, 23, 0,  24,
-    24, 0,  23, 23, 0,  25, 25, 0,  25, 25, 0,  9,  1,  0,  2,  8,  1,  0,  2,
-    8,  35, 35, 0,  2,  8,  35, 0,  24, 24, 0,  23, 23, 0,  24, 24, 0,  23, 23,
-    0,  25, 25, 0,  25, 25, 0,  2,  8,  2,  5,  8,  35, 1,  0,  24, 24, 0,  24,
-    24, 24, 0,  23, 23, 23, 0,  25, 25, 25, 0,  23, 23, 0,  24, 24, 0,  23, 23,
-    0,  25, 25, 0,  25, 25, 0,  15, 2,  5,  8,  2,  5,  8,  35, 0,  8,  2,  5,
-    8,  2,  8,  35, 0,  14, 14, 0,  16, 16, 0,  20, 20, 0,  8,  2,  8,  35, 0,
-    8,  3,  36, 1,  0,  24, 7,  24, 0,  23, 7,  23, 0,  25, 7,  25, 0,  7,  24,
-    7,  24, 0,  7,  23, 7,  23, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,
-    25, 7,  25, 0,  7,  25, 7,  25, 0,  24, 7,  24, 0,  23, 7,  23, 0,  25, 7,
-    25, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  24, 7,  24, 0,  7,  23,
-    7,  23, 0,  7,  25, 7,  25, 0,  7,  25, 7,  25, 0,  7,  24, 7,  24, 0,  7,
-    23, 7,  23, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,
-    7,  25, 7,  25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  7,  24, 7,  24, 0,
+    24, 0,  23, 23, 0,  25, 25, 0,  25, 25, 0,  9,  1,  0,  16, 16, 16, 16, 2,
+    16, 0,  12, 12, 12, 12, 2,  12, 0,  18, 18, 18, 18, 2,  18, 0,  20, 20, 20,
+    20, 2,  20, 0,  14, 14, 14, 14, 2,  14, 0,  2,  8,  1,  0,  2,  8,  35, 35,
+    0,  2,  8,  35, 0,  24, 24, 0,  23, 23, 0,  24, 24, 0,  23, 23, 0,  25, 25,
+    0,  25, 25, 0,  2,  8,  2,  5,  8,  35, 1,  0,  24, 24, 0,  24, 24, 24, 0,
+    23, 23, 23, 0,  25, 25, 25, 0,  23, 23, 0,  24, 24, 0,  23, 23, 0,  25, 25,
+    0,  25, 25, 0,  15, 2,  5,  8,  2,  5,  8,  35, 0,  8,  2,  5,  8,  2,  8,
+    35, 0,  14, 14, 0,  16, 16, 0,  20, 20, 0,  8,  2,  8,  35, 0,  8,  3,  36,
+    1,  0,  24, 7,  24, 0,  23, 7,  23, 0,  25, 7,  25, 0,  7,  24, 7,  24, 0,
     7,  23, 7,  23, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25,
-    0,  7,  25, 7,  25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  7,  24, 7,  24,
-    0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  24, 7,  24, 0,  23, 7,  23, 0,
-    25, 7,  25, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,
-    15, 15, 0,  15, 17, 0,  15, 19, 0,  15, 16, 0,  15, 12, 0,  15, 14, 0,  15,
-    16, 0,  15, 18, 0,  15, 20, 0,  15, 22, 0,  15, 12, 15, 0,  15, 14, 15, 0,
-    15, 16, 15, 0,  15, 18, 15, 0,  15, 20, 15, 0,  15, 22, 15, 0,  15, 18, 0,
-    15, 20, 0,  15, 14, 0,  7,  23, 23, 23, 0,  7,  24, 24, 24, 0,  7,  25, 25,
-    25, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  15, 1,
-    0,  24, 24, 24, 0,  23, 23, 23, 0,  25, 25, 25, 0,  8,  2,  8,  0,  9,  2,
-    8,  0,  2,  8,  0,  2,  8,  2,  8,  15, 9,  0,  8,  2,  8,  0,  24, 24, 0,
-    23, 23, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  25, 25, 0,  7,  24, 7,  24,
-    7,  24, 0,  7,  23, 7,  23, 7,  23, 0,  7,  25, 7,  25, 7,  25, 0,  7,  24,
-    7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  24, 7,  24, 0,  23, 7,
-    23, 0,  25, 7,  25, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  24, 7,
-    24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  7,  25, 7,  25, 0,  7,  24,
-    7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  7,  24, 7,  24, 0,  7,
-    23, 7,  23, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,
-    7,  25, 7,  25, 0,  15, 16, 0,  15, 12, 0,  15, 14, 0,  15, 16, 0,  15, 18,
-    0,  15, 20, 0,  15, 22, 0,  15, 12, 15, 0,  15, 14, 15, 0,  15, 16, 15, 0,
-    15, 18, 15, 0,  15, 20, 15, 0,  15, 22, 15, 0,  15, 18, 0,  15, 20, 0,  15,
-    14, 0,  24, 24, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  23, 23, 0,  25, 25,
-    0,  8,  15, 0,  24, 24, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  17, 17, 17,
-    0,  23, 23, 0,  25, 25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 0,
-    23, 23, 0,  25, 25, 0,  24, 24, 24, 0,  23, 23, 23, 0,  25, 25, 25, 0,  15,
-    15, 0,  15, 17, 0,  15, 19, 0,  15, 24, 0,  15, 23, 0,  15, 25, 0,  24, 24,
-    0,  23, 23, 0,  25, 25, 0,  24, 24, 24, 24, 0,  23, 23, 23, 23, 0,  25, 25,
-    25, 25, 0,  24, 24, 24, 0,  23, 23, 23, 0,  24, 24, 24, 0,  23, 23, 23, 0,
-    25, 25, 25, 0,  25, 25, 25, 0,  24, 24, 24, 0,  23, 23, 23, 0,  24, 24, 24,
-    0,  23, 23, 23, 0,  25, 25, 25, 0,  25, 25, 25, 0,  24, 24, 24, 0,  23, 23,
-    23, 0,  25, 25, 25, 0,  15, 15, 15, 15, 15, 15, 1,  0,  24, 24, 2,  15, 0,
-    23, 23, 2,  15, 0,  25, 25, 2,  15, 0,  24, 0,  23, 0,  25, 0,  24, 24, 24,
-    0,  23, 23, 23, 0,  25, 25, 25, 0,  15, 24, 0,  15, 23, 0,  15, 25, 0,  2,
-    10, 2,  5,  10, 15, 0,  24, 0,  23, 0,  25, 0,  2,  8,  1,  0,  9,  0,  15,
-    15, 0,  15, 15, 0,  15, 15, 0,  15, 15, 0,  15, 15, 0,  9,  23, 0,  9,  24,
-    0,  9,  25, 0,  15, 15, 0,  9,  1,  0,  9,  1,  0,  9,  23, 0,  9,  24, 0,
-    9,  25, 0,  9,  1,  0,  9,  1,  0,  9,  1,  0,  15, 15, 0,  9,  23, 0,  9,
-    24, 0,  9,  25, 0,  9,  23, 0,  9,  24, 0,  9,  25, 0,  15, 15, 0,  15, 15,
-    0,  15, 15, 0,  9,  1,  0,  15, 15, 0,  15, 15, 0,  17, 17, 0,  24, 24, 15,
-    0,  23, 23, 15, 0,  25, 25, 15, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  19,
-    19, 0,  19, 24, 0,  19, 23, 0,  19, 25, 0,  19, 24, 0,  19, 23, 0,  19, 25,
-    0,  24, 24, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 0,  23, 23, 0,
-    25, 25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 0,  23, 23, 0,  25,
-    25, 0,  23, 23, 0,  25, 25, 0,  17, 24, 0,  17, 23, 0,  17, 25, 0,  17, 24,
-    0,  17, 23, 0,  17, 25, 0,  2,  8,  2,  8,  2,  5,  8,  15, 35, 0,  2,  8,
-    2,  5,  8,  15, 35, 0,  15, 2,  5,  8,  2,  5,  8,  35, 0,  2,  8,  2,  8,
-    2,  5,  8,  35, 0,  2,  8,  2,  8,  2,  5,  8,  35, 0,  2,  8,  2,  8,  2,
-    5,  8,  35, 0,  2,  8,  2,  8,  15, 35, 0,  24, 24, 2,  24, 0,  23, 23, 2,
-    23, 0,  25, 25, 2,  25, 0,  9,  1,  0,  24, 2,  5,  10, 0,  23, 2,  5,  10,
-    0,  25, 2,  5,  10, 0,  24, 2,  5,  10, 0,  23, 2,  5,  10, 0,  25, 2,  5,
-    10, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 24, 0,  23, 23, 23, 0,
-    25, 25, 25, 0,  24, 24, 25, 0,  23, 23, 25, 0,  25, 25, 25, 0,  8,  2,  8,
-    0,  8,  2,  8,  35, 0,  8,  2,  8,  37, 0,  8,  2,  8,  35, 37, 0,  8,  2,
-    8,  3,  5,  38, 0,  8,  2,  8,  37, 3,  5,  38, 0,  2,  8,  35, 0,  2,  8,
-    35, 37, 0,  2,  8,  35, 3,  5,  38, 0,  2,  8,  35, 37, 3,  5,  38, 0,  15,
-    16, 0,  15, 18, 0,  15, 20, 0,  15, 16, 0,  15, 12, 0,  15, 14, 0,  15, 16,
-    0,  15, 18, 0,  15, 20, 0,  15, 22, 0,  15, 18, 0,  15, 20, 0,  24, 24, 24,
-    0,  23, 23, 23, 0,  25, 25, 25, 0,  15, 1,  0,  15, 1,  0,  15, 1,  0,  15,
-    1,  0,  15, 1,  0,  24, 24, 24, 0,  23, 23, 23, 0,  25, 25, 25, 0,  24, 24,
-    24, 2,  15, 0,  23, 23, 23, 2,  15, 0,  25, 25, 25, 2,  15, 0,  2,  10, 2,
-    5,  10, 15, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 0,  24, 24, 0,
-    23, 23, 0,  25, 25, 0,  23, 23, 0,  25, 25, 0,  24, 24, 17, 0,  23, 23, 17,
-    0,  25, 25, 17, 0,  24, 24, 15, 0,  23, 23, 15, 0,  25, 25, 15, 0,  9,  23,
-    0,  9,  24, 0,  9,  25, 0,  24, 24, 0,  8,  24, 2,  24, 2,  24, 0,  8,  23,
-    2,  23, 2,  23, 0,  8,  25, 2,  25, 2,  25, 0,  23, 23, 0,  24, 24, 0,  23,
-    23, 0,  25, 25, 0,  25, 25, 0,  2,  5,  8,  0,  24, 24, 0,  23, 23, 0,  25,
-    25, 0,  2,  10, 2,  10, 2,  5,  10, 0,  2,  10, 2,  10, 2,  5,  10, 35, 0,
-    15, 2,  5,  10, 2,  5,  10, 0,  2,  10, 2,  10, 2,  5,  10, 0,  2,  10, 2,
-    5,  10, 15, 0,  15, 2,  5,  10, 2,  5,  10, 0,  2,  10, 2,  10, 2,  5,  10,
-    0,  35, 2,  5,  10, 2,  5,  10, 0,  2,  10, 2,  5,  10, 0,  2,  10, 15, 0,
-    35, 2,  10, 2,  5,  10, 35, 0,  35, 2,  10, 2,  5,  10, 35, 0,  35, 2,  5,
-    10, 0,  15, 2,  5,  10, 2,  5,  10, 35, 0,  2,  10, 2,  10, 2,  5,  10, 35,
-    0,  15, 2,  5,  10, 2,  5,  10, 35, 0,  2,  10, 2,  10, 2,  5,  10, 35, 0,
-    2,  10, 2,  5,  10, 35, 0,  2,  10, 2,  5,  10, 2,  5,  10, 0,  2,  10, 2,
-    5,  10, 15, 0,  35, 2,  5,  10, 2,  5,  10, 0,  2,  10, 2,  5,  10, 2,  5,
-    10, 0,  24, 2,  5,  10, 2,  2,  10, 0,  23, 2,  5,  10, 2,  2,  10, 0,  2,
-    10, 2,  10, 2,  5,  10, 0,  17, 2,  5,  10, 2,  2,  10, 15, 0,  25, 2,  5,
-    10, 2,  2,  10, 0,  19, 2,  5,  10, 2,  2,  10, 15, 0,  18, 2,  5,  10, 2,
-    2,  10, 15, 0,  20, 2,  5,  10, 2,  2,  10, 15, 0,  35, 2,  10, 2,  5,  10,
-    35, 0,  9,  1,  0,  24, 24, 0,  23, 23, 0,  24, 24, 0,  23, 23, 0,  25, 25,
-    0,  25, 25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  15, 15, 0,  15, 15, 0,
-    8,  0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  8,  0,  8,  3,  36, 3,  36, 0,
-    8,  3,  36, 0,  8,  3,  36, 1,  0,  15, 2,  10, 35, 2,  5,  10, 3,  36, 0,
-    2,  30, 2,  5,  30, 30, 0,  15, 2,  5,  30, 2,  5,  30, 0,  35, 2,  5,  30,
-    0,  15, 2,  5,  30, 2,  5,  30, 35, 0,  2,  30, 2,  5,  30, 30, 35, 0,  15,
-    2,  5,  30, 2,  5,  30, 35, 0,  2,  30, 2,  30, 2,  5,  30, 35, 0,  2,  30,
-    2,  30, 2,  5,  30, 35, 0,  15, 2,  6,  8,  2,  8,  19, 15, 15, 0,  15, 2,
-    6,  8,  2,  8,  19, 15, 15, 0,  19, 2,  6,  8,  19, 15, 0,  19, 2,  6,  8,
-    19, 15, 0,  19, 2,  6,  8,  19, 15, 0,  19, 2,  6,  8,  19, 15, 0,  19, 2,
-    6,  8,  19, 15, 0,  19, 2,  6,  8,  19, 15, 0,  19, 2,  6,  8,  19, 15, 0,
-    8,  2,  6,  8,  19, 0,  9,  35, 0,  19, 2,  6,  8,  15, 0,  8,  15, 0,  8,
-    2,  6,  8,  19, 15, 0,  8,  15, 0,  2,  8,  35, 0,  2,  8,  35, 37, 0,  2,
-    8,  35, 0,  2,  8,  35, 37, 0,  8,  2,  8,  0,  8,  2,  8,  35, 0,  8,  2,
-    8,  37, 0,  8,  2,  8,  35, 37, 0,  8,  2,  8,  0,  8,  2,  8,  35, 0,  8,
-    2,  8,  37, 0,  8,  2,  8,  35, 37, 0,
+    0,  7,  25, 7,  25, 0,  24, 7,  24, 0,  23, 7,  23, 0,  25, 7,  25, 0,  7,
+    24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,
+    7,  25, 7,  25, 0,  7,  25, 7,  25, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23,
+    0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  7,  25, 7,
+    25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  7,  24, 7,  24, 0,  7,  23, 7,
+    23, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  7,  25,
+    7,  25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  7,  24, 7,  24, 0,  7,  23,
+    7,  23, 0,  7,  25, 7,  25, 0,  24, 7,  24, 0,  23, 7,  23, 0,  25, 7,  25,
+    0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  15, 15, 0,
+    15, 17, 0,  15, 19, 0,  15, 16, 0,  15, 12, 0,  15, 14, 0,  15, 16, 0,  15,
+    18, 0,  15, 20, 0,  15, 22, 0,  15, 12, 15, 0,  15, 14, 15, 0,  15, 16, 15,
+    0,  15, 18, 15, 0,  15, 20, 15, 0,  15, 22, 15, 0,  15, 18, 0,  15, 20, 0,
+    15, 14, 0,  7,  23, 23, 23, 0,  7,  24, 24, 24, 0,  7,  25, 25, 25, 0,  7,
+    24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  15, 1,  0,  24, 24,
+    24, 0,  23, 23, 23, 0,  25, 25, 25, 0,  8,  2,  8,  0,  9,  2,  8,  0,  2,
+    8,  0,  2,  8,  2,  8,  15, 9,  0,  8,  2,  8,  0,  24, 24, 0,  23, 23, 0,
+    24, 24, 0,  23, 23, 0,  25, 25, 0,  25, 25, 0,  7,  24, 7,  24, 7,  24, 0,
+    7,  23, 7,  23, 7,  23, 0,  7,  25, 7,  25, 7,  25, 0,  7,  24, 7,  24, 0,
+    7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  24, 7,  24, 0,  23, 7,  23, 0,  25,
+    7,  25, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  24, 7,  24, 0,  7,
+    23, 7,  23, 0,  7,  25, 7,  25, 0,  7,  25, 7,  25, 0,  7,  24, 7,  24, 0,
+    7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  7,  24, 7,  24, 0,  7,  23, 7,  23,
+    0,  7,  24, 7,  24, 0,  7,  23, 7,  23, 0,  7,  25, 7,  25, 0,  7,  25, 7,
+    25, 0,  15, 16, 0,  15, 12, 0,  15, 14, 0,  15, 16, 0,  15, 18, 0,  15, 20,
+    0,  15, 22, 0,  15, 12, 15, 0,  15, 14, 15, 0,  15, 16, 15, 0,  15, 18, 15,
+    0,  15, 20, 15, 0,  15, 22, 15, 0,  15, 18, 0,  15, 20, 0,  15, 14, 0,  24,
+    24, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  23, 23, 0,  25, 25, 0,  8,  15,
+    0,  24, 24, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  17, 17, 17, 0,  23, 23,
+    0,  25, 25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 0,  23, 23, 0,
+    25, 25, 0,  24, 24, 24, 0,  23, 23, 23, 0,  25, 25, 25, 0,  15, 15, 0,  15,
+    17, 0,  15, 19, 0,  15, 24, 0,  15, 23, 0,  15, 25, 0,  24, 24, 0,  23, 23,
+    0,  25, 25, 0,  24, 24, 24, 24, 0,  23, 23, 23, 23, 0,  25, 25, 25, 25, 0,
+    24, 24, 24, 0,  23, 23, 23, 0,  24, 24, 24, 0,  23, 23, 23, 0,  25, 25, 25,
+    0,  25, 25, 25, 0,  24, 24, 24, 0,  23, 23, 23, 0,  24, 24, 24, 0,  23, 23,
+    23, 0,  25, 25, 25, 0,  25, 25, 25, 0,  24, 24, 24, 0,  23, 23, 23, 0,  25,
+    25, 25, 0,  15, 15, 15, 15, 15, 15, 1,  0,  24, 24, 2,  15, 0,  23, 23, 2,
+    15, 0,  25, 25, 2,  15, 0,  24, 0,  23, 0,  25, 0,  24, 24, 24, 0,  23, 23,
+    23, 0,  25, 25, 25, 0,  15, 24, 0,  15, 23, 0,  15, 25, 0,  2,  10, 2,  5,
+    10, 15, 0,  24, 0,  23, 0,  25, 0,  2,  8,  1,  0,  9,  0,  15, 15, 0,  15,
+    15, 0,  15, 15, 0,  15, 15, 0,  15, 15, 0,  9,  23, 0,  9,  24, 0,  9,  25,
+    0,  15, 15, 0,  9,  1,  0,  9,  1,  0,  9,  23, 0,  9,  24, 0,  9,  25, 0,
+    9,  1,  0,  9,  1,  0,  9,  1,  0,  15, 15, 0,  9,  23, 0,  9,  24, 0,  9,
+    25, 0,  9,  23, 0,  9,  24, 0,  9,  25, 0,  15, 15, 0,  15, 15, 0,  15, 15,
+    0,  9,  1,  0,  15, 15, 0,  15, 15, 0,  17, 17, 0,  24, 24, 15, 0,  23, 23,
+    15, 0,  25, 25, 15, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  19, 19, 0,  19,
+    24, 0,  19, 23, 0,  19, 25, 0,  19, 24, 0,  19, 23, 0,  19, 25, 0,  24, 24,
+    0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,
+    24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  23,
+    23, 0,  25, 25, 0,  17, 24, 0,  17, 23, 0,  17, 25, 0,  17, 24, 0,  17, 23,
+    0,  17, 25, 0,  2,  8,  2,  8,  2,  5,  8,  15, 35, 0,  2,  8,  2,  5,  8,
+    15, 35, 0,  15, 2,  5,  8,  2,  5,  8,  35, 0,  2,  8,  2,  8,  2,  5,  8,
+    35, 0,  2,  8,  2,  8,  2,  5,  8,  35, 0,  2,  8,  2,  8,  2,  5,  8,  35,
+    0,  2,  8,  2,  8,  15, 35, 0,  24, 24, 2,  24, 0,  23, 23, 2,  23, 0,  25,
+    25, 2,  25, 0,  9,  1,  0,  24, 2,  5,  10, 0,  23, 2,  5,  10, 0,  25, 2,
+    5,  10, 0,  24, 2,  5,  10, 0,  23, 2,  5,  10, 0,  25, 2,  5,  10, 0,  24,
+    24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 24, 0,  23, 23, 23, 0,  25, 25, 25,
+    0,  24, 24, 25, 0,  23, 23, 25, 0,  25, 25, 25, 0,  8,  2,  8,  0,  8,  2,
+    8,  35, 0,  8,  2,  8,  37, 0,  8,  2,  8,  35, 37, 0,  8,  2,  8,  3,  5,
+    38, 0,  8,  2,  8,  37, 3,  5,  38, 0,  2,  8,  35, 0,  2,  8,  35, 37, 0,
+    2,  8,  35, 3,  5,  38, 0,  2,  8,  35, 37, 3,  5,  38, 0,  15, 16, 0,  15,
+    18, 0,  15, 20, 0,  15, 16, 0,  15, 12, 0,  15, 14, 0,  15, 16, 0,  15, 18,
+    0,  15, 20, 0,  15, 22, 0,  15, 18, 0,  15, 20, 0,  24, 24, 24, 0,  23, 23,
+    23, 0,  25, 25, 25, 0,  15, 1,  0,  15, 1,  0,  15, 1,  0,  15, 1,  0,  15,
+    1,  0,  24, 24, 24, 0,  23, 23, 23, 0,  25, 25, 25, 0,  24, 24, 24, 2,  15,
+    0,  23, 23, 23, 2,  15, 0,  25, 25, 25, 2,  15, 0,  2,  10, 2,  5,  10, 15,
+    0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  24, 24, 0,  24, 24, 0,  23, 23, 0,
+    25, 25, 0,  23, 23, 0,  25, 25, 0,  24, 24, 17, 0,  23, 23, 17, 0,  25, 25,
+    17, 0,  24, 24, 15, 0,  23, 23, 15, 0,  25, 25, 15, 0,  9,  23, 0,  9,  24,
+    0,  9,  25, 0,  24, 24, 0,  8,  24, 2,  24, 2,  24, 0,  8,  23, 2,  23, 2,
+    23, 0,  8,  25, 2,  25, 2,  25, 0,  23, 23, 0,  24, 24, 0,  23, 23, 0,  25,
+    25, 0,  25, 25, 0,  2,  5,  8,  0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  2,
+    10, 2,  10, 2,  5,  10, 0,  2,  10, 2,  10, 2,  5,  10, 35, 0,  15, 2,  5,
+    10, 2,  5,  10, 0,  2,  10, 2,  10, 2,  5,  10, 0,  2,  10, 2,  5,  10, 15,
+    0,  15, 2,  5,  10, 2,  5,  10, 0,  2,  10, 2,  10, 2,  5,  10, 0,  35, 2,
+    5,  10, 2,  5,  10, 0,  2,  10, 2,  5,  10, 0,  2,  10, 15, 0,  35, 2,  10,
+    2,  5,  10, 35, 0,  35, 2,  10, 2,  5,  10, 35, 0,  35, 2,  5,  10, 0,  15,
+    2,  5,  10, 2,  5,  10, 35, 0,  2,  10, 2,  10, 2,  5,  10, 35, 0,  15, 2,
+    5,  10, 2,  5,  10, 35, 0,  2,  10, 2,  10, 2,  5,  10, 35, 0,  2,  10, 2,
+    5,  10, 35, 0,  2,  10, 2,  5,  10, 2,  5,  10, 0,  2,  10, 2,  5,  10, 15,
+    0,  35, 2,  5,  10, 2,  5,  10, 0,  2,  10, 2,  5,  10, 2,  5,  10, 0,  24,
+    2,  5,  10, 2,  2,  10, 0,  23, 2,  5,  10, 2,  2,  10, 0,  2,  10, 2,  10,
+    2,  5,  10, 0,  17, 2,  5,  10, 2,  2,  10, 15, 0,  25, 2,  5,  10, 2,  2,
+    10, 0,  19, 2,  5,  10, 2,  2,  10, 15, 0,  18, 2,  5,  10, 2,  2,  10, 15,
+    0,  20, 2,  5,  10, 2,  2,  10, 15, 0,  35, 2,  10, 2,  5,  10, 35, 0,  9,
+    1,  0,  16, 16, 16, 16, 2,  16, 0,  12, 12, 12, 12, 2,  12, 0,  18, 18, 18,
+    18, 2,  18, 0,  20, 20, 20, 20, 2,  20, 0,  14, 14, 14, 14, 2,  14, 0,  24,
+    24, 0,  23, 23, 0,  24, 24, 0,  23, 23, 0,  25, 25, 0,  25, 25, 0,  24, 24,
+    0,  23, 23, 0,  25, 25, 0,  15, 15, 0,  15, 15, 0,  8,  0,  24, 24, 0,  23,
+    23, 0,  25, 25, 0,  8,  0,  8,  3,  36, 3,  36, 0,  8,  3,  36, 0,  8,  3,
+    36, 1,  0,  15, 2,  10, 35, 2,  5,  10, 3,  36, 0,  2,  30, 2,  5,  30, 30,
+    0,  15, 2,  5,  30, 2,  5,  30, 0,  35, 2,  5,  30, 0,  15, 2,  5,  30, 2,
+    5,  30, 35, 0,  2,  30, 2,  5,  30, 30, 35, 0,  15, 2,  5,  30, 2,  5,  30,
+    35, 0,  2,  30, 2,  30, 2,  5,  30, 35, 0,  2,  30, 2,  30, 2,  5,  30, 35,
+    0,  15, 2,  6,  8,  2,  8,  19, 15, 15, 0,  15, 2,  6,  8,  2,  8,  19, 15,
+    15, 0,  19, 2,  6,  8,  19, 15, 0,  19, 2,  6,  8,  19, 15, 0,  19, 2,  6,
+    8,  19, 15, 0,  19, 2,  6,  8,  19, 15, 0,  19, 2,  6,  8,  19, 15, 0,  19,
+    2,  6,  8,  19, 15, 0,  19, 2,  6,  8,  19, 15, 0,  8,  2,  6,  8,  19, 0,
+    9,  35, 0,  19, 2,  6,  8,  15, 0,  8,  15, 0,  8,  2,  6,  8,  19, 15, 0,
+    8,  15, 0,  2,  8,  35, 0,  2,  8,  35, 37, 0,  2,  8,  35, 0,  2,  8,  35,
+    37, 0,  8,  2,  8,  0,  8,  2,  8,  35, 0,  8,  2,  8,  37, 0,  8,  2,  8,
+    35, 37, 0,  8,  2,  8,  0,  8,  2,  8,  35, 0,  8,  2,  8,  37, 0,  8,  2,
+    8,  35, 37, 0,
 };
 
 inline constexpr BuiltinSignature kBuiltinSignatures[] = {
@@ -352,716 +356,736 @@ inline constexpr BuiltinSignature kBuiltinSignatures[] = {
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_add_overflow
     {261, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_addc
+    {268, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_addcb
+    {275, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_addcl
+    {282, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_addcll
+    {289, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_addcs
+    {296, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},      // __builtin_addressof
-    {265, 1, BuiltinFlags::kNone},      // __builtin_aligned_alloc
-    {270, 1, BuiltinFlags::kNoexcept},  // __builtin_alloca
-    {274, 1,
+    {300, 1, BuiltinFlags::kNone},      // __builtin_aligned_alloc
+    {305, 1, BuiltinFlags::kNoexcept},  // __builtin_alloca
+    {309, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asin
-    {277, 1,
+    {312, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinf
-    {280, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinh
-    {283, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinhf
-    {286, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinhl
-    {289, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinl
-    {292, 1, BuiltinFlags::kNoexcept},  // __builtin_assume_aligned
-    {300, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atan
-    {303, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atan2
-    {307, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atan2f
-    {311, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atan2l
     {315, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanf
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinh
     {318, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanh
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinhf
     {321, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanhf
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinhl
     {324, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanhl
-    {327, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanl
-    {330, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_bcmp
-    {339, 1, BuiltinFlags::kNoexcept},                     // __builtin_bcopy
-    {347, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_bswap16
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_asinl
+    {327, 1, BuiltinFlags::kNoexcept},  // __builtin_assume_aligned
+    {335, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atan
+    {338, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atan2
+    {342, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atan2f
+    {346, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atan2l
     {350, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_bswap32
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanf
     {353, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanh
+    {356, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanhf
+    {359, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanhl
+    {362, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_atanl
+    {365, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_bcmp
+    {374, 1, BuiltinFlags::kNoexcept},                     // __builtin_bcopy
+    {382, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_bswap16
+    {385, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_bswap32
+    {388, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_bswap64
-    {356, 1, BuiltinFlags::kNoexcept},                     // __builtin_bzero
-    {361, 1, BuiltinFlags::kNoexcept},  // __builtin_c23_va_start
-    {366, 1, BuiltinFlags::kNoexcept},  // __builtin_cabs
-    {370, 1, BuiltinFlags::kNoexcept},  // __builtin_cabsf
-    {374, 1, BuiltinFlags::kNoexcept},  // __builtin_cabsl
-    {378, 1, BuiltinFlags::kNoexcept},  // __builtin_cacos
-    {383, 1, BuiltinFlags::kNoexcept},  // __builtin_cacosf
-    {388, 1, BuiltinFlags::kNoexcept},  // __builtin_cacosh
-    {393, 1, BuiltinFlags::kNoexcept},  // __builtin_cacoshf
-    {398, 1, BuiltinFlags::kNoexcept},  // __builtin_cacoshl
-    {403, 1, BuiltinFlags::kNoexcept},  // __builtin_cacosl
-    {408, 1, BuiltinFlags::kNoexcept},  // __builtin_carg
-    {412, 1, BuiltinFlags::kNoexcept},  // __builtin_cargf
-    {416, 1, BuiltinFlags::kNoexcept},  // __builtin_cargl
-    {420, 1, BuiltinFlags::kNoexcept},  // __builtin_casin
-    {425, 1, BuiltinFlags::kNoexcept},  // __builtin_casinf
-    {430, 1, BuiltinFlags::kNoexcept},  // __builtin_casinh
-    {435, 1, BuiltinFlags::kNoexcept},  // __builtin_casinhf
-    {440, 1, BuiltinFlags::kNoexcept},  // __builtin_casinhl
-    {445, 1, BuiltinFlags::kNoexcept},  // __builtin_casinl
-    {450, 1, BuiltinFlags::kNoexcept},  // __builtin_catan
-    {455, 1, BuiltinFlags::kNoexcept},  // __builtin_catanf
-    {460, 1, BuiltinFlags::kNoexcept},  // __builtin_catanh
-    {465, 1, BuiltinFlags::kNoexcept},  // __builtin_catanhf
-    {470, 1, BuiltinFlags::kNoexcept},  // __builtin_catanhl
-    {475, 1, BuiltinFlags::kNoexcept},  // __builtin_catanl
-    {480, 1,
+    {391, 1, BuiltinFlags::kNoexcept},                     // __builtin_bzero
+    {396, 1, BuiltinFlags::kNoexcept},  // __builtin_c23_va_start
+    {401, 1, BuiltinFlags::kNoexcept},  // __builtin_cabs
+    {405, 1, BuiltinFlags::kNoexcept},  // __builtin_cabsf
+    {409, 1, BuiltinFlags::kNoexcept},  // __builtin_cabsl
+    {413, 1, BuiltinFlags::kNoexcept},  // __builtin_cacos
+    {418, 1, BuiltinFlags::kNoexcept},  // __builtin_cacosf
+    {423, 1, BuiltinFlags::kNoexcept},  // __builtin_cacosh
+    {428, 1, BuiltinFlags::kNoexcept},  // __builtin_cacoshf
+    {433, 1, BuiltinFlags::kNoexcept},  // __builtin_cacoshl
+    {438, 1, BuiltinFlags::kNoexcept},  // __builtin_cacosl
+    {443, 1, BuiltinFlags::kNoexcept},  // __builtin_carg
+    {447, 1, BuiltinFlags::kNoexcept},  // __builtin_cargf
+    {451, 1, BuiltinFlags::kNoexcept},  // __builtin_cargl
+    {455, 1, BuiltinFlags::kNoexcept},  // __builtin_casin
+    {460, 1, BuiltinFlags::kNoexcept},  // __builtin_casinf
+    {465, 1, BuiltinFlags::kNoexcept},  // __builtin_casinh
+    {470, 1, BuiltinFlags::kNoexcept},  // __builtin_casinhf
+    {475, 1, BuiltinFlags::kNoexcept},  // __builtin_casinhl
+    {480, 1, BuiltinFlags::kNoexcept},  // __builtin_casinl
+    {485, 1, BuiltinFlags::kNoexcept},  // __builtin_catan
+    {490, 1, BuiltinFlags::kNoexcept},  // __builtin_catanf
+    {495, 1, BuiltinFlags::kNoexcept},  // __builtin_catanh
+    {500, 1, BuiltinFlags::kNoexcept},  // __builtin_catanhf
+    {505, 1, BuiltinFlags::kNoexcept},  // __builtin_catanhl
+    {510, 1, BuiltinFlags::kNoexcept},  // __builtin_catanl
+    {515, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_cbrt
-    {483, 1,
+    {518, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_cbrtf
-    {486, 1,
+    {521, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_cbrtl
-    {489, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccos
-    {494, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccosf
-    {499, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccosh
-    {504, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccoshf
-    {509, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccoshl
-    {514, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccosl
-    {519, 1,
+    {524, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccos
+    {529, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccosf
+    {534, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccosh
+    {539, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccoshf
+    {544, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccoshl
+    {549, 1, BuiltinFlags::kNoexcept},                     // __builtin_ccosl
+    {554, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ceil
-    {522, 1,
+    {557, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ceilf
-    {525, 1,
+    {560, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ceill
-    {528, 1, BuiltinFlags::kNoexcept},                     // __builtin_cexp
-    {533, 1, BuiltinFlags::kNoexcept},                     // __builtin_cexpf
-    {538, 1, BuiltinFlags::kNoexcept},                     // __builtin_cexpl
-    {543, 1, BuiltinFlags::kNoexcept},                     // __builtin_cimag
-    {547, 1, BuiltinFlags::kNoexcept},                     // __builtin_cimagf
-    {551, 1, BuiltinFlags::kNoexcept},                     // __builtin_cimagl
-    {555, 1, BuiltinFlags::kNoexcept},                     // __builtin_clog
-    {560, 1, BuiltinFlags::kNoexcept},                     // __builtin_clogf
-    {565, 1, BuiltinFlags::kNoexcept},                     // __builtin_clogl
-    {570, 1,
+    {563, 1, BuiltinFlags::kNoexcept},                     // __builtin_cexp
+    {568, 1, BuiltinFlags::kNoexcept},                     // __builtin_cexpf
+    {573, 1, BuiltinFlags::kNoexcept},                     // __builtin_cexpl
+    {578, 1, BuiltinFlags::kNoexcept},                     // __builtin_cimag
+    {582, 1, BuiltinFlags::kNoexcept},                     // __builtin_cimagf
+    {586, 1, BuiltinFlags::kNoexcept},                     // __builtin_cimagl
+    {590, 1, BuiltinFlags::kNoexcept},                     // __builtin_clog
+    {595, 1, BuiltinFlags::kNoexcept},                     // __builtin_clogf
+    {600, 1, BuiltinFlags::kNoexcept},                     // __builtin_clogl
+    {605, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_clrsb
-    {573, 1,
+    {608, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_clrsbl
-    {576, 1,
+    {611, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_clrsbll
-    {579, 1,
+    {614, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_clz
-    {582, 12,
+    {617, 12,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_clzg
-    {624, 1,
+    {659, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_clzl
-    {627, 1,
+    {662, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_clzll
-    {630, 1,
+    {665, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_clzs
-    {633, 3,
+    {668, 3,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_complex
-    {648, 1, BuiltinFlags::kNoexcept},                     // __builtin_conj
-    {653, 1, BuiltinFlags::kNoexcept},                     // __builtin_conjf
-    {658, 1, BuiltinFlags::kNoexcept},                     // __builtin_conjl
-    {663, 1,
+    {683, 1, BuiltinFlags::kNoexcept},                     // __builtin_conj
+    {688, 1, BuiltinFlags::kNoexcept},                     // __builtin_conjf
+    {693, 1, BuiltinFlags::kNoexcept},                     // __builtin_conjl
+    {698, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_constant_p
-    {666, 1,
+    {701, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_copysign
-    {670, 1,
+    {705, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_copysignf
-    {674, 1,
+    {709, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},      // __builtin_copysignl
-    {678, 1, BuiltinFlags::kNone},      // __builtin_coro_destroy
-    {682, 1, BuiltinFlags::kNoexcept},  // __builtin_coro_done
-    {686, 1, BuiltinFlags::kNoexcept},  // __builtin_coro_noop
-    {689, 1, BuiltinFlags::kNoexcept},  // __builtin_coro_promise
-    {696, 1, BuiltinFlags::kNone},      // __builtin_coro_resume
-    {700, 1,
+    {713, 1, BuiltinFlags::kNone},      // __builtin_coro_destroy
+    {717, 1, BuiltinFlags::kNoexcept},  // __builtin_coro_done
+    {721, 1, BuiltinFlags::kNoexcept},  // __builtin_coro_noop
+    {724, 1, BuiltinFlags::kNoexcept},  // __builtin_coro_promise
+    {731, 1, BuiltinFlags::kNone},      // __builtin_coro_resume
+    {735, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_cos
-    {703, 1,
+    {738, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_cosf
-    {706, 1,
+    {741, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_cosh
-    {709, 1,
+    {744, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_coshf
-    {712, 1,
+    {747, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_coshl
-    {715, 1,
+    {750, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_cosl
-    {718, 1, BuiltinFlags::kNoexcept},                     // __builtin_cpow
-    {725, 1, BuiltinFlags::kNoexcept},                     // __builtin_cpowf
-    {732, 1, BuiltinFlags::kNoexcept},                     // __builtin_cpowl
-    {739, 1, BuiltinFlags::kNoexcept},                     // __builtin_cproj
-    {744, 1, BuiltinFlags::kNoexcept},                     // __builtin_cprojf
-    {749, 1, BuiltinFlags::kNoexcept},                     // __builtin_cprojl
-    {754, 1, BuiltinFlags::kNoexcept},                     // __builtin_creal
-    {758, 1, BuiltinFlags::kNoexcept},                     // __builtin_crealf
-    {762, 1, BuiltinFlags::kNoexcept},                     // __builtin_creall
-    {766, 1, BuiltinFlags::kNoexcept},                     // __builtin_csin
-    {771, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinf
-    {776, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinh
-    {781, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinhf
-    {786, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinhl
-    {791, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinl
-    {796, 1, BuiltinFlags::kNoexcept},                     // __builtin_csqrt
-    {801, 1, BuiltinFlags::kNoexcept},                     // __builtin_csqrtf
-    {806, 1, BuiltinFlags::kNoexcept},                     // __builtin_csqrtl
-    {811, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctan
-    {816, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanf
-    {821, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanh
-    {826, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanhf
-    {831, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanhl
-    {836, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanl
-    {841, 1,
+    {753, 1, BuiltinFlags::kNoexcept},                     // __builtin_cpow
+    {760, 1, BuiltinFlags::kNoexcept},                     // __builtin_cpowf
+    {767, 1, BuiltinFlags::kNoexcept},                     // __builtin_cpowl
+    {774, 1, BuiltinFlags::kNoexcept},                     // __builtin_cproj
+    {779, 1, BuiltinFlags::kNoexcept},                     // __builtin_cprojf
+    {784, 1, BuiltinFlags::kNoexcept},                     // __builtin_cprojl
+    {789, 1, BuiltinFlags::kNoexcept},                     // __builtin_creal
+    {793, 1, BuiltinFlags::kNoexcept},                     // __builtin_crealf
+    {797, 1, BuiltinFlags::kNoexcept},                     // __builtin_creall
+    {801, 1, BuiltinFlags::kNoexcept},                     // __builtin_csin
+    {806, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinf
+    {811, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinh
+    {816, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinhf
+    {821, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinhl
+    {826, 1, BuiltinFlags::kNoexcept},                     // __builtin_csinl
+    {831, 1, BuiltinFlags::kNoexcept},                     // __builtin_csqrt
+    {836, 1, BuiltinFlags::kNoexcept},                     // __builtin_csqrtf
+    {841, 1, BuiltinFlags::kNoexcept},                     // __builtin_csqrtl
+    {846, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctan
+    {851, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanf
+    {856, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanh
+    {861, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanhf
+    {866, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanhl
+    {871, 1, BuiltinFlags::kNoexcept},                     // __builtin_ctanl
+    {876, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ctz
-    {844, 12,
+    {879, 12,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ctzg
-    {886, 1,
+    {921, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ctzl
-    {889, 1,
+    {924, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ctzll
-    {892, 1,
+    {927, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ctzs
-    {895, 1,
+    {930, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_erf
-    {898, 1,
+    {933, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_erfc
-    {901, 1,
+    {936, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_erfcf
-    {904, 1,
+    {939, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_erfcl
-    {907, 1,
+    {942, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_erff
-    {910, 1,
+    {945, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_erfl
-    {913, 1, BuiltinFlags::kNoReturn},                     // __builtin_exit
-    {916, 1,
+    {948, 1, BuiltinFlags::kNoReturn},                     // __builtin_exit
+    {951, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_exp
-    {919, 1,
+    {954, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_exp2
-    {922, 1,
+    {957, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_exp2f
-    {925, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_exp2l
-    {928, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expect
-    {932, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expf
-    {935, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expl
-    {938, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expm1
-    {941, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expm1f
-    {944, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expm1l
-    {947, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fabs
-    {950, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fabsf
-    {953, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fabsl
-    {956, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fdim
     {960, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fdimf
-    {964, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fdiml
-    {968, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ffs
-    {971, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ffsl
-    {974, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ffsll
-    {977, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_finite
-    {980, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_finitef
-    {983, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_finitel
-    {986, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_floor
-    {989, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_floorf
-    {992, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_floorl
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_exp2l
+    {963, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expect
+    {967, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expf
+    {970, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expl
+    {973, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expm1
+    {976, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expm1f
+    {979, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_expm1l
+    {982, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fabs
+    {985, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fabsf
+    {988, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fabsl
+    {991, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fdim
     {995, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fma
-    {1000, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmaf
-    {1005, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmal
-    {1010, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmax
-    {1014, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmaxf
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fdimf
+    {999, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fdiml
+    {1003, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ffs
+    {1006, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ffsl
+    {1009, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ffsll
+    {1012, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_finite
+    {1015, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_finitef
     {1018, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_finitel
+    {1021, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_floor
+    {1024, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_floorf
+    {1027, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_floorl
+    {1030, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fma
+    {1035, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmaf
+    {1040, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmal
+    {1045, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmax
+    {1049, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmaxf
+    {1053, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_fmaximum_num
-    {1022, 1,
+    {1057, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_fmaximum_numf
-    {1026, 1,
+    {1061, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_fmaximum_numl
-    {1030, 1,
+    {1065, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmaxl
-    {1034, 1,
+    {1069, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmin
-    {1038, 1,
+    {1073, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fminf
-    {1042, 1,
+    {1077, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_fminimum_num
-    {1046, 1,
+    {1081, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_fminimum_numf
-    {1050, 1,
+    {1085, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_fminimum_numl
-    {1054, 1,
+    {1089, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fminl
-    {1058, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmod
-    {1062, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmodf
-    {1066, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmodl
-    {1070, 1, BuiltinFlags::kNoexcept},  // __builtin_fpclassify
-    {1078, 1, BuiltinFlags::kNoexcept},  // __builtin_frexp
-    {1083, 1, BuiltinFlags::kNoexcept},  // __builtin_frexpf
-    {1088, 1, BuiltinFlags::kNoexcept},  // __builtin_frexpl
     {1093, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmod
+    {1097, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmodf
+    {1101, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_fmodl
+    {1105, 1, BuiltinFlags::kNoexcept},  // __builtin_fpclassify
+    {1113, 1, BuiltinFlags::kNoexcept},  // __builtin_frexp
+    {1118, 1, BuiltinFlags::kNoexcept},  // __builtin_frexpf
+    {1123, 1, BuiltinFlags::kNoexcept},  // __builtin_frexpl
+    {1128, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_huge_val
-    {1095, 1,
+    {1130, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_huge_valf
-    {1097, 1,
+    {1132, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_huge_vall
-    {1099, 1,
+    {1134, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_hypot
-    {1103, 1,
+    {1138, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_hypotf
-    {1107, 1,
+    {1142, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_hypotl
-    {1111, 1,
+    {1146, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ilogb
-    {1114, 1,
+    {1149, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ilogbf
-    {1117, 1,
+    {1152, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ilogbl
-    {1120, 1,
+    {1155, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_index
-    {1127, 1,
+    {1162, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_inf
-    {1129, 1,
+    {1164, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_inff
-    {1131, 1,
+    {1166, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_infl
-    {1133, 1, BuiltinFlags::kNone},                        // __builtin_invoke
-    {1137, 1,
+    {1168, 1, BuiltinFlags::kNone},                        // __builtin_invoke
+    {1172, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},       // __builtin_is_constant_evaluated
-    {1139, 1, BuiltinFlags::kNoexcept},  // __builtin_isalnum
-    {1142, 1, BuiltinFlags::kNoexcept},  // __builtin_isalpha
-    {1145, 1, BuiltinFlags::kNoexcept},  // __builtin_isblank
-    {1148, 1, BuiltinFlags::kNoexcept},  // __builtin_iscntrl
-    {1151, 1, BuiltinFlags::kNoexcept},  // __builtin_isdigit
-    {1154, 3,
+    {1174, 1, BuiltinFlags::kNoexcept},  // __builtin_isalnum
+    {1177, 1, BuiltinFlags::kNoexcept},  // __builtin_isalpha
+    {1180, 1, BuiltinFlags::kNoexcept},  // __builtin_isblank
+    {1183, 1, BuiltinFlags::kNoexcept},  // __builtin_iscntrl
+    {1186, 1, BuiltinFlags::kNoexcept},  // __builtin_isdigit
+    {1189, 3,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_isfinite
-    {1163, 1, BuiltinFlags::kNoexcept},                    // __builtin_isgraph
-    {1166, 1,
+    {1198, 1, BuiltinFlags::kNoexcept},                    // __builtin_isgraph
+    {1201, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_isgreater
-    {1169, 1,
+    {1204, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_isgreaterequal
-    {1172, 3,
+    {1207, 3,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_isinf
-    {1181, 1,
+    {1216, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_isless
-    {1184, 1,
+    {1219, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_islessequal
-    {1187, 1,
+    {1222, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},       // __builtin_islessgreater
-    {1190, 1, BuiltinFlags::kNoexcept},  // __builtin_islower
-    {1193, 3,
+    {1225, 1, BuiltinFlags::kNoexcept},  // __builtin_islower
+    {1228, 3,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_isnan
-    {1202, 3, BuiltinFlags::kNoexcept},                    // __builtin_isnormal
-    {1211, 1, BuiltinFlags::kNoexcept},                    // __builtin_isprint
-    {1214, 1, BuiltinFlags::kNoexcept},                    // __builtin_ispunct
-    {1217, 1, BuiltinFlags::kNoexcept},                    // __builtin_isspace
-    {1220, 1,
+    {1237, 3, BuiltinFlags::kNoexcept},                    // __builtin_isnormal
+    {1246, 1, BuiltinFlags::kNoexcept},                    // __builtin_isprint
+    {1249, 1, BuiltinFlags::kNoexcept},                    // __builtin_ispunct
+    {1252, 1, BuiltinFlags::kNoexcept},                    // __builtin_isspace
+    {1255, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},       // __builtin_isunordered
-    {1223, 1, BuiltinFlags::kNoexcept},  // __builtin_isupper
-    {1226, 1, BuiltinFlags::kNoexcept},  // __builtin_isxdigit
-    {1229, 1,
+    {1258, 1, BuiltinFlags::kNoexcept},  // __builtin_isupper
+    {1261, 1, BuiltinFlags::kNoexcept},  // __builtin_isxdigit
+    {1264, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_labs
-    {1232, 1,
+    {1267, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ldexp
-    {1236, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ldexpf
-    {1240, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ldexpl
-    {1244, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lgamma
-    {1247, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lgammaf
-    {1250, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lgammal
-    {1253, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llabs
-    {1256, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llrint
-    {1259, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llrintf
-    {1262, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llrintl
-    {1265, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llround
-    {1268, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llroundf
     {1271, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ldexpf
+    {1275, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_ldexpl
+    {1279, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lgamma
+    {1282, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lgammaf
+    {1285, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lgammal
+    {1288, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llabs
+    {1291, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llrint
+    {1294, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llrintf
+    {1297, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llrintl
+    {1300, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llround
+    {1303, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llroundf
+    {1306, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_llroundl
-    {1274, 1,
+    {1309, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log
-    {1277, 1,
+    {1312, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log10
-    {1280, 1,
+    {1315, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log10f
-    {1283, 1,
+    {1318, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log10l
-    {1286, 1,
+    {1321, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log1p
-    {1289, 1,
+    {1324, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log1pf
-    {1292, 1,
+    {1327, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log1pl
-    {1295, 1,
+    {1330, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log2
-    {1298, 1,
+    {1333, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log2f
-    {1301, 1,
+    {1336, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_log2l
-    {1304, 1,
+    {1339, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_logb
-    {1307, 1,
+    {1342, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_logbf
-    {1310, 1,
+    {1345, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_logbl
-    {1313, 1,
+    {1348, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_logf
-    {1316, 1,
+    {1351, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_logl
-    {1319, 1,
+    {1354, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lrint
-    {1322, 1,
+    {1357, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lrintf
-    {1325, 1,
+    {1360, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lrintl
-    {1328, 1,
+    {1363, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lround
-    {1331, 1,
+    {1366, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lroundf
-    {1334, 1,
+    {1369, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_lroundl
-    {1337, 1, BuiltinFlags::kNone},                        // __builtin_memccpy
-    {1347, 1,
+    {1372, 1, BuiltinFlags::kNone},                        // __builtin_memccpy
+    {1382, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_memchr
-    {1355, 1,
+    {1390, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_memcmp
-    {1364, 1, BuiltinFlags::kNoexcept},                    // __builtin_memcpy
-    {1373, 1, BuiltinFlags::kNoexcept},                    // __builtin_memmove
-    {1382, 1, BuiltinFlags::kNoexcept},                    // __builtin_mempcpy
-    {1391, 1, BuiltinFlags::kNoexcept},                    // __builtin_memset
-    {1398, 1, BuiltinFlags::kNoexcept},                    // __builtin_modf
-    {1403, 1, BuiltinFlags::kNoexcept},                    // __builtin_modff
-    {1408, 1, BuiltinFlags::kNoexcept},                    // __builtin_modfl
-    {1413, 1,
+    {1399, 1, BuiltinFlags::kNoexcept},                    // __builtin_memcpy
+    {1408, 1, BuiltinFlags::kNoexcept},                    // __builtin_memmove
+    {1417, 1, BuiltinFlags::kNoexcept},                    // __builtin_mempcpy
+    {1426, 1, BuiltinFlags::kNoexcept},                    // __builtin_memset
+    {1433, 1, BuiltinFlags::kNoexcept},                    // __builtin_modf
+    {1438, 1, BuiltinFlags::kNoexcept},                    // __builtin_modff
+    {1443, 1, BuiltinFlags::kNoexcept},                    // __builtin_modfl
+    {1448, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_mul_overflow
-    {1416, 1,
+    {1451, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_nan
-    {1421, 1,
+    {1456, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_nanf
-    {1426, 1,
+    {1461, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_nanl
-    {1431, 1, BuiltinFlags::kNoexcept},                    // __builtin_nans
-    {1436, 1, BuiltinFlags::kNoexcept},                    // __builtin_nansf
-    {1441, 1, BuiltinFlags::kNoexcept},                    // __builtin_nansl
-    {1446, 1,
+    {1466, 1, BuiltinFlags::kNoexcept},                    // __builtin_nans
+    {1471, 1, BuiltinFlags::kNoexcept},                    // __builtin_nansf
+    {1476, 1, BuiltinFlags::kNoexcept},                    // __builtin_nansl
+    {1481, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nearbyint
-    {1449, 1,
+    {1484, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nearbyintf
-    {1452, 1,
+    {1487, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nearbyintl
-    {1455, 1,
+    {1490, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nextafter
-    {1459, 1,
+    {1494, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nextafterf
-    {1463, 1,
+    {1498, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nextafterl
-    {1467, 1,
+    {1502, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nexttoward
-    {1471, 1,
+    {1506, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nexttowardf
-    {1475, 1,
+    {1510, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_nexttowardl
-    {1479, 6,
+    {1514, 6,
      BuiltinFlags::kNoexcept |
          BuiltinFlags::kCplusplus},       // __builtin_operator_delete
-    {1514, 4, BuiltinFlags::kCplusplus},  // __builtin_operator_new
-    {1538, 1,
+    {1549, 4, BuiltinFlags::kCplusplus},  // __builtin_operator_new
+    {1573, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_parity
-    {1541, 1,
+    {1576, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_parityl
-    {1544, 1,
+    {1579, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_parityll
-    {1547, 1,
+    {1582, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_popcount
-    {1550, 6,
+    {1585, 6,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_popcountg
-    {1568, 1,
+    {1603, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_popcountl
-    {1571, 1,
+    {1606, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_popcountll
-    {1574, 1,
+    {1609, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_pow
-    {1578, 1,
+    {1613, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_powf
-    {1582, 1,
+    {1617, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_powl
-    {1586, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_add
-    {1589, 1,
+    {1621, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_add
+    {1624, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},       // __builtin_reduce_and
-    {1592, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_mul
-    {1595, 1,
+    {1627, 1, BuiltinFlags::kNoexcept},  // __builtin_reduce_mul
+    {1630, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_reduce_or
-    {1598, 1,
+    {1633, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_reduce_xor
-    {1601, 1,
+    {1636, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_remainder
-    {1605, 1,
+    {1640, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_remainderf
-    {1609, 1,
+    {1644, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},       // __builtin_remainderl
-    {1613, 1, BuiltinFlags::kNoexcept},  // __builtin_remquo
-    {1619, 1, BuiltinFlags::kNoexcept},  // __builtin_remquof
-    {1625, 1, BuiltinFlags::kNoexcept},  // __builtin_remquol
-    {1631, 1,
+    {1648, 1, BuiltinFlags::kNoexcept},  // __builtin_remquo
+    {1654, 1, BuiltinFlags::kNoexcept},  // __builtin_remquof
+    {1660, 1, BuiltinFlags::kNoexcept},  // __builtin_remquol
+    {1666, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_rindex
-    {1638, 1,
+    {1673, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_rint
-    {1641, 1,
+    {1676, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_rintf
-    {1644, 1,
+    {1679, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_rintl
-    {1647, 1,
+    {1682, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_round
-    {1650, 1,
+    {1685, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_roundeven
-    {1653, 1,
+    {1688, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_roundevenf
-    {1656, 1,
+    {1691, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_roundevenl
-    {1659, 1,
+    {1694, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_roundf
-    {1662, 1,
+    {1697, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_roundl
-    {1665, 1,
+    {1700, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_scalbln
-    {1669, 1,
+    {1704, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_scalblnf
-    {1673, 1,
+    {1708, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_scalblnl
-    {1677, 1,
+    {1712, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_scalbn
-    {1681, 1,
+    {1716, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_scalbnf
-    {1685, 1,
+    {1720, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_scalbnl
-    {1689, 3,
+    {1724, 3,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_signbit
-    {1698, 1,
+    {1733, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sin
-    {1701, 1, BuiltinFlags::kNoexcept},                    // __builtin_sincos
-    {1708, 1, BuiltinFlags::kNoexcept},                    // __builtin_sincosf
-    {1715, 1, BuiltinFlags::kNoexcept},                    // __builtin_sincosl
-    {1722, 1,
+    {1736, 1, BuiltinFlags::kNoexcept},                    // __builtin_sincos
+    {1743, 1, BuiltinFlags::kNoexcept},                    // __builtin_sincosf
+    {1750, 1, BuiltinFlags::kNoexcept},                    // __builtin_sincosl
+    {1757, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sinf
-    {1725, 1,
+    {1760, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sinh
-    {1728, 1,
+    {1763, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sinhf
-    {1731, 1,
+    {1766, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sinhl
-    {1734, 1,
+    {1769, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sinl
-    {1737, 1,
+    {1772, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kConsteval |
          BuiltinFlags::kNoexcept},  // __builtin_source_location
-    {1741, 1,
+    {1776, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sqrt
-    {1744, 1,
+    {1779, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sqrtf
-    {1747, 1,
+    {1782, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_sqrtl
-    {1750, 1, BuiltinFlags::kNoexcept},                    // __builtin_stpcpy
-    {1758, 1, BuiltinFlags::kNoexcept},                    // __builtin_stpncpy
-    {1767, 1, BuiltinFlags::kConstexpr},  // __builtin_strcasecmp
-    {1775, 1, BuiltinFlags::kNoexcept},   // __builtin_strcat
-    {1783, 1,
+    {1785, 1, BuiltinFlags::kNoexcept},                    // __builtin_stpcpy
+    {1793, 1, BuiltinFlags::kNoexcept},                    // __builtin_stpncpy
+    {1802, 1, BuiltinFlags::kConstexpr},  // __builtin_strcasecmp
+    {1810, 1, BuiltinFlags::kNoexcept},   // __builtin_strcat
+    {1818, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strchr
-    {1790, 1,
+    {1825, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strcmp
-    {1798, 1, BuiltinFlags::kNoexcept},                    // __builtin_strcpy
-    {1806, 1,
+    {1833, 1, BuiltinFlags::kNoexcept},                    // __builtin_strcpy
+    {1841, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strcspn
-    {1814, 1, BuiltinFlags::kNoexcept},                    // __builtin_strdup
-    {1820, 1, BuiltinFlags::kNone},                        // __builtin_strerror
-    {1824, 1, BuiltinFlags::kNone},                        // __builtin_strlcat
-    {1832, 1, BuiltinFlags::kNone},                        // __builtin_strlcpy
-    {1840, 1,
+    {1849, 1, BuiltinFlags::kNoexcept},                    // __builtin_strdup
+    {1855, 1, BuiltinFlags::kNone},                        // __builtin_strerror
+    {1859, 1, BuiltinFlags::kNone},                        // __builtin_strlcat
+    {1867, 1, BuiltinFlags::kNone},                        // __builtin_strlcpy
+    {1875, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strlen
-    {1845, 1, BuiltinFlags::kConstexpr},  // __builtin_strncasecmp
-    {1854, 1, BuiltinFlags::kNoexcept},   // __builtin_strncat
-    {1863, 1,
+    {1880, 1, BuiltinFlags::kConstexpr},  // __builtin_strncasecmp
+    {1889, 1, BuiltinFlags::kNoexcept},   // __builtin_strncat
+    {1898, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strncmp
-    {1872, 1, BuiltinFlags::kNoexcept},                    // __builtin_strncpy
-    {1881, 1, BuiltinFlags::kNoexcept},                    // __builtin_strndup
-    {1888, 1,
+    {1907, 1, BuiltinFlags::kNoexcept},                    // __builtin_strncpy
+    {1916, 1, BuiltinFlags::kNoexcept},                    // __builtin_strndup
+    {1923, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strpbrk
-    {1897, 1,
+    {1932, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strrchr
-    {1904, 1,
+    {1939, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strspn
-    {1912, 1,
+    {1947, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_strstr
-    {1921, 1, BuiltinFlags::kNone},                        // __builtin_strtod
-    {1929, 1, BuiltinFlags::kNone},                        // __builtin_strtof
-    {1937, 1, BuiltinFlags::kNone},                        // __builtin_strtok
-    {1945, 1, BuiltinFlags::kNone},                        // __builtin_strtol
-    {1954, 1, BuiltinFlags::kNone},                        // __builtin_strtold
-    {1962, 1, BuiltinFlags::kNone},                        // __builtin_strtoll
-    {1971, 1, BuiltinFlags::kNone},                        // __builtin_strtoul
-    {1980, 1, BuiltinFlags::kNone},                        // __builtin_strtoull
-    {1989, 1, BuiltinFlags::kNone},                        // __builtin_strxfrm
-    {1997, 1,
+    {1956, 1, BuiltinFlags::kNone},                        // __builtin_strtod
+    {1964, 1, BuiltinFlags::kNone},                        // __builtin_strtof
+    {1972, 1, BuiltinFlags::kNone},                        // __builtin_strtok
+    {1980, 1, BuiltinFlags::kNone},                        // __builtin_strtol
+    {1989, 1, BuiltinFlags::kNone},                        // __builtin_strtold
+    {1997, 1, BuiltinFlags::kNone},                        // __builtin_strtoll
+    {2006, 1, BuiltinFlags::kNone},                        // __builtin_strtoul
+    {2015, 1, BuiltinFlags::kNone},                        // __builtin_strtoull
+    {2024, 1, BuiltinFlags::kNone},                        // __builtin_strxfrm
+    {2032, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},  // __builtin_sub_overflow
-    {2000, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tan
-    {2003, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanf
-    {2006, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanh
-    {2009, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanhf
-    {2012, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanhl
-    {2015, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanl
-    {2018, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tgamma
-    {2021, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tgammaf
-    {2024, 1,
-     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tgammal
-    {2027, 1, BuiltinFlags::kNoexcept},                    // __builtin_tolower
-    {2030, 1, BuiltinFlags::kNoexcept},                    // __builtin_toupper
-    {2033, 1,
-     BuiltinFlags::kNoexcept | BuiltinFlags::kNoReturn},  // __builtin_trap
     {2035, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_subc
+    {2042, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_subcb
+    {2049, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_subcl
+    {2056, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_subcll
+    {2063, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_subcs
+    {2070, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tan
+    {2073, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanf
+    {2076, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanh
+    {2079, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanhf
+    {2082, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanhl
+    {2085, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tanl
+    {2088, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tgamma
+    {2091, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tgammaf
+    {2094, 1,
+     BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_tgammal
+    {2097, 1, BuiltinFlags::kNoexcept},                    // __builtin_tolower
+    {2100, 1, BuiltinFlags::kNoexcept},                    // __builtin_toupper
+    {2103, 1,
+     BuiltinFlags::kNoexcept | BuiltinFlags::kNoReturn},  // __builtin_trap
+    {2105, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_trunc
-    {2038, 1,
+    {2108, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_truncf
-    {2041, 1,
+    {2111, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_truncl
-    {2044, 1,
+    {2114, 1,
      BuiltinFlags::kNoexcept |
          BuiltinFlags::kNoReturn},       // __builtin_unreachable
-    {2046, 1, BuiltinFlags::kNoexcept},  // __builtin_va_copy
-    {2052, 1, BuiltinFlags::kNoexcept},  // __builtin_va_end
-    {2056, 1, BuiltinFlags::kNoexcept},  // __builtin_va_start
-    {2061, 1, BuiltinFlags::kNoexcept},  // __builtin_vsnprintf
-    {2071, 1,
+    {2116, 1, BuiltinFlags::kNoexcept},  // __builtin_va_copy
+    {2122, 1, BuiltinFlags::kNoexcept},  // __builtin_va_end
+    {2126, 1, BuiltinFlags::kNoexcept},  // __builtin_va_start
+    {2131, 1, BuiltinFlags::kNoexcept},  // __builtin_vsnprintf
+    {2141, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_wcschr
-    {2078, 1,
+    {2148, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_wcscmp
-    {2086, 1,
+    {2156, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_wcslen
-    {2091, 1,
+    {2161, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_wcsncmp
-    {2100, 1,
+    {2170, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_wmemchr
-    {2108, 1,
+    {2178, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_wmemcmp
-    {2117, 1,
+    {2187, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_wmemcpy
-    {2126, 1,
+    {2196, 1,
      BuiltinFlags::kConstexpr | BuiltinFlags::kNoexcept},  // __builtin_wmemmove
-    {2135, 1, BuiltinFlags::kNone},  // __c11_atomic_compare_exchange_strong
-    {2145, 1, BuiltinFlags::kNone},  // __c11_atomic_compare_exchange_weak
-    {2155, 1, BuiltinFlags::kNone},  // __c11_atomic_exchange
-    {2162, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_add
-    {2169, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_and
-    {2176, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_nand
-    {2183, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_or
-    {2190, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_sub
-    {2197, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_xor
-    {2204, 1, BuiltinFlags::kNone},  // __c11_atomic_init
-    {2210, 1,
+    {2205, 1, BuiltinFlags::kNone},  // __c11_atomic_compare_exchange_strong
+    {2215, 1, BuiltinFlags::kNone},  // __c11_atomic_compare_exchange_weak
+    {2225, 1, BuiltinFlags::kNone},  // __c11_atomic_exchange
+    {2232, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_add
+    {2239, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_and
+    {2246, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_nand
+    {2253, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_or
+    {2260, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_sub
+    {2267, 1, BuiltinFlags::kNone},  // __c11_atomic_fetch_xor
+    {2274, 1, BuiltinFlags::kNone},  // __c11_atomic_init
+    {2280, 1,
      BuiltinFlags::kConstexpr |
          BuiltinFlags::kNoexcept},       // __c11_atomic_is_lock_free
-    {2213, 1, BuiltinFlags::kNone},      // __c11_atomic_load
-    {2219, 1, BuiltinFlags::kNoexcept},  // __c11_atomic_signal_fence
-    {2222, 1, BuiltinFlags::kNone},      // __c11_atomic_store
-    {2229, 1, BuiltinFlags::kNoexcept},  // __c11_atomic_thread_fence
+    {2283, 1, BuiltinFlags::kNone},      // __c11_atomic_load
+    {2289, 1, BuiltinFlags::kNoexcept},  // __c11_atomic_signal_fence
+    {2292, 1, BuiltinFlags::kNone},      // __c11_atomic_store
+    {2299, 1, BuiltinFlags::kNoexcept},  // __c11_atomic_thread_fence
 };
 
 inline constexpr ImplicitDeclarationSignature kImplicitDeclarationSignatures[] =
     {
-        {TokenKind::T_NEW, {2232, 2, BuiltinFlags::kCplusplus}},
-        {TokenKind::T_NEW_ARRAY, {2241, 2, BuiltinFlags::kCplusplus}},
+        {TokenKind::T_NEW, {2302, 2, BuiltinFlags::kCplusplus}},
+        {TokenKind::T_NEW_ARRAY, {2311, 2, BuiltinFlags::kCplusplus}},
         {TokenKind::T_DELETE,
-         {2250, 4, BuiltinFlags::kNoexcept | BuiltinFlags::kCplusplus}},
+         {2320, 4, BuiltinFlags::kNoexcept | BuiltinFlags::kCplusplus}},
         {TokenKind::T_DELETE_ARRAY,
-         {2270, 4, BuiltinFlags::kNoexcept | BuiltinFlags::kCplusplus}},
+         {2340, 4, BuiltinFlags::kNoexcept | BuiltinFlags::kCplusplus}},
 };
 
 static_assert(

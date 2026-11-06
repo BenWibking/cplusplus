@@ -167,6 +167,36 @@ auto cxx::Codegen::ExpressionVisitor::codegenBuiltinDispatch(
     case BuiltinFunctionKind::T___BUILTIN_ISUNORDERED:
       return codegenBuiltinFloatComparison(ast);
 
+    case BuiltinFunctionKind::T___BUILTIN_ADDCB:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDCS:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDC:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDCL:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_ADDCLL:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBCB:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBCS:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBC:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBCL:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
+    case BuiltinFunctionKind::T___BUILTIN_SUBCLL:
+      return codegenBuiltinMultiprecisionArithmetic(ast);
+
     case BuiltinFunctionKind::T___BUILTIN_ADD_OVERFLOW:
       return codegenBuiltinArithmeticOverflow(ast);
 

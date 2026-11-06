@@ -277,8 +277,7 @@ void Binder::bind(EnumeratorAST* ast, EnumeratorSymbol* previous) {
   }
 
   auto owningScope = isC() ? scope()->parent() : scope();
-  auto symbol =
-      control()->newEnumeratorSymbol(owningScope, ast->identifierLoc);
+  auto symbol = control()->newEnumeratorSymbol(owningScope, ast->identifierLoc);
   ast->symbol = symbol;
   symbol->setName(ast->identifier);
   symbol->setType(type);
@@ -305,8 +304,8 @@ void Binder::bind(EnumeratorAST* ast, EnumeratorSymbol* previous) {
 void Binder::complete(EnumSpecifierAST* ast) {
   auto unscoped = symbol_cast<EnumSymbol>(ast->symbol);
   if (unscoped && !unscoped->hasFixedUnderlyingType()) {
-    const auto completed = completedEnumerationTypes(control(), traits, ast,
-                                                     unscoped->isPacked());
+    const auto completed =
+        completedEnumerationTypes(control(), traits, ast, unscoped->isPacked());
     if (completed.underlyingType && completed.promotionType) {
       unscoped->setUnderlyingType(completed.underlyingType);
       unscoped->setPromotionType(completed.promotionType);

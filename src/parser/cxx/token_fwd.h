@@ -378,6 +378,11 @@ class Token;
   V(__BUILTIN_ACOSHL, "__builtin_acoshl")                                     \
   V(__BUILTIN_ACOSL, "__builtin_acosl")                                       \
   V(__BUILTIN_ADD_OVERFLOW, "__builtin_add_overflow")                         \
+  V(__BUILTIN_ADDC, "__builtin_addc")                                         \
+  V(__BUILTIN_ADDCB, "__builtin_addcb")                                       \
+  V(__BUILTIN_ADDCL, "__builtin_addcl")                                       \
+  V(__BUILTIN_ADDCLL, "__builtin_addcll")                                     \
+  V(__BUILTIN_ADDCS, "__builtin_addcs")                                       \
   V(__BUILTIN_ADDRESSOF, "__builtin_addressof")                               \
   V(__BUILTIN_ALIGNED_ALLOC, "__builtin_aligned_alloc")                       \
   V(__BUILTIN_ALLOCA, "__builtin_alloca")                                     \
@@ -742,6 +747,11 @@ class Token;
   V(__BUILTIN_STRTOULL, "__builtin_strtoull")                                 \
   V(__BUILTIN_STRXFRM, "__builtin_strxfrm")                                   \
   V(__BUILTIN_SUB_OVERFLOW, "__builtin_sub_overflow")                         \
+  V(__BUILTIN_SUBC, "__builtin_subc")                                         \
+  V(__BUILTIN_SUBCB, "__builtin_subcb")                                       \
+  V(__BUILTIN_SUBCL, "__builtin_subcl")                                       \
+  V(__BUILTIN_SUBCLL, "__builtin_subcll")                                     \
+  V(__BUILTIN_SUBCS, "__builtin_subcs")                                       \
   V(__BUILTIN_TAN, "__builtin_tan")                                           \
   V(__BUILTIN_TANF, "__builtin_tanf")                                         \
   V(__BUILTIN_TANH, "__builtin_tanh")                                         \

@@ -644,6 +644,9 @@ class ASTInterpreter {
   [[nodiscard]] auto evaluateBuiltinArithmeticOverflow(CallExpressionAST* ast)
       -> std::optional<ConstValue>;
 
+  [[nodiscard]] auto evaluateBuiltinMultiprecisionArithmetic(
+      CallExpressionAST* ast) -> std::optional<ConstValue>;
+
   [[nodiscard]] auto evaluateBuiltinNanPayload(CallExpressionAST* ast)
       -> std::optional<std::string>;
 
