@@ -24,7 +24,6 @@
 #include <cxx/private/sve_types-priv.h>
 #include <cxx/private/utf8.h>
 
-#include <cctype>
 #include <vector>
 
 namespace cxx {
@@ -112,8 +111,21 @@ inline auto classifyCharPrefix(std::string_view text, EncodingPrefix& enc)
   return false;
 }
 
-inline auto is_idcont(int ch) -> bool {
-  return ch == '_' || std::isalnum(static_cast<unsigned char>(ch));
+constexpr auto isAsciiDigit(std::uint32_t ch) -> bool {
+  return ch >= '0' && ch <= '9';
+}
+
+constexpr auto isAsciiAlpha(std::uint32_t ch) -> bool {
+  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+}
+
+constexpr auto isIdentifierContinuation(std::uint32_t ch) -> bool {
+  return ch == '_' || isAsciiAlpha(ch) || isAsciiDigit(ch);
+}
+
+constexpr auto isAsciiSpace(std::uint32_t ch) -> bool {
+  return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\f' ||
+         ch == '\v';
 }
 
 template <typename It>
@@ -212,7 +224,7 @@ auto Lexer::readToken() -> TokenKind {
 
   const auto ch = LA();
 
-  if (std::isdigit(ch)) {
+  if (isAsciiDigit(ch)) {
     bool integer_literal = true;
     bool is_hex = false;
 
@@ -231,12 +243,13 @@ auto Lexer::readToken() -> TokenKind {
       } else if (pos_ + 1 < end_ &&
                  (!is_hex && (ch == 'e' || ch == 'E') ||
                   (is_hex && (ch == 'p' || ch == 'P'))) &&
-                 std::isdigit(LA(1))) {
+                 isAsciiDigit(LA(1))) {
         consume(1);
         integer_literal = false;
-      } else if (pos_ + 1 < end_ && ch == '\'' && is_idcont(LA(1))) {
+      } else if (pos_ + 1 < end_ && ch == '\'' &&
+                 isIdentifierContinuation(LA(1))) {
         consume();
-      } else if (is_idcont(ch)) {
+      } else if (isIdentifierContinuation(ch)) {
         consume();
       } else if (ch == '.') {
         consume();
@@ -253,10 +266,11 @@ auto Lexer::readToken() -> TokenKind {
 
   bool isRawStringLiteral = false;
 
-  if (std::isalpha(ch) || ch == '_') {
+  if (isAsciiAlpha(ch) || ch == '_') {
     if (pos_ < end_ && *pos_ == static_cast<char>(ch)) {
       auto scan = pos_ + 1;
-      while (scan < end_ && is_idcont(static_cast<unsigned char>(*scan)))
+      while (scan < end_ &&
+             isIdentifierContinuation(static_cast<unsigned char>(*scan)))
         ++scan;
       if (scan >= end_ || *scan != '\\') {
         text_.assign(pos_, scan);
@@ -266,13 +280,13 @@ auto Lexer::readToken() -> TokenKind {
         do {
           text_ += static_cast<char>(LA());
           consume();
-        } while (pos_ != end_ && is_idcont(LA()));
+        } while (pos_ != end_ && isIdentifierContinuation(LA()));
       }
     } else {
       do {
         text_ += static_cast<char>(LA());
         consume();
-      } while (pos_ != end_ && is_idcont(LA()));
+      } while (pos_ != end_ && isIdentifierContinuation(LA()));
     }
 
     bool isStringOrCharacterLiteral = false;
@@ -340,11 +354,11 @@ auto Lexer::readToken() -> TokenKind {
 
     if (lang_ == LanguageKind::kCXX) {
       bool ud = false;
-      if (std::isalpha(LA()) || LA() == '_') {
+      if (isAsciiAlpha(LA()) || LA() == '_') {
         ud = true;
         do {
           consume();
-        } while (pos_ != end_ && is_idcont(LA()));
+        } while (pos_ != end_ && isIdentifierContinuation(LA()));
       }
 
       if (ud) return TokenKind::T_USER_DEFINED_STRING_LITERAL;
@@ -378,16 +392,16 @@ auto Lexer::readToken() -> TokenKind {
       consume();
     }
 
-    if (lang_ == LanguageKind::kCXX && (std::isalpha(LA()) || LA() == '_')) {
+    if (lang_ == LanguageKind::kCXX && (isAsciiAlpha(LA()) || LA() == '_')) {
       do {
         consume();
-      } while (pos_ != end_ && is_idcont(LA()));
+      } while (pos_ != end_ && isIdentifierContinuation(LA()));
     }
 
     return TokenKind::T_CHARACTER_LITERAL;
   }
 
-  if (pos_ + 1 < end_ && LA() == '.' && std::isdigit(LA(1))) {
+  if (pos_ + 1 < end_ && LA() == '.' && isAsciiDigit(LA(1))) {
     consume();
     while (pos_ != end_) {
       const auto ch = LA();
@@ -395,9 +409,10 @@ auto Lexer::readToken() -> TokenKind {
           (ch == 'e' || ch == 'E' || ch == 'p' || ch == 'P') &&
           (LA(1) == '+' || LA(1) == '-')) {
         consume(2);
-      } else if (pos_ + 1 < end_ && ch == '\'' && is_idcont(LA(1))) {
+      } else if (pos_ + 1 < end_ && ch == '\'' &&
+                 isIdentifierContinuation(LA(1))) {
         consume();
-      } else if (is_idcont(ch)) {
+      } else if (isIdentifierContinuation(ch)) {
         consume();
       } else {
         break;
@@ -633,7 +648,7 @@ auto Lexer::skipSpaces() -> bool {
 
     const auto ch = LA();
 
-    if (std::isspace(ch)) {
+    if (isAsciiSpace(ch)) {
       if (ch == '\n') {
         tokenStartOfLine_ = true;
         tokenLeadingSpace_ = false;
