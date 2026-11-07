@@ -770,8 +770,9 @@ struct Preprocessor::Private {
   [[nodiscard]] auto filterDirectivesInArgs(const Tok* lparen, const Tok* end)
       -> FilteredArgs;
 
-  void handleConditionalDirective(PreprocessorDirectiveKind kind, const Tok* ts,
-                                  const Tok* lineEnd);
+  [[nodiscard]] auto handleConditionalDirective(PreprocessorDirectiveKind kind,
+                                                const Tok* ts,
+                                                const Tok* lineEnd) -> bool;
 
   using TokRange = std::pair<const Tok*, const Tok*>;
 
@@ -2029,9 +2030,21 @@ auto Preprocessor::Private::hasDirectivesInArgRange(const Tok* lparen,
   return false;
 }
 
-void Preprocessor::Private::handleConditionalDirective(
-    PreprocessorDirectiveKind kind, const Tok* ts, const Tok* lineEnd) {
+auto Preprocessor::Private::handleConditionalDirective(
+    PreprocessorDirectiveKind kind, const Tok* ts, const Tok* lineEnd) -> bool {
   const auto [skipping, evaluating] = state();
+
+  switch (kind) {
+    case PreprocessorDirectiveKind::T_ELIF:
+    case PreprocessorDirectiveKind::T_ELIFDEF:
+    case PreprocessorDirectiveKind::T_ELIFNDEF:
+    case PreprocessorDirectiveKind::T_ELSE:
+    case PreprocessorDirectiveKind::T_ENDIF:
+      if (evaluating_.size() == 1) return false;
+      break;
+    default:
+      break;
+  }
 
   switch (kind) {
     case PreprocessorDirectiveKind::T_IF: {
@@ -2127,6 +2140,8 @@ void Preprocessor::Private::handleConditionalDirective(
     default:
       break;
   }
+
+  return true;
 }
 
 auto Preprocessor::Private::filterDirectivesInArgs(const Tok* lparen,
@@ -2169,7 +2184,7 @@ auto Preprocessor::Private::filterDirectivesInArgs(const Tok* lparen,
       ++pos;
 
       auto lineEnd = findLineEnd(pos);
-      handleConditionalDirective(kind, pos, lineEnd);
+      (void)handleConditionalDirective(kind, pos, lineEnd);
       pos = lineEnd;
       continue;
     }
@@ -2663,7 +2678,10 @@ auto Preprocessor::Private::parseDirective(SourceFile* source,
     case PreprocessorDirectiveKind::T_ELIFDEF:
     case PreprocessorDirectiveKind::T_ELIFNDEF:
     case PreprocessorDirectiveKind::T_ELSE: {
-      handleConditionalDirective(directiveKind, ts, directiveEnd);
+      if (!handleConditionalDirective(directiveKind, ts, directiveEnd)) {
+        error(directiveLine + 1,
+              std::format("unexpected '#{}'", directiveText));
+      }
       break;
     }
 
@@ -2695,6 +2713,10 @@ auto Preprocessor::Private::parseDirective(SourceFile* source,
     }
 
     case PreprocessorDirectiveKind::T_ELIF: {
+      if (evaluating_.size() == 1) {
+        error(directiveLine + 1, "unexpected '#elif'");
+        break;
+      }
       if (!evaluating) {
         setState(std::tuple(true, false));
       } else {
@@ -2722,9 +2744,9 @@ auto Preprocessor::Private::parseDirective(SourceFile* source,
     }
 
     case PreprocessorDirectiveKind::T_ENDIF: {
-      handleConditionalDirective(directiveKind, ts, directiveEnd);
-      if (evaluating_.empty()) {
+      if (!handleConditionalDirective(directiveKind, ts, directiveEnd)) {
         error(directiveLine + 1, "unexpected '#endif'");
+        break;
       }
       if (!source->headerGuardName.empty() &&
           evaluating_.size() == source->headerProtectionLevel) {

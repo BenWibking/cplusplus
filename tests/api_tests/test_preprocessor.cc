@@ -24,10 +24,13 @@
 #include <cxx/token.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <filesystem>
+#include <format>
 #include <future>
 #include <latch>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -195,4 +198,29 @@ TEST(Preprocessor, IncludeCandidatesUseGenericPaths) {
   ASSERT_EQ(preprocessor.includedFiles().size(), 1u);
   EXPECT_EQ(preprocessor.includedFiles().front().first,
             userCandidate.generic_string());
+}
+
+TEST(Preprocessor, UnmatchedConditionalDirectivesPreserveRootState) {
+  constexpr std::string_view directives[] = {
+      "#elif 1", "#elifdef NAME", "#elifndef NAME", "#else", "#endif",
+  };
+
+  for (auto directive : directives) {
+    Control control;
+    CapturingDiagnosticsClient diagnostics;
+    Preprocessor preprocessor{&control, &diagnostics};
+    std::vector<Token> tokens;
+    preprocessor.preprocess(std::format("{}\nint after;\n", directive),
+                            "main.cc", tokens);
+
+    ASSERT_EQ(diagnostics.diagnostics.size(), 1u) << directive;
+    EXPECT_EQ(diagnostics.diagnostics.front().message(),
+              std::format("unexpected '{}'",
+                          directive.substr(0, directive.find(' '))))
+        << directive;
+    EXPECT_TRUE(std::ranges::any_of(tokens, [](const Token& token) {
+      return token.kind() == TokenKind::T_IDENTIFIER &&
+             token.spell() == "after";
+    })) << directive;
+  }
 }
