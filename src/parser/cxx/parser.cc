@@ -1147,6 +1147,46 @@ auto isClosingDelimiter(TokenKind kind) -> bool {
   }
 }
 
+auto isFoldOperator(TokenKind kind) -> bool {
+  switch (kind) {
+    case TokenKind::T_GREATER_GREATER_EQUAL:
+    case TokenKind::T_GREATER_GREATER:
+    case TokenKind::T_GREATER_EQUAL:
+    case TokenKind::T_GREATER:
+    case TokenKind::T_PLUS:
+    case TokenKind::T_MINUS:
+    case TokenKind::T_STAR:
+    case TokenKind::T_SLASH:
+    case TokenKind::T_PERCENT:
+    case TokenKind::T_CARET:
+    case TokenKind::T_AMP:
+    case TokenKind::T_BAR:
+    case TokenKind::T_LESS_LESS:
+    case TokenKind::T_PLUS_EQUAL:
+    case TokenKind::T_MINUS_EQUAL:
+    case TokenKind::T_STAR_EQUAL:
+    case TokenKind::T_SLASH_EQUAL:
+    case TokenKind::T_PERCENT_EQUAL:
+    case TokenKind::T_CARET_EQUAL:
+    case TokenKind::T_AMP_EQUAL:
+    case TokenKind::T_BAR_EQUAL:
+    case TokenKind::T_LESS_LESS_EQUAL:
+    case TokenKind::T_EQUAL:
+    case TokenKind::T_EQUAL_EQUAL:
+    case TokenKind::T_EXCLAIM_EQUAL:
+    case TokenKind::T_LESS:
+    case TokenKind::T_LESS_EQUAL:
+    case TokenKind::T_AMP_AMP:
+    case TokenKind::T_BAR_BAR:
+    case TokenKind::T_COMMA:
+    case TokenKind::T_DOT_STAR:
+    case TokenKind::T_MINUS_GREATER_STAR:
+      return true;
+    default:
+      return false;
+  }
+}
+
 auto typeOfSymbol(Symbol* symbol) -> const Type* {
   if (!symbol) return nullptr;
   return symbol->type();
@@ -1341,8 +1381,7 @@ auto Parser::parse_primary_expression(ExpressionAST*& yyast,
   if (parse_lambda_expression(yyast)) return true;
   if (parse_requires_expression(yyast)) return true;
   if (lookat(TokenKind::T_LPAREN, TokenKind::T_RPAREN)) return false;
-  if (parse_fold_expression(yyast, ctx)) return true;
-  if (parse_nested_expession(yyast, ctx)) return true;
+  if (parse_parenthesized_expression(yyast, ctx)) return true;
   auto idExpressionContext = IdExpressionContext::kExpression;
   if (ctx.inRequiresClause)
     idExpressionContext = IdExpressionContext::kRequiresClause;
@@ -2338,8 +2377,12 @@ void Parser::parse_generic_association(GenericAssociationAST*& yyast) {
   parse_assignment_expression(ast->expression, ExprContext{});
 }
 
-auto Parser::parse_nested_expession(ExpressionAST*& yyast,
-                                    const ExprContext& ctx) -> bool {
+auto Parser::parse_parenthesized_expression(ExpressionAST*& yyast,
+                                            const ExprContext& ctx) -> bool {
+  if (isCxx() && lookat(TokenKind::T_LPAREN, TokenKind::T_DOT_DOT_DOT)) {
+    return parse_left_fold_expression(yyast, ctx);
+  }
+
   SourceLocation lparenLoc;
 
   if (!match(TokenKind::T_LPAREN, lparenLoc)) return false;
@@ -2362,100 +2405,89 @@ auto Parser::parse_nested_expession(ExpressionAST*& yyast,
     return true;
   }
 
-  auto ast = NestedExpressionAST::create(pool_);
-  yyast = ast;
-
-  ast->lparenLoc = lparenLoc;
-
-  parse_expression(ast->expression, ctx);
-
-  expect(TokenKind::T_RPAREN, ast->rparenLoc);
-
-  check(&yyast);
-
-  return true;
-}
-
-auto Parser::parse_fold_expression(ExpressionAST*& yyast,
-                                   const ExprContext& ctx) -> bool {
-  if (!isCxx()) return false;
-
-  if (!lookat(TokenKind::T_LPAREN)) return false;
-
-  if (parse_left_fold_expression(yyast, ctx)) return true;
-
-  SourceLocation lparenLoc;
+  // A fold and an ordinary parenthesized expression share a cast-expression
+  // prefix. Parse it once: speculatively reparsing that prefix at every nested
+  // parenthesis makes malformed input exponentially expensive.
   ExpressionAST* expression = nullptr;
-  SourceLocation opLoc;
-  TokenKind op = TokenKind::T_EOF_SYMBOL;
-  SourceLocation ellipsisLoc;
-  bool isNestedExpression = false;
-
-  auto lookat_fold_or_nested_expression = [&] {
-    LookaheadParser lookahead{this};
-    if (!match(TokenKind::T_LPAREN, lparenLoc)) return false;
-    if (!parse_cast_expression(expression, ctx)) return false;
-    if (lookat(TokenKind::T_RPAREN)) {
-      isNestedExpression = true;
-      lookahead.commit();
-      return true;
-    }
-    if (!parse_fold_operator(opLoc, op)) return false;
-    if (!match(TokenKind::T_DOT_DOT_DOT, ellipsisLoc)) return false;
-    lookahead.commit();
-    return true;
-  };
-
-  if (!lookat_fold_or_nested_expression()) return false;
-
-  if (isNestedExpression) {
+  if (!parse_cast_expression(expression, ExprContext{})) {
     auto ast = NestedExpressionAST::create(pool_);
     yyast = ast;
     ast->lparenLoc = lparenLoc;
-    ast->expression = expression;
+    parse_expression(ast->expression, ctx);
     expect(TokenKind::T_RPAREN, ast->rparenLoc);
     check(&yyast);
     return true;
   }
 
-  if (SourceLocation rparenLoc; match(TokenKind::T_RPAREN, rparenLoc)) {
-    auto ast = RightFoldExpressionAST::create(pool_);
+  SourceLocation opLoc;
+  TokenKind op = TokenKind::T_EOF_SYMBOL;
+  SourceLocation ellipsisLoc;
+  bool isFoldExpression = false;
+
+  if (isCxx()) {
+    LookaheadParser lookahead{this};
+    if (parse_fold_operator(opLoc, op) &&
+        match(TokenKind::T_DOT_DOT_DOT, ellipsisLoc)) {
+      isFoldExpression = true;
+      lookahead.commit();
+    }
+  }
+
+  if (isFoldExpression) {
+    if (SourceLocation rparenLoc; match(TokenKind::T_RPAREN, rparenLoc)) {
+      auto ast = RightFoldExpressionAST::create(pool_);
+      yyast = ast;
+
+      ast->lparenLoc = lparenLoc;
+      ast->expression = expression;
+      ast->opLoc = opLoc;
+      ast->op = op;
+      ast->ellipsisLoc = ellipsisLoc;
+      ast->rparenLoc = rparenLoc;
+
+      return true;
+    }
+
+    auto ast = FoldExpressionAST::create(pool_);
     yyast = ast;
 
     ast->lparenLoc = lparenLoc;
-    ast->expression = expression;
+    ast->leftExpression = expression;
     ast->opLoc = opLoc;
     ast->op = op;
     ast->ellipsisLoc = ellipsisLoc;
-    ast->rparenLoc = rparenLoc;
+
+    if (!parse_fold_operator(ast->foldOpLoc, ast->foldOp)) {
+      parse_error("expected a fold operator");
+    }
+
+    if (!parse_cast_expression(ast->rightExpression, ctx)) {
+      report_failed_parse("expected an expression");
+    }
+
+    expect(TokenKind::T_RPAREN, ast->rparenLoc);
 
     return true;
   }
 
-  auto ast = FoldExpressionAST::create(pool_);
+  parse_rest_of_binary_expression(expression, ExprContext{});
+  parse_rest_of_conditional_expression(expression, ExprContext{});
+  parse_rest_of_assignment_expression(expression, ExprContext{});
+  parse_rest_of_expression(expression, ctx);
+
+  auto ast = NestedExpressionAST::create(pool_);
   yyast = ast;
-
   ast->lparenLoc = lparenLoc;
-  ast->leftExpression = expression;
-  ast->opLoc = opLoc;
-  ast->op = op;
-  ast->ellipsisLoc = ellipsisLoc;
-
-  if (!parse_fold_operator(ast->foldOpLoc, ast->foldOp)) {
-    parse_error("expected a fold operator");
-  }
-
-  if (!parse_cast_expression(ast->rightExpression, ctx)) {
-    report_failed_parse("expected an expression");
-  }
-
+  ast->expression = expression;
   expect(TokenKind::T_RPAREN, ast->rparenLoc);
-
+  check(&yyast);
   return true;
 }
 
 auto Parser::parse_fold_operator(SourceLocation& loc, TokenKind& op) -> bool {
   loc = currentLocation();
+
+  if (!isFoldOperator(LA().kind())) return false;
 
   switch (TokenKind(LA())) {
     case TokenKind::T_GREATER: {
@@ -2471,44 +2503,11 @@ auto Parser::parse_fold_operator(SourceLocation& loc, TokenKind& op) -> bool {
       return true;
     }
 
-    case TokenKind::T_GREATER_GREATER_EQUAL:
-    case TokenKind::T_GREATER_GREATER:
-    case TokenKind::T_GREATER_EQUAL:
-    case TokenKind::T_PLUS:
-    case TokenKind::T_MINUS:
-    case TokenKind::T_STAR:
-    case TokenKind::T_SLASH:
-    case TokenKind::T_PERCENT:
-    case TokenKind::T_CARET:
-    case TokenKind::T_AMP:
-    case TokenKind::T_BAR:
-    case TokenKind::T_LESS_LESS:
-    case TokenKind::T_PLUS_EQUAL:
-    case TokenKind::T_MINUS_EQUAL:
-    case TokenKind::T_STAR_EQUAL:
-    case TokenKind::T_SLASH_EQUAL:
-    case TokenKind::T_PERCENT_EQUAL:
-    case TokenKind::T_CARET_EQUAL:
-    case TokenKind::T_AMP_EQUAL:
-    case TokenKind::T_BAR_EQUAL:
-    case TokenKind::T_LESS_LESS_EQUAL:
-    case TokenKind::T_EQUAL:
-    case TokenKind::T_EQUAL_EQUAL:
-    case TokenKind::T_EXCLAIM_EQUAL:
-    case TokenKind::T_LESS:
-    case TokenKind::T_LESS_EQUAL:
-    case TokenKind::T_AMP_AMP:
-    case TokenKind::T_BAR_BAR:
-    case TokenKind::T_COMMA:
-    case TokenKind::T_DOT_STAR:
-    case TokenKind::T_MINUS_GREATER_STAR: {
+    default: {
       op = LA().kind();
       consumeToken();
       return true;
     }
-
-    default:
-      return false;
   }
 }
 
@@ -3900,13 +3899,18 @@ auto Parser::parse_binary_expression(ExpressionAST*& yyast,
                                      const ExprContext& exprContext) -> bool {
   if (!parse_cast_expression(yyast, exprContext)) return false;
 
+  parse_rest_of_binary_expression(yyast, exprContext);
+
+  return true;
+}
+
+void Parser::parse_rest_of_binary_expression(ExpressionAST*& yyast,
+                                             const ExprContext& exprContext) {
   LookaheadParser lookahead{this};
 
   if (parse_binary_expression_helper(yyast, Prec::kLogicalOr, exprContext)) {
     lookahead.commit();
   }
-
-  return true;
 }
 
 auto Parser::parse_lookahead_binary_operator(SourceLocation& loc, TokenKind& tk,
@@ -3984,8 +3988,15 @@ auto Parser::parse_conditional_expression(ExpressionAST*& yyast,
     -> bool {
   if (!parse_logical_or_expression(yyast, exprContext)) return false;
 
+  parse_rest_of_conditional_expression(yyast, exprContext);
+
+  return true;
+}
+
+void Parser::parse_rest_of_conditional_expression(
+    ExpressionAST*& yyast, const ExprContext& exprContext) {
   SourceLocation questionLoc;
-  if (!match(TokenKind::T_QUESTION, questionLoc)) return true;
+  if (!match(TokenKind::T_QUESTION, questionLoc)) return;
 
   auto ast = ConditionalExpressionAST::create(pool_);
   ast->condition = yyast;
@@ -4006,8 +4017,6 @@ auto Parser::parse_conditional_expression(ExpressionAST*& yyast,
   }
 
   check(&yyast);
-
-  return true;
 }
 
 auto Parser::parse_yield_expression(ExpressionAST*& yyast,
@@ -4065,6 +4074,13 @@ auto Parser::parse_maybe_assignment_expression(ExpressionAST*& yyast,
 
   if (!parse_conditional_expression(yyast, exprContext)) return false;
 
+  parse_rest_of_assignment_expression(yyast, exprContext);
+
+  return true;
+}
+
+void Parser::parse_rest_of_assignment_expression(
+    ExpressionAST*& yyast, const ExprContext& exprContext) {
   SourceLocation opLoc;
   TokenKind op = TokenKind::T_EOF_SYMBOL;
 
@@ -4097,8 +4113,6 @@ auto Parser::parse_maybe_assignment_expression(ExpressionAST*& yyast,
 
     check(&yyast);
   }
-
-  return true;
 }
 
 auto Parser::parse_assignment_operator(SourceLocation& loc, TokenKind& op)
@@ -4135,6 +4149,13 @@ auto Parser::parse_maybe_expression(ExpressionAST*& yyast,
                                     const ExprContext& ctx) -> bool {
   if (!parse_maybe_assignment_expression(yyast, ExprContext{})) return false;
 
+  parse_rest_of_expression(yyast, ctx);
+
+  return true;
+}
+
+void Parser::parse_rest_of_expression(ExpressionAST*& yyast,
+                                      const ExprContext& ctx) {
   SourceLocation commaLoc;
 
   while (match(TokenKind::T_COMMA, commaLoc)) {
@@ -4155,8 +4176,6 @@ auto Parser::parse_maybe_expression(ExpressionAST*& yyast,
 
     check(&yyast);
   }
-
-  return true;
 }
 
 auto Parser::parse_constant_expression(ExpressionAST*& yyast,
