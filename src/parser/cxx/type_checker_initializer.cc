@@ -284,12 +284,16 @@ void TypeDeducer::deduceAutoType(S* var) {
 
   if (!var->initializer()) {
     ctx.error(var->location(), "variable with 'auto' type must be initialized");
+    var->setType(nullptr);
     return;
   }
 
   auto deduced = ctx.checker.deduceDeclaredPlaceholderType(
       declType, var->initializer(), var->location());
-  if (!deduced) return;
+  if (!deduced) {
+    var->setType(nullptr);
+    return;
+  }
   var->setType(deduced);
 
   if (auto classType =
@@ -355,6 +359,7 @@ void InitDeclaratorChecker::checkVariable(S* var, ExpressionAST*& initializer,
   typeDeducer.deduceArraySize(var);
   typeDeducer.deduceClassTemplateArguments(var, typeSpecifier);
   typeDeducer.deduceAutoType(var);
+  if (!var->type()) return;
 
   if (var->isConstexpr()) var->setType(ctx.traits.add_const(var->type()));
 
