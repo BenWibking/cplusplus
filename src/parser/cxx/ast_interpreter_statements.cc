@@ -262,6 +262,11 @@ auto ASTInterpreter::StatementVisitor::operator()(SwitchStatementAST* ast)
 
 auto ASTInterpreter::StatementVisitor::operator()(WhileStatementAST* ast)
     -> StatementResult {
+  if (!ast->statement) {
+    interp.aborted_ = true;
+    return {};
+  }
+
   for (;;) {
     if (!interp.tick()) return {};
 
@@ -276,6 +281,11 @@ auto ASTInterpreter::StatementVisitor::operator()(WhileStatementAST* ast)
 
 auto ASTInterpreter::StatementVisitor::operator()(DoStatementAST* ast)
     -> StatementResult {
+  if (!ast->statement) {
+    interp.aborted_ = true;
+    return {};
+  }
+
   for (;;) {
     if (!interp.tick()) return {};
 
@@ -570,6 +580,11 @@ auto ASTInterpreter::StatementVisitor::forRangeOverClassIterator(
 
 auto ASTInterpreter::StatementVisitor::operator()(ForRangeStatementAST* ast)
     -> StatementResult {
+  if (!ast->statement) {
+    interp.aborted_ = true;
+    return {};
+  }
+
   AutomaticScope scope{interp};
   auto result = [&]() -> StatementResult {
     (void)interp.statement(ast->initializer);
@@ -607,6 +622,11 @@ auto ASTInterpreter::StatementVisitor::operator()(ForRangeStatementAST* ast)
 
 auto ASTInterpreter::StatementVisitor::operator()(ForStatementAST* ast)
     -> StatementResult {
+  if (!ast->statement) {
+    interp.aborted_ = true;
+    return {};
+  }
+
   AutomaticScope scope{interp};
   auto loopResult = [&]() -> StatementResult {
     (void)interp.statement(ast->initializer);
