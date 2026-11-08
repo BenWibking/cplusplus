@@ -151,8 +151,11 @@ class SubobjectPathVisitor final : public ASTVisitor {
 
   void visit(ImplicitCastExpressionAST* ast) override {
     if (ast->subobjectPath) {
-      castPaths.emplace_back(ListView(ast->subobjectPath).begin(),
-                             ListView(ast->subobjectPath).end());
+      auto& paths = ast->castKind == ImplicitCastKind::kBaseToDerivedConversion
+                        ? inversePaths
+                        : castPaths;
+      paths.emplace_back(ListView(ast->subobjectPath).begin(),
+                         ListView(ast->subobjectPath).end());
     }
     ASTVisitor::visit(ast);
   }
@@ -160,6 +163,8 @@ class SubobjectPathVisitor final : public ASTVisitor {
   std::vector<std::vector<Symbol*>> implicitPaths;
   std::vector<std::vector<Symbol*>> memberPaths;
   std::vector<std::vector<Symbol*>> castPaths;
+  // Derived-to-base paths retained by inverse class conversions.
+  std::vector<std::vector<Symbol*>> inversePaths;
 };
 
 [[nodiscard]] auto containsBasePath(
@@ -1068,6 +1073,10 @@ using Member = Ref<object.Left::value>;
 constexpr const unsigned& select(const Left& left) { return left.value; }
 using Converted = Ref<select(static_cast<const Left&>(object))>;
 static_assert(__is_same(Member, Converted));
+struct Unique : Left {};
+const Unique& recover(const Base& base) {
+  return static_cast<const Unique&>(base);
+}
 )"};
     data = prefix.emit();
     ASSERT_TRUE(prefix.errors().empty());
@@ -1097,6 +1106,7 @@ static_assert(__is_same(Member, Converted));
   EXPECT_TRUE(containsBasePath(restoredPaths.implicitPaths, {right, base}));
   EXPECT_TRUE(containsBasePath(restoredPaths.memberPaths, {left, base}));
   EXPECT_TRUE(containsBasePath(restoredPaths.castPaths, {left}));
+  EXPECT_TRUE(containsBasePath(restoredPaths.inversePaths, {left, base}));
 
   auto cloned = consumer.ast()->clone(consumer.arena());
   SubobjectPathVisitor clonedPaths;
@@ -1105,6 +1115,7 @@ static_assert(__is_same(Member, Converted));
   EXPECT_TRUE(containsBasePath(clonedPaths.implicitPaths, {right, base}));
   EXPECT_TRUE(containsBasePath(clonedPaths.memberPaths, {left, base}));
   EXPECT_TRUE(containsBasePath(clonedPaths.castPaths, {left}));
+  EXPECT_TRUE(containsBasePath(clonedPaths.inversePaths, {left, base}));
 }
 
 TEST(PrecompiledHeader, RestoresConstexprBranchSelections) {

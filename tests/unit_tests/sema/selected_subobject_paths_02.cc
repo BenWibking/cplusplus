@@ -47,3 +47,11 @@ unsigned callOverloaded(Both& object) {
 unsigned callStatic(Both& object) { return object.overloaded(13); }
 
 unsigned Base::* memberPointer = &Both::value;
+
+struct Adjusted : Left { unsigned tail; };
+constexpr Base standalone{};
+constexpr Base array[2]{};
+// A base object with no selected containing derived object cannot be downcast.
+static_assert(static_cast<const Adjusted*>(&standalone) == nullptr); // expected-error {{static assertion expression is not an integral constant expression}}
+// A one-past pointer does not designate a base subobject of a derived object.
+static_assert(static_cast<const Adjusted*>(array + 2) == nullptr); // expected-error {{static assertion expression is not an integral constant expression}}

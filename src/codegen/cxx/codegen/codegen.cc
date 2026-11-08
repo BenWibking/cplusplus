@@ -1685,56 +1685,6 @@ auto Codegen::emitBaseClassAddress(SourceLocation loc, ir::ValueRef objectPtr,
   return current;
 }
 
-auto Codegen::emitDerivedClassAddress(SourceLocation loc,
-                                      ir::ValueRef objectPtr,
-                                      ClassSymbol* fromClass,
-                                      ClassSymbol* targetClass)
-    -> ir::ValueRef {
-  if (!objectPtr || !fromClass || !targetClass) return objectPtr;
-  if (!(emitter_.typeKind(emitter_.typeOf(objectPtr)) == ir::TypeKind::Pointer))
-    return objectPtr;
-
-  fromClass = classDefinition(fromClass);
-  targetClass = classDefinition(targetClass);
-  if (fromClass == targetClass) return objectPtr;
-
-  std::vector<BaseClassSymbol*> path;
-  if (!findBaseClassPath(targetClass, fromClass, path)) return objectPtr;
-
-  std::int64_t byteOffset = 0;
-  auto currentClass = targetClass;
-
-  for (auto step : path) {
-    auto baseClass = classDefinition(symbol_cast<ClassSymbol>(step->symbol()));
-    if (step->isVirtual())
-      cxx_runtime_error("base-to-derived conversion through a virtual base");
-
-    if (auto layout = currentClass->layout()) {
-      if (auto baseInfo = layout->getBaseInfo(baseClass))
-        byteOffset += static_cast<std::int64_t>(baseInfo->offset);
-    }
-
-    currentClass = baseClass;
-  }
-
-  auto derivedPtrType = emitter_.pointerType(convertType(targetClass->type()));
-
-  if (byteOffset == 0) {
-    return emitter_.bitcast(loc, derivedPtrType, objectPtr);
-  }
-
-  auto i8PtrType = emitter_.pointerType(emitter_.integerType(8));
-  const auto wordSize =
-      static_cast<std::int64_t>(control()->memoryLayout()->sizeOfPointer());
-  auto wordType = emitter_.integerType(static_cast<unsigned>(wordSize * 8));
-
-  auto objectI8 = emitter_.bitcast(loc, i8PtrType, objectPtr);
-  auto offsetOp = emitter_.constantInt(loc, wordType, -byteOffset);
-  auto adjusted = emitter_.pointerAdd(loc, i8PtrType, objectI8, offsetOp);
-
-  return emitter_.bitcast(loc, derivedPtrType, adjusted);
-}
-
 auto Codegen::makeMemberFunctionPointer(
     SourceLocation loc, const MemberFunctionPointerType* pointerType,
     ir::ValueRef pointerField, ir::ValueRef adjustmentField) -> ir::ValueRef {

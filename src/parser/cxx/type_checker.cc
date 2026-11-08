@@ -3937,8 +3937,8 @@ auto TypeChecker::Visitor::CheckStaticCast::castsPointerToDerived() -> bool {
                                           expression->firstSourceLocation()))
     return true;
 
-  visitor.emit_implicit_cast(expression, source, targetType,
-                             ImplicitCastKind::kBaseToDerivedConversion);
+  expression = source;
+  visitor.stdconv_.convertPointer(expression, targetType);
 
   return true;
 }

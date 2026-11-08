@@ -577,6 +577,12 @@ class ASTInterpreter {
                                         List<Symbol*>* subobjectPath)
       -> Receiver;
 
+  // Class conversions retain their derived-to-base declaration path. Inverse
+  // conversions remove that exact suffix from the selected object address.
+  [[nodiscard]] auto adjustClassAddress(ImplicitCastExpressionAST* conversion,
+                                        std::shared_ptr<ConstAddress> address)
+      -> std::shared_ptr<ConstAddress>;
+
   [[nodiscard]] auto addressOfField(const Receiver& receiver,
                                     FieldSymbol* field)
       -> std::optional<ConstValue>;

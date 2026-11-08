@@ -148,7 +148,8 @@ auto ASTInterpreter::sameObjectOperand(ExpressionAST* ast) -> ExpressionAST* {
   if (!is_glvalue(ast)) return nullptr;
   if (auto cast = ast_cast<ImplicitCastExpressionAST>(ast)) {
     if (cast->castKind == ImplicitCastKind::kUserDefinedConversion ||
-        cast->castKind == ImplicitCastKind::kDerivedToBaseConversion)
+        cast->castKind == ImplicitCastKind::kDerivedToBaseConversion ||
+        cast->castKind == ImplicitCastKind::kBaseToDerivedConversion)
       return nullptr;
     return cast->expression;
   }
@@ -974,6 +975,13 @@ auto ASTInterpreter::lvalue(ExpressionAST* ast) -> ConstValue* {
     if (cast->castKind == ImplicitCastKind::kUserDefinedConversion)
       return evaluateConversionFunctionCall(cast, CallResultKind::kLValue)
           .lvalue;
+    if (cast->castKind == ImplicitCastKind::kBaseToDerivedConversion) {
+      auto value = addressOfLvalue(cast);
+      auto address =
+          value ? std::get_if<std::shared_ptr<ConstAddress>>(&*value) : nullptr;
+      return address && *address ? addressSlot(**address, 0, cast->type)
+                                 : nullptr;
+    }
     if (cast->castKind == ImplicitCastKind::kDerivedToBaseConversion) {
       auto slot = lvalue(cast->expression);
       for (auto symbol : ListView(cast->subobjectPath)) {
@@ -1681,6 +1689,24 @@ auto ASTInterpreter::applySubobjectPath(Receiver receiver,
   return receiver;
 }
 
+auto ASTInterpreter::adjustClassAddress(ImplicitCastExpressionAST* conversion,
+                                        std::shared_ptr<ConstAddress> address)
+    -> std::shared_ptr<ConstAddress> {
+  if (conversion->castKind == ImplicitCastKind::kDerivedToBaseConversion)
+    return applySubobjectPath(Receiver{{}, std::move(address)},
+                              conversion->subobjectPath)
+        .address;
+
+  auto path = ListView(conversion->subobjectPath);
+  std::vector<Symbol*> steps(path.begin(), path.end());
+  for (auto step = steps.rbegin(); step != steps.rend(); ++step) {
+    if (!address || address->symbol() != *step || address->offset() != 0)
+      return {};
+    address = address->parent();
+  }
+  return address;
+}
+
 auto ASTInterpreter::addressOfField(const Receiver& receiver,
                                     FieldSymbol* field)
     -> std::optional<ConstValue> {
@@ -1915,16 +1941,16 @@ auto ASTInterpreter::addressOfLvalue(ExpressionAST* ast)
     if (cast->castKind == ImplicitCastKind::kUserDefinedConversion)
       return evaluateConversionFunctionCall(cast, CallResultKind::kAddress)
           .value;
-    if (cast->castKind == ImplicitCastKind::kDerivedToBaseConversion) {
+    if (cast->castKind == ImplicitCastKind::kDerivedToBaseConversion ||
+        cast->castKind == ImplicitCastKind::kBaseToDerivedConversion) {
       auto value = addressOfLvalue(cast->expression);
       auto address =
           value ? std::get_if<std::shared_ptr<ConstAddress>>(&*value) : nullptr;
       if (!address || !*address) return std::nullopt;
 
-      auto receiver =
-          applySubobjectPath(Receiver{{}, *address}, cast->subobjectPath);
-      if (!receiver.address) return std::nullopt;
-      return ConstValue{std::move(receiver.address)};
+      auto adjusted = adjustClassAddress(cast, *address);
+      if (!adjusted) return std::nullopt;
+      return ConstValue{std::move(adjusted)};
     }
   }
 
@@ -3215,10 +3241,28 @@ auto ASTInterpreter::ExpressionVisitor::operator()(
     return ConstValue{ConstAddress::arrayElement(*address, 0)};
   }
 
+  if (ast->castKind == ImplicitCastKind::kBaseToDerivedConversion &&
+      is_glvalue(ast)) {
+    auto value = interp.addressOfLvalue(ast);
+    auto address =
+        value ? std::get_if<std::shared_ptr<ConstAddress>>(&*value) : nullptr;
+    return address && *address ? interp.loadAddress(**address, 0, ast->type)
+                               : std::nullopt;
+  }
+
   auto value = evaluate(ast->expression);
   if (!value.has_value()) return std::nullopt;
 
-  if (ast->castKind == ImplicitCastKind::kDerivedToBaseConversion) {
+  if (ast->castKind == ImplicitCastKind::kDerivedToBaseConversion ||
+      ast->castKind == ImplicitCastKind::kBaseToDerivedConversion) {
+    if (unit()->typeTraits().is_pointer(ast->type)) {
+      if (auto nonnull = interp.toBool(*value); nonnull && !*nonnull)
+        return value;
+      auto address = std::get_if<std::shared_ptr<ConstAddress>>(&*value);
+      if (!address || !*address) return std::nullopt;
+      auto adjusted = interp.adjustClassAddress(ast, *address);
+      return adjusted ? ExpressionResult{std::move(adjusted)} : std::nullopt;
+    }
     Receiver receiver;
     if (auto address = std::get_if<std::shared_ptr<ConstAddress>>(&*value)) {
       receiver.address = *address;

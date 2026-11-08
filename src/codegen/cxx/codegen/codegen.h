@@ -496,12 +496,6 @@ class Codegen {
                                           ClassSymbol* targetClass)
       -> ir::ValueRef;
 
-  [[nodiscard]] auto emitDerivedClassAddress(SourceLocation loc,
-                                             ir::ValueRef objectPtr,
-                                             ClassSymbol* fromClass,
-                                             ClassSymbol* targetClass)
-      -> ir::ValueRef;
-
   [[nodiscard]] auto emitMemberFunctionPointerValue(
       SourceLocation loc, const MemberFunctionPointerType* pointerType,
       FunctionSymbol* function, std::int64_t adjustmentBytes) -> ir::ValueRef;

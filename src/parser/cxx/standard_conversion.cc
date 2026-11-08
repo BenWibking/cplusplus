@@ -2188,9 +2188,12 @@ void StandardConversion::wrapWithImplicitCast(ImplicitCastKind castKind,
     }
   }
 
-  if (castKind == ImplicitCastKind::kDerivedToBaseConversion) {
-    if (auto path = lookupBaseSubobjectPath(convertedClassSymbol(expr->type),
-                                            convertedClassSymbol(type))) {
+  if (isClassAdjustment(castKind)) {
+    auto derived = convertedClassSymbol(expr->type);
+    auto base = convertedClassSymbol(type);
+    if (castKind == ImplicitCastKind::kBaseToDerivedConversion)
+      std::swap(derived, base);
+    if (auto path = lookupBaseSubobjectPath(derived, base)) {
       cast->subobjectPath = make_symbol_path(arena_, *path);
     }
   }

@@ -120,6 +120,52 @@ struct Derived : T {
 constexpr Derived<Both> instantiated{{{{3}}, {{7}}}};
 static_assert(instantiated.inherited() == 17);
 
+// Class adjustments preserve the complete object behind the selected base.
+struct Adjusted : Other, Left { unsigned tail; };
+constexpr Adjusted adjusted{{17}, {{19}}, 23};
+constexpr const Base* adjustedBase = &adjusted;
+static_assert(adjustedBase->value == 19);
+static_assert(static_cast<const Adjusted*>(adjustedBase) == &adjusted);
+static_assert(static_cast<const Adjusted&>(*adjustedBase).tail == 23);
+static_assert(static_cast<const Adjusted&&>(*adjustedBase).tail == 23);
+static_assert(static_cast<const Base&&>(adjusted).value == 19);
+template <typename T>
+constexpr const T* recover(const Base* value) { return static_cast<const T*>(value); }
+static_assert(recover<Adjusted>(adjustedBase) == &adjusted);
+
+constexpr const Right* selectedRight = &initialized;
+constexpr const Base* selectedLeaf = selectedRight;
+static_assert(static_cast<const Right*>(selectedLeaf) == selectedRight);
+static_assert(static_cast<const Both*>(selectedRight) == &initialized);
+
+extern Adjusted externalAdjusted;
+static_assert(static_cast<Adjusted*>(static_cast<Base*>(&externalAdjusted)) == &externalAdjusted);
+using AdjustedMember = Ref<static_cast<const Adjusted&>(*adjustedBase).tail>;
+using DirectAdjustedMember = Ref<adjusted.tail>;
+static_assert(__is_same(AdjustedMember, DirectAdjustedMember));
+
+constexpr Adjusted adjustedArray[] = {{{1}, {{2}}, 3}, {{4}, {{5}}, 6}};
+constexpr const Base* arrayBase = &adjustedArray[1];
+static_assert(static_cast<const Adjusted*>(arrayBase) == &adjustedArray[1]);
+static_assert(static_cast<const Adjusted&>(*arrayBase).tail == 6);
+
+constexpr Adjusted* nullAdjusted = nullptr;
+constexpr Base* nullBase = nullptr;
+static_assert(static_cast<Base*>(nullAdjusted) == nullptr);
+static_assert(static_cast<Adjusted*>(nullBase) == nullptr);
+static_assert(static_cast<const Base*>(nullAdjusted) == nullptr);
+static_assert(static_cast<const Adjusted*>(nullBase) == nullptr);
+
+constexpr bool updateAdjusted() {
+  Adjusted value{{1}, {{2}}, 3};
+  Base& base = value;
+  static_cast<Adjusted&>(base).tail = 7;
+  Adjusted&& moved = static_cast<Adjusted&&>(base);
+  moved.tail += 2;
+  return value.Other::value == 1 && base.value == 2 && value.tail == 9;
+}
+static_assert(updateAdjusted());
+
 RepeatedLeft repeatedLeft;
 RepeatedRight repeatedRight;
 UsingSelected usingSelected;

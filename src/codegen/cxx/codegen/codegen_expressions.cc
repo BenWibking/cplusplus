@@ -238,10 +238,7 @@ struct [[nodiscard]] Codegen::ExpressionVisitor {
   auto emitVectorSplat(ImplicitCastExpressionAST* ast) -> ExpressionResult;
 
   auto emitVectorConversion(ImplicitCastExpressionAST* ast) -> ExpressionResult;
-  auto emitBaseToDerivedConversion(ImplicitCastExpressionAST* ast)
-      -> ExpressionResult;
-  auto emitDerivedToBaseConversion(ImplicitCastExpressionAST* ast)
-      -> ExpressionResult;
+  auto emitClassAdjustment(ImplicitCastExpressionAST* ast) -> ExpressionResult;
   auto emitUserDefinedConversion(ImplicitCastExpressionAST* ast)
       -> ExpressionResult;
 
@@ -3133,52 +3130,69 @@ auto Codegen::ExpressionVisitor::emitPointerConversion(
   return {op};
 }
 
-auto Codegen::ExpressionVisitor::emitDerivedToBaseConversion(
+auto Codegen::ExpressionVisitor::emitClassAdjustment(
     ImplicitCastExpressionAST* ast) -> ExpressionResult {
   auto loc = ast->firstSourceLocation();
-  auto expressionResult = gen.expression(ast->expression);
-  if (!expressionResult.value) return expressionResult;
+  auto operand = gen.expression(ast->expression);
+  if (!operand.value) return operand;
 
-  auto traits = gen.traits;
-  auto sourceClass = unqualified_cast<ClassType>(
-      traits.remove_pointer(traits.remove_reference(ast->expression->type)));
-  auto targetClass = unqualified_cast<ClassType>(
-      traits.remove_pointer(traits.remove_reference(ast->type)));
-
-  ir::ValueRef value = expressionResult.value;
-  if (sourceClass && targetClass &&
-      sourceClass->symbol() != targetClass->symbol()) {
-    value = gen.emitBaseClassAddress(loc, value, sourceClass->symbol(),
-                                     targetClass->symbol());
-  }
-
-  if (traits.is_pointer(ast->type)) {
-    auto resultType = gen.convertType(ast->type);
-    if (gen.emitter_.typeOf(value) != resultType) {
-      value = gen.emitter_.bitcast(loc, resultType, value);
+  const bool pointer = gen.traits.is_pointer(ast->type);
+  auto resultType = pointer
+                        ? gen.convertType(ast->type)
+                        : gen.emitter_.pointerType(gen.convertType(ast->type));
+  std::int64_t byteOffset = 0;
+  bool virtualPath = false;
+  for (auto symbol : ListView(ast->subobjectPath)) {
+    auto base = symbol_cast<BaseClassSymbol>(symbol);
+    if (base->isVirtual()) {
+      virtualPath = true;
+      break;
     }
+    auto record = symbol_cast<ClassSymbol>(base->parent());
+    auto baseClass =
+        symbol_cast<ClassSymbol>(base->symbol())->resolvedDefinition();
+    byteOffset += record->layout()->getBaseInfo(baseClass)->offset;
   }
+  if (ast->castKind == ImplicitCastKind::kBaseToDerivedConversion)
+    byteOffset = -byteOffset;
 
-  return {value};
-}
+  auto adjust = [&] {
+    if (virtualPath) {
+      auto value =
+          gen.applySubobjectPath(loc, operand.value, ast->subobjectPath);
+      return gen.emitter_.bitcast(loc, resultType, value);
+    }
+    if (byteOffset == 0)
+      return gen.emitter_.bitcast(loc, resultType, operand.value);
+    auto bytePointer = gen.emitter_.pointerType(gen.emitter_.integerType(8));
+    auto value = gen.emitter_.bitcast(loc, bytePointer, operand.value);
+    auto offset =
+        gen.emitter_.constantInt(loc, gen.pointerSizedIntType(), byteOffset);
+    value = gen.emitter_.pointerAdd(loc, bytePointer, value, offset);
+    return gen.emitter_.bitcast(loc, resultType, value);
+  };
 
-auto Codegen::ExpressionVisitor::emitBaseToDerivedConversion(
-    ImplicitCastExpressionAST* ast) -> ExpressionResult {
-  auto loc = ast->firstSourceLocation();
-  auto expressionResult = gen.expression(ast->expression);
-  if (!expressionResult.value) return expressionResult;
+  if (!pointer || (!virtualPath && byteOffset == 0)) return {adjust()};
+  auto nullInput = gen.emitter_.zero(loc, gen.emitter_.typeOf(operand.value));
+  auto nullResult = gen.emitter_.zero(loc, resultType);
+  auto isNull = gen.emitter_.compareInt(loc, ir::IntPredicate::Equal,
+                                        operand.value, nullInput);
+  if (!virtualPath)
+    return {gen.emitter_.select(loc, isNull, nullResult, adjust())};
 
-  auto traits = gen.traits;
-  auto sourceClass = unqualified_cast<ClassType>(
-      traits.remove_pointer(traits.remove_reference(ast->expression->type)));
-  auto targetClass = unqualified_cast<ClassType>(
-      traits.remove_pointer(traits.remove_reference(ast->type)));
-
-  if (!sourceClass || !targetClass) return expressionResult;
-
-  return {gen.emitDerivedClassAddress(loc, expressionResult.value,
-                                      sourceClass->symbol(),
-                                      targetClass->symbol())};
+  // A virtual adjustment reads the vtable, so selection after evaluating the
+  // address would still dereference null. Keep the read on the non-null edge.
+  auto nullBlock = gen.newBlock();
+  auto objectBlock = gen.newBlock();
+  auto endBlock = gen.newBlock();
+  auto result = gen.emitter_.addBlockParameter(endBlock, resultType, loc);
+  gen.emitter_.condBranch(loc, isNull, nullBlock, objectBlock);
+  gen.emitter_.setInsertionBlock(nullBlock);
+  gen.branch(loc, endBlock, std::vector<ir::ValueRef>{nullResult});
+  gen.emitter_.setInsertionBlock(objectBlock);
+  gen.branch(loc, endBlock, std::vector<ir::ValueRef>{adjust()});
+  gen.emitter_.setInsertionBlock(endBlock);
+  return {result};
 }
 
 auto Codegen::ExpressionVisitor::emitPointerToMemberConversion(
@@ -3336,10 +3350,8 @@ auto Codegen::ExpressionVisitor::operator()(ImplicitCastExpressionAST* ast)
       return emitPointerToMemberConversion(ast);
 
     case ImplicitCastKind::kDerivedToBaseConversion:
-      return emitDerivedToBaseConversion(ast);
-
     case ImplicitCastKind::kBaseToDerivedConversion:
-      return emitBaseToDerivedConversion(ast);
+      return emitClassAdjustment(ast);
 
     case ImplicitCastKind::kUserDefinedConversion:
       return emitUserDefinedConversion(ast);
