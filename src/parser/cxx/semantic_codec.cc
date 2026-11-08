@@ -14308,9 +14308,9 @@ void SemanticDecoder::readAstTypeTraitExpressionAST(
       static_cast<std::uint32_t>(
           ::cxx::BuiltinTypeTraitKind::T___REFERENCE_CONVERTS_FROM_TEMPORARY) +
           1 ==
-      62);
+      63);
   ::cxx::BuiltinTypeTraitKind value5 =
-      static_cast<::cxx::BuiltinTypeTraitKind>(readEnum(in, 62));
+      static_cast<::cxx::BuiltinTypeTraitKind>(readEnum(in, 63));
   self->typeTrait = std::move(value5);
   // ::cxx::TypeTraitExpressionAST::value
   std::optional<bool> value6;

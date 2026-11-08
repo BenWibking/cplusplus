@@ -249,6 +249,7 @@ export const BUILTIN_TYPE_TRAITS: string[] = [
   "__is_member_pointer",
   "__is_nothrow_assignable",
   "__is_nothrow_constructible",
+  "__is_nothrow_convertible",
   "__is_nothrow_destructible",
   "__is_null_pointer",
   "__is_object",

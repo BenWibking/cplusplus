@@ -336,6 +336,8 @@ class TypeTraits {
       CovariantReturnClasses* classes = nullptr) -> bool;
   [[nodiscard]] auto is_convertible(const Type* from, const Type* to) const
       -> bool;
+  [[nodiscard]] auto is_nothrow_convertible(const Type* from, const Type* to)
+      -> bool;
   [[nodiscard]] auto reference_constructs_from_temporary(const Type* to,
                                                          const Type* from) const
       -> bool;
