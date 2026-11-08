@@ -144,6 +144,13 @@ export const bindings: Record<string, ClassBindings> = {
     },
   },
 
+  '::cxx::ImplicitCastExpressionAST': {
+    subobjectPath: {
+      cls: 'P',
+      why: 'class conversion selected this exact derived-to-base subobject path',
+    },
+  },
+
   '::cxx::ScopeSymbol': {
     members_: {
       cls: 'P',
