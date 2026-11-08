@@ -60,7 +60,8 @@ struct [[nodiscard]] Codegen::ExpressionVisitor {
       -> std::optional<std::pair<ir::ValueRef, ClassLayout::MemberInfo>>;
 
   [[nodiscard]] auto emitThisFieldAddress(FieldSymbol* field,
-                                          SourceLocation loc)
+                                          SourceLocation loc,
+                                          List<Symbol*>* path)
       -> std::optional<std::pair<ir::ValueRef, ClassLayout::MemberInfo>>;
 
   struct BitFieldAccess {
@@ -768,7 +769,8 @@ auto Codegen::ExpressionVisitor::operator()(IdExpressionAST* ast)
         return {op};
       }
 
-      auto access = emitThisFieldAddress(field, ast->firstSourceLocation());
+      auto access = emitThisFieldAddress(field, ast->firstSourceLocation(),
+                                         ast->subobjectPath);
       if (!access) {
         return {gen.emitTodoExpr(ast->firstSourceLocation(),
                                  "could not access member through 'this'")};
@@ -1107,8 +1109,8 @@ auto Codegen::ExpressionVisitor::operator()(CallExpressionAST* ast)
         auto loadedThis =
             gen.loadEnclosingObject(loc, classSymbol, currentClass);
 
-        auto adjustedThis = gen.emitBaseClassAddress(loc, loadedThis,
-                                                     currentClass, classSymbol);
+        auto adjustedThis =
+            gen.applySubobjectPath(loc, loadedThis, id->subobjectPath);
         thisValue = {adjustedThis};
       }
     }
@@ -1122,19 +1124,9 @@ auto Codegen::ExpressionVisitor::operator()(CallExpressionAST* ast)
       if (functionSymbol->isImplicitObjectMemberFunction()) {
         thisValue = baseResult;
 
-        if (auto targetClass =
-                symbol_cast<ClassSymbol>(functionSymbol->parent())) {
-          auto baseType = gen.traits.remove_cv(member->baseExpression->type);
-          if (member->accessOp == TokenKind::T_MINUS_GREATER) {
-            baseType =
-                gen.traits.remove_cv(gen.traits.get_element_type(baseType));
-          }
-          if (auto fromClassType = type_cast<ClassType>(baseType)) {
-            thisValue = {gen.emitBaseClassAddress(
-                member->firstSourceLocation(), thisValue.value,
-                fromClassType->symbol(), targetClass)};
-          }
-        }
+        thisValue = {gen.applySubobjectPath(member->firstSourceLocation(),
+                                            thisValue.value,
+                                            member->subobjectPath)};
       }
     }
   }
@@ -1396,8 +1388,32 @@ auto Codegen::navigateToClass(SourceLocation loc, ir::ValueRef value,
   return value;
 }
 
+auto Codegen::applySubobjectPath(SourceLocation loc, ir::ValueRef value,
+                                 List<Symbol*>* path) -> ir::ValueRef {
+  for (auto symbol : ListView(path)) {
+    if (auto base = symbol_cast<BaseClassSymbol>(symbol)) {
+      auto record = symbol_cast<ClassSymbol>(base->parent());
+      auto baseClass =
+          symbol_cast<ClassSymbol>(base->symbol())->resolvedDefinition();
+      if (base->isVirtual()) {
+        value = emitVirtualBaseAddress(loc, value, record, baseClass);
+      } else {
+        const auto info = record->layout()->getBaseInfo(baseClass);
+        value = subobjectAddress(loc, value, baseClass, info->offset);
+      }
+    } else {
+      auto field = symbol_cast<FieldSymbol>(symbol);
+      auto record = symbol_cast<ClassSymbol>(field->parent());
+      const auto info = record->layout()->getFieldInfo(field);
+      value = memberAddress(loc, value, field->type(), info->index);
+    }
+  }
+  return value;
+}
+
 auto Codegen::ExpressionVisitor::emitThisFieldAddress(FieldSymbol* field,
-                                                      SourceLocation srcLoc)
+                                                      SourceLocation srcLoc,
+                                                      List<Symbol*>* path)
     -> std::optional<std::pair<ir::ValueRef, ClassLayout::MemberInfo>> {
   if (!field || field->isStatic() || !gen.thisValue_) return std::nullopt;
 
@@ -1415,8 +1431,7 @@ auto Codegen::ExpressionVisitor::emitThisFieldAddress(FieldSymbol* field,
   ClassSymbol* currentClass = nullptr;
   auto thisPtr = gen.loadEnclosingObject(loc, classSymbol, currentClass);
 
-  auto adjustedThis =
-      gen.navigateToClass(loc, thisPtr, currentClass, classSymbol);
+  auto adjustedThis = gen.applySubobjectPath(loc, thisPtr, path);
 
   auto op =
       gen.memberAddress(loc, adjustedThis, field->type(), fieldInfo->index);
@@ -1454,14 +1469,10 @@ auto Codegen::ExpressionVisitor::emitMemberAccess(MemberExpressionAST* ast)
       return std::nullopt;
     }
 
-    auto startClass = classType->symbol();
     auto fieldClass = symbol_cast<ClassSymbol>(field->parent());
-
-    if (startClass != fieldClass) {
-      auto loc = ast->firstSourceLocation();
-      baseExpressionResult.value = gen.navigateToClass(
-          loc, baseExpressionResult.value, startClass, fieldClass);
-    }
+    baseExpressionResult.value =
+        gen.applySubobjectPath(ast->firstSourceLocation(),
+                               baseExpressionResult.value, ast->subobjectPath);
 
     auto layout = fieldClass->layout();
     if (!layout) {
@@ -1496,7 +1507,8 @@ auto Codegen::ExpressionVisitor::emitBitFieldAccess(ExpressionAST* ast)
   if (!field || field->isStatic() || !field->isBitField()) return std::nullopt;
 
   auto access = idExpr
-                    ? emitThisFieldAddress(field, idExpr->firstSourceLocation())
+                    ? emitThisFieldAddress(field, idExpr->firstSourceLocation(),
+                                           idExpr->subobjectPath)
                     : emitMemberAccess(member);
   if (!access) return std::nullopt;
 

@@ -517,10 +517,8 @@ class ASTInterpreter {
   [[nodiscard]] auto pointeeObject(ConstValue value, const Type* pointeeType)
       -> std::shared_ptr<ConstObject>;
 
-  [[nodiscard]] auto objectDesignatedByThis() -> std::shared_ptr<ConstObject>;
-
-  [[nodiscard]] auto implicitObjectFor(Symbol* member)
-      -> std::shared_ptr<ConstObject>;
+  [[nodiscard]] auto thisReceiver() -> Receiver;
+  [[nodiscard]] auto implicitMemberReceiver(IdExpressionAST* ast) -> Receiver;
 
   [[nodiscard]] auto memberValue(const std::shared_ptr<ConstObject>& object,
                                  const Symbol* member)

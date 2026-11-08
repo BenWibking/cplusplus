@@ -549,6 +549,10 @@ struct TypeChecker::Visitor {
                                                 Symbol* member) -> bool;
   [[nodiscard]] auto checkMemberPointerAccessible(IdExpressionAST* ast) -> bool;
 
+  [[nodiscard]] auto checkMemberObjectUnambiguous(ClassSymbol* classSymbol,
+                                                  Symbol* member,
+                                                  SourceLocation loc) -> bool;
+
   [[nodiscard]] auto checkUnambiguousMemberLookup(ClassSymbol* classSymbol,
                                                   const Name* memberName,
                                                   Symbol* member,
@@ -8268,8 +8272,14 @@ auto TypeChecker::Visitor::checkExpressionAccessible(ExpressionAST* callee,
                                                      Symbol* function) -> bool {
   if (auto memberExpression = ast_cast<MemberExpressionAST>(callee)) {
     auto objectClass = objectClassOf(memberExpression);
-    return checkMemberAccessible(function, objectClass, objectClass,
-                                 get_name_location(memberExpression));
+    auto designatingClass =
+        memberExpression->nestedNameSpecifier
+            ? resolveClassScope(memberExpression->nestedNameSpecifier->symbol)
+            : objectClass;
+    return checkMemberAccessible(function, designatingClass, objectClass,
+                                 get_name_location(memberExpression)) &&
+           checkMemberObjectUnambiguous(designatingClass, function,
+                                        get_name_location(memberExpression));
   }
 
   auto idExpression = ast_cast<IdExpressionAST>(callee);
@@ -8290,12 +8300,42 @@ auto TypeChecker::Visitor::checkNamedMemberAccessible(IdExpressionAST* ast,
 
   auto designatingClass = objectClass;
   if (ast->nestedNameSpecifier) {
-    designatingClass =
-        symbol_cast<ClassSymbol>(ast->nestedNameSpecifier->symbol);
+    designatingClass = resolveClassScope(ast->nestedNameSpecifier->symbol);
   }
 
-  return checkMemberAccessible(member, designatingClass, objectClass,
-                               get_name_location(ast));
+  if (!checkMemberAccessible(member, designatingClass, objectClass,
+                             get_name_location(ast)))
+    return false;
+
+  ast->subobjectPath = nullptr;
+  if (!objectClass || !designatingClass) return true;
+
+  objectClass = objectClass->resolvedDefinition();
+  designatingClass = designatingClass->resolvedDefinition();
+  auto selected = resolve_using_declaration(member);
+  if (!selected || selected->parent() == objectClass ||
+      !is_non_static_member(selected))
+    return true;
+
+  if (!checkMemberObjectUnambiguous(designatingClass, selected,
+                                    get_name_location(ast)))
+    return false;
+
+  auto lookup = lookupClassMember(designatingClass, selected->name(),
+                                  [](Symbol*) { return true; });
+  auto path = std::move(lookup.subobjectPath);
+  if (designatingClass != objectClass) {
+    if (!requireValidBaseConversion(objectClass, designatingClass,
+                                    BaseConversionKind::kDerivedToBase,
+                                    get_name_location(ast)))
+      return false;
+    auto prefix = lookupBaseSubobjectPath(objectClass, designatingClass);
+    if (!prefix) return true;
+    prefix->insert(prefix->end(), path.begin(), path.end());
+    path = std::move(*prefix);
+  }
+  ast->subobjectPath = make_symbol_path(arena(), path);
+  return true;
 }
 
 auto TypeChecker::Visitor::checkMemberPointerAccessible(IdExpressionAST* ast)
@@ -8303,6 +8343,27 @@ auto TypeChecker::Visitor::checkMemberPointerAccessible(IdExpressionAST* ast)
   auto qualifier = symbol_cast<ClassSymbol>(ast->nestedNameSpecifier->symbol);
   return checkMemberAccessible(ast->symbol, qualifier, qualifier,
                                get_name_location(ast));
+}
+
+auto TypeChecker::Visitor::checkMemberObjectUnambiguous(
+    ClassSymbol* classSymbol, Symbol* member, SourceLocation loc) -> bool {
+  if (!classSymbol) return true;
+  member = resolve_using_declaration(member);
+  if (!member || member->parent() == classSymbol ||
+      !is_non_static_member(member))
+    return true;
+  if (symbol_cast<OverloadSetSymbol>(member)) return true;
+  if (auto function = symbol_cast<FunctionSymbol>(member);
+      function && !function->isImplicitObjectMemberFunction())
+    return true;
+  auto declaringClass = declaringClassOf(member);
+  if (!declaringClass || declaringClass == classSymbol) return true;
+  auto info = classSymbol->baseSubobjectInfo(declaringClass);
+  if (info.subobjectCount == 0 || info.isUniqueSubobject()) return true;
+  error(loc,
+        std::format("member '{}' found in multiple base classes of '{}'",
+                    to_string(member->name()), to_string(classSymbol->type())));
+  return false;
 }
 
 auto TypeChecker::Visitor::checkUnambiguousMemberLookup(
@@ -8324,16 +8385,7 @@ auto TypeChecker::Visitor::checkUnambiguousMemberLookup(
   };
 
   if (lookup.ambiguous) return reportAmbiguous();
-  if (!is_non_static_member(member)) return true;
-  if (!lookup.subobjectPath.empty()) return true;
-  auto declaringClass = member->enclosingClass();
-  if (!declaringClass || declaringClass == classSymbol) return true;
-
-  auto info = classSymbol->baseSubobjectInfo(declaringClass);
-  if (info.subobjectCount == 0) return true;
-  if (info.isUniqueSubobject()) return true;
-
-  return reportAmbiguous();
+  return checkMemberObjectUnambiguous(classSymbol, member, loc);
 }
 
 auto TypeChecker::Visitor::checkMemberAccessible(Symbol* member,
@@ -8557,6 +8609,13 @@ auto TypeChecker::Visitor::CheckMemberAccess::lookupMember(
   if (auto usingDeclaration = symbol_cast<UsingDeclarationSymbol>(symbol);
       usingDeclaration && usingDeclaration->target()) {
     symbol = resolve_using_declaration(symbol);
+  }
+
+  if (lookupScope != classSymbol &&
+      !visitor.checkMemberObjectUnambiguous(lookupClass, symbol,
+                                            get_name_location(ast))) {
+    lookupScope = nullptr;
+    return nullptr;
   }
 
   std::vector<Symbol*> subobjectPath;

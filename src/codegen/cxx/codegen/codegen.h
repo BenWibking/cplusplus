@@ -518,6 +518,9 @@ class Codegen {
                                      ClassSymbol* from, ClassSymbol* to)
       -> ir::ValueRef;
 
+  [[nodiscard]] auto applySubobjectPath(SourceLocation loc, ir::ValueRef value,
+                                        List<Symbol*>* path) -> ir::ValueRef;
+
   [[nodiscard]] auto subobjectAddress(SourceLocation loc,
                                       ir::ValueRef objectPtr,
                                       ClassSymbol* subobjectClass,

@@ -612,6 +612,11 @@ auto ASTRewriter::ExpressionVisitor::operator()(IdExpressionAST* ast)
   copy->unqualifiedId = rewrite.unqualifiedId(ast->unqualifiedId);
   copy->isTemplateIntroduced = ast->isTemplateIntroduced;
 
+  std::vector<Symbol*> subobjectPath;
+  for (auto symbol : ListView(ast->subobjectPath))
+    subobjectPath.push_back(rewrite.remapSymbol(symbol));
+  copy->subobjectPath = make_symbol_path(arena(), subobjectPath);
+
   if (auto param = symbol_cast<NonTypeParameterSymbol>(ast->symbol);
       param && rewrite.templateArgumentFor(param)) {
     copy->symbol = param;

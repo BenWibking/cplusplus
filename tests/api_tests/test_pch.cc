@@ -133,6 +133,14 @@ class BranchSelectionVisitor final : public ASTVisitor {
 
 class SubobjectPathVisitor final : public ASTVisitor {
  public:
+  void visit(IdExpressionAST* ast) override {
+    if (ast->subobjectPath) {
+      implicitPaths.emplace_back(ListView(ast->subobjectPath).begin(),
+                                 ListView(ast->subobjectPath).end());
+    }
+    ASTVisitor::visit(ast);
+  }
+
   void visit(MemberExpressionAST* ast) override {
     if (ast->subobjectPath) {
       memberPaths.emplace_back(ListView(ast->subobjectPath).begin(),
@@ -149,6 +157,7 @@ class SubobjectPathVisitor final : public ASTVisitor {
     ASTVisitor::visit(ast);
   }
 
+  std::vector<std::vector<Symbol*>> implicitPaths;
   std::vector<std::vector<Symbol*>> memberPaths;
   std::vector<std::vector<Symbol*>> castPaths;
 };
@@ -1049,7 +1058,9 @@ TEST(PrecompiledHeader, RestoresSelectedSubobjectPaths) {
 struct Base { unsigned value; };
 struct Left : Base {};
 struct Right : Base {};
-struct Both : Left, Right {};
+struct Both : Left, Right {
+  constexpr unsigned sum() const { return Left::value + Right::value; }
+};
 extern Both object;
 template <const unsigned&>
 struct Ref {};
@@ -1074,17 +1085,24 @@ static_assert(__is_same(Member, Converted));
       symbol_cast<ClassSymbol>(findMember(consumer.globalScope(), "Base"));
   auto left =
       symbol_cast<ClassSymbol>(findMember(consumer.globalScope(), "Left"));
+  auto right =
+      symbol_cast<ClassSymbol>(findMember(consumer.globalScope(), "Right"));
   ASSERT_TRUE(base);
   ASSERT_TRUE(left);
+  ASSERT_TRUE(right);
 
   SubobjectPathVisitor restoredPaths;
   restoredPaths.accept(consumer.ast());
+  EXPECT_TRUE(containsBasePath(restoredPaths.implicitPaths, {left, base}));
+  EXPECT_TRUE(containsBasePath(restoredPaths.implicitPaths, {right, base}));
   EXPECT_TRUE(containsBasePath(restoredPaths.memberPaths, {left, base}));
   EXPECT_TRUE(containsBasePath(restoredPaths.castPaths, {left}));
 
   auto cloned = consumer.ast()->clone(consumer.arena());
   SubobjectPathVisitor clonedPaths;
   clonedPaths.accept(cloned);
+  EXPECT_TRUE(containsBasePath(clonedPaths.implicitPaths, {left, base}));
+  EXPECT_TRUE(containsBasePath(clonedPaths.implicitPaths, {right, base}));
   EXPECT_TRUE(containsBasePath(clonedPaths.memberPaths, {left, base}));
   EXPECT_TRUE(containsBasePath(clonedPaths.castPaths, {left}));
 }

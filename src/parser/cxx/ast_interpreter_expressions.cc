@@ -1008,8 +1008,8 @@ auto ASTInterpreter::lvalue(ExpressionAST* ast) -> ConstValue* {
 
     if (auto field = symbol_cast<FieldSymbol>(sym)) {
       if (!field->isStatic()) {
-        if (auto object = implicitObjectFor(field))
-          return memberSlot(object, field);
+        auto receiver = implicitMemberReceiver(id);
+        if (receiver.object) return memberSlot(receiver.object, field);
         return nullptr;
       }
       if (field->isStatic()) return staticFieldSlot(field);
@@ -1585,25 +1585,30 @@ auto ASTInterpreter::pointeeObject(ConstValue value, const Type* pointeeType)
   return object ? *object : nullptr;
 }
 
-auto ASTInterpreter::objectDesignatedByThis() -> std::shared_ptr<ConstObject> {
-  if (!receiver_.object) return {};
+auto ASTInterpreter::thisReceiver() -> Receiver {
+  if (!receiver_.object) return receiver_;
   auto classType = unqualified_cast<ClassType>(receiver_.object->type());
-  if (!classType || !classType->symbol()) return receiver_.object;
+  if (!classType || !classType->symbol()) return receiver_;
   auto closure = classType->symbol()->resolvedDefinition();
-  if (!closure->isClosureType()) return receiver_.object;
+  if (!closure->isClosureType()) return receiver_;
   auto capturedThis = closure->capturedThisField();
   if (!capturedThis) return {};
   auto value = receiver_.object->subobject(capturedThis);
   if (!value) return {};
-  return pointeeObject(*value, traits.remove_pointer(capturedThis->type()));
+  Receiver receiver;
+  if (auto address = std::get_if<std::shared_ptr<ConstAddress>>(value))
+    receiver.address = *address;
+  receiver.object =
+      pointeeObject(*value, traits.remove_pointer(capturedThis->type()));
+  return receiver;
 }
 
-auto ASTInterpreter::implicitObjectFor(Symbol* member)
-    -> std::shared_ptr<ConstObject> {
-  if (!receiver_.object) return {};
-  if (traits.is_member_of_object_type(receiver_.object->type(), member))
-    return receiver_.object;
-  return objectDesignatedByThis();
+auto ASTInterpreter::implicitMemberReceiver(IdExpressionAST* ast) -> Receiver {
+  auto receiver = receiver_.object && traits.is_member_of_object_type(
+                                          receiver_.object->type(), ast->symbol)
+                      ? receiver_
+                      : thisReceiver();
+  return applySubobjectPath(std::move(receiver), ast->subobjectPath);
 }
 
 auto ASTInterpreter::receiverFor(ExpressionAST* base, TokenKind accessOp)
@@ -1927,7 +1932,7 @@ auto ASTInterpreter::addressOfLvalue(ExpressionAST* ast)
     if (!idExpr->symbol) return std::nullopt;
     if (auto field = symbol_cast<FieldSymbol>(idExpr->symbol)) {
       if (field->isStatic()) return staticFieldAddress(field);
-      return addressOfField(receiver_, field);
+      return addressOfField(implicitMemberReceiver(idExpr), field);
     }
     if (auto function = designatedFunction(idExpr->symbol))
       return std::make_shared<ConstAddress>(function);
@@ -2130,10 +2135,10 @@ auto ASTInterpreter::ExpressionVisitor::operator()(
 
 auto ASTInterpreter::ExpressionVisitor::operator()(ThisExpressionAST* ast)
     -> ExpressionResult {
-  if (interp.receiver_.address) return interp.receiver_.address;
-  auto object = interp.objectDesignatedByThis();
-  if (!object) return std::nullopt;
-  return ConstValue{ConstAddress::materialized(std::move(object))};
+  auto receiver = interp.thisReceiver();
+  if (receiver.address) return receiver.address;
+  if (!receiver.object) return std::nullopt;
+  return ConstValue{ConstAddress::materialized(std::move(receiver.object))};
 }
 
 auto ASTInterpreter::ExpressionVisitor::operator()(PackIndexExpressionAST* ast)
@@ -2227,8 +2232,10 @@ auto ASTInterpreter::ExpressionVisitor::operator()(IdExpressionAST* ast)
   }
 
   if (auto field = symbol_cast<FieldSymbol>(ast->symbol)) {
-    if (auto object = interp.implicitObjectFor(field)) {
-      if (auto fieldVal = interp.memberValue(object, field)) return fieldVal;
+    auto receiver = interp.implicitMemberReceiver(ast);
+    if (receiver.object) {
+      if (auto fieldVal = interp.memberValue(receiver.object, field))
+        return fieldVal;
     }
   }
 
@@ -2470,7 +2477,7 @@ auto ASTInterpreter::evaluateCallExpression(CallExpressionAST* ast,
     }
     function = designatedFunction(id->symbol);
     if (function && function->isImplicitObjectMemberFunction())
-      receiver = receiver_;
+      receiver = implicitMemberReceiver(id);
   } else if (auto member = ast_cast<MemberExpressionAST>(base)) {
     function = designatedFunction(member->symbol);
     if (!function) return {};

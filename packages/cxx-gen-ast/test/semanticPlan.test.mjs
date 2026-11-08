@@ -89,6 +89,14 @@ test("constant lifetime storage persists its storage duration", () => {
 });
 
 test("selected subobject paths are persisted with their rationale", () => {
+  const implicitPaths = reportsFor("::cxx::IdExpressionAST", "subobjectPath");
+  assert.equal(implicitPaths.length, 1);
+  assert.equal(implicitPaths[0].cls, "P");
+  assert.equal(
+    implicitPaths[0].why,
+    "implicit object lookup selected these exact base and anonymous subobjects",
+  );
+
   const memberPaths = reportsFor("::cxx::MemberExpressionAST", "subobjectPath");
   assert.equal(memberPaths.length, 1);
   assert.equal(memberPaths[0].cls, "P");
