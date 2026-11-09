@@ -802,6 +802,12 @@ auto ASTRewriter::ExpressionVisitor::operator()(LambdaExpressionAST* ast)
   copy->lambdaSpecifierList = rewrite.rewriteList(
       ast->lambdaSpecifierList, &ASTRewriter::lambdaSpecifier);
 
+  // The parser records `mutable` on the lambda's symbol as it parses the
+  // lambda-specifiers. The instantiated lambda keeps it, so its call operator
+  // and the entities it captures by copy are not const.
+  if (needsFreshClosure && copy->symbol && ast->symbol)
+    copy->symbol->setMutable(ast->symbol->isMutable());
+
   {
     auto _ = Binder::ScopeGuard(binder());
 

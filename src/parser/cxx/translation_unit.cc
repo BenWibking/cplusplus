@@ -590,6 +590,18 @@ void TranslationUnit::setPlaceholderReturnType(const ScopeSymbol* function,
   placeholderReturnTypes_.insert_or_assign(function, placeholder);
 }
 
+auto TranslationUnit::lambdaCaptureMode(const ScopeSymbol* lambdaScope) const
+    -> const LambdaCaptureMode* {
+  auto it = lambdaCaptureModes_.find(lambdaScope);
+  if (it == lambdaCaptureModes_.end()) return nullptr;
+  return &it->second;
+}
+
+void TranslationUnit::setLambdaCaptureMode(const ScopeSymbol* lambdaScope,
+                                           LambdaCaptureMode mode) {
+  lambdaCaptureModes_.insert_or_assign(lambdaScope, mode);
+}
+
 auto TranslationUnit::takePendingMemberInstantiations()
     -> std::vector<ClassSymbol*> {
   auto pending = std::move(pendingMemberInstantiations_);
