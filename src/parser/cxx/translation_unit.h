@@ -106,6 +106,20 @@ class TranslationUnit {
       -> const Type*;
   void setPlaceholderReturnType(const ScopeSymbol* function,
                                 const Type* placeholder);
+
+  // How a lambda captures entities that its body names without capturing
+  // them explicitly, and whether its function call operator is const.
+  // Recorded for the lambda's scope and for its closure type.
+  struct LambdaCaptureMode {
+    TokenKind captureDefault = TokenKind::T_EOF_SYMBOL;
+    bool constCallOperator = false;
+  };
+
+  [[nodiscard]] auto lambdaCaptureMode(const ScopeSymbol* lambdaScope) const
+      -> const LambdaCaptureMode*;
+  void setLambdaCaptureMode(const ScopeSymbol* lambdaScope,
+                            LambdaCaptureMode mode);
+
   void addNonDependentType(const Type* type);
 
   void addPendingBodyCompletion(FunctionSymbol* function,
@@ -595,6 +609,7 @@ class TranslationUnit {
   std::unordered_set<const Type*> nonDependentTypes_;
   std::unordered_map<const Symbol*, bool> immediateObjectVariables_;
   std::unordered_map<const ScopeSymbol*, const Type*> placeholderReturnTypes_;
+  std::unordered_map<const ScopeSymbol*, LambdaCaptureMode> lambdaCaptureModes_;
   std::unordered_map<std::uint64_t, const Identifier*> snippets_;
   std::vector<std::pair<unsigned, int>> packAlignments_;
   std::unique_ptr<PrefixSourceMap> prefixSourceMap_;

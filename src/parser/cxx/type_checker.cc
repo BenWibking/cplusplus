@@ -580,6 +580,9 @@ struct TypeChecker::Visitor {
   [[nodiscard]] auto add_implicit_object_cv(const Type* fieldType,
                                             FieldSymbol* field) -> const Type*;
 
+  [[nodiscard]] auto add_copy_capture_cv(const Type* type, Symbol* symbol)
+      -> const Type*;
+
   [[nodiscard]] auto base_symbol(ExpressionAST* base) -> Symbol*;
 
   [[nodiscard]] auto overload_set_of(ExpressionAST* base) -> OverloadSetSymbol*;
@@ -1333,6 +1336,71 @@ auto TypeChecker::Visitor::add_implicit_object_cv(const Type* fieldType,
   return traits.add_cv(fieldType, cv);
 }
 
+auto TypeChecker::Visitor::add_copy_capture_cv(const Type* type, Symbol* symbol)
+    -> const Type* {
+  // [expr.prim.id.unqual]: a local entity that some intervening lambda
+  // captures by copy names the member of the closure of the innermost such
+  // lambda, which is const unless that lambda is mutable. A capture or
+  // init-capture of an enclosing lambda names that member directly.
+  if (!symbol || !type || !traits.is_object(type)) return type;
+
+  ClassSymbol* capturingClosure = nullptr;
+  if (auto field = symbol_cast<FieldSymbol>(symbol)) {
+    auto closure = symbol_cast<ClassSymbol>(field->parent());
+    if (!closure || !closure->isClosureType()) return type;
+    if (field->isStatic() || traits.is_reference(field->type())) return type;
+    capturingClosure = closure;
+  } else if (auto var = symbol_cast<VariableSymbol>(symbol)) {
+    if (var->isStatic() || var->isExtern() || var->isThreadLocal()) return type;
+    if (!var->enclosingFunction()) return type;
+  } else if (!symbol_cast<ParameterSymbol>(symbol)) {
+    return type;
+  }
+
+  auto encloses = [symbol](ScopeSymbol* scope) {
+    for (auto parent = symbol->parent(); parent; parent = parent->parent()) {
+      if (parent == scope) return true;
+    }
+    return false;
+  };
+
+  auto constIf = [&](const TranslationUnit::LambdaCaptureMode* mode) {
+    if (!mode || !mode->constCallOperator) return type;
+    return traits.add_const(type);
+  };
+
+  ClassSymbol* previousClosure = nullptr;
+
+  for (auto current = scope(); current; current = current->parent()) {
+    if (!capturingClosure && encloses(current)) return type;
+
+    ClassSymbol* closure = nullptr;
+    if (auto lambda = symbol_cast<LambdaSymbol>(current)) {
+      closure = lambda->closureType();
+    } else if (auto classSymbol = symbol_cast<ClassSymbol>(current)) {
+      // A local class does not capture.
+      if (!classSymbol->isClosureType()) return type;
+      closure = classSymbol;
+    } else {
+      continue;
+    }
+
+    // A lambda's scope and its closure type can both be on the chain.
+    if (closure && closure == previousClosure) continue;
+    if (closure) previousClosure = closure;
+
+    auto mode = check.unit_->lambdaCaptureMode(current);
+
+    if (capturingClosure && closure == capturingClosure) return constIf(mode);
+
+    if (!mode) return type;
+    if (mode->captureDefault == TokenKind::T_EQUAL) return constIf(mode);
+    if (mode->captureDefault != TokenKind::T_AMP) return type;
+  }
+
+  return type;
+}
+
 void TypeChecker::Visitor::operator()(IdExpressionAST* ast) {
   if (!ast->symbol) {
     if (!ast->nestedNameSpecifier) {
@@ -1398,6 +1466,9 @@ void TypeChecker::Visitor::operator()(IdExpressionAST* ast) {
   ASTRewriter::requireVariableValue(check.unit_,
                                     symbol_cast<VariableSymbol>(ast->symbol));
   if (ast->valueCategory == ValueCategory::kPrValue) return;
+
+  if (!ast->nestedNameSpecifier)
+    ast->type = add_copy_capture_cv(ast->type, ast->symbol);
 
   auto field = symbol_cast<FieldSymbol>(ast->symbol);
   if (!field) return;

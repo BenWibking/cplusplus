@@ -3050,12 +3050,20 @@ void Binder::complete(LambdaExpressionAST* ast) {
   const auto hasExplicitObjectParameter =
       declaresExplicitObjectParameter(ast->parameterDeclarationClause);
 
-  auto funcType = control()->getFunctionType(
-      returnType, std::move(parameterTypes), isVariadic,
-      callOperatorQualifiers(ast->symbol, hasExplicitObjectParameter), {},
-      isNoexcept);
+  const auto callQualifiers =
+      callOperatorQualifiers(ast->symbol, hasExplicitObjectParameter);
+
+  auto funcType =
+      control()->getFunctionType(returnType, std::move(parameterTypes),
+                                 isVariadic, callQualifiers, {}, isNoexcept);
   checkFunctionType(unit_, funcType, ast->firstSourceLocation());
   ast->symbol->setType(funcType);
+
+  const TranslationUnit::LambdaCaptureMode captureMode{
+      .captureDefault = ast->captureDefault,
+      .constCallOperator = callQualifiers == CvQualifiers::kConst,
+  };
+  unit_->setLambdaCaptureMode(ast->symbol, captureMode);
 
   const bool inDependentContext =
       isEnclosedInDependentTemplate(unit_, ast->symbol->parent(),
@@ -3123,6 +3131,7 @@ void Binder::complete(LambdaExpressionAST* ast) {
 
     classSymbol->setIsClosureType(true);
     ast->symbol->setClosureType(classSymbol);
+    unit_->setLambdaCaptureMode(classSymbol, captureMode);
     classSymbol->setClosureDiscriminator(nextClosureNumber(classSymbol));
     classSymbol->setHasLambdaCapture(ast->captureDefault !=
                                          TokenKind::T_EOF_SYMBOL ||
