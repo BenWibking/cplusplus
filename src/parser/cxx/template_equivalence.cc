@@ -1409,7 +1409,10 @@ auto TemplateEquivalence::same(TemplateDeclarationAST* a,
                                TemplateDeclarationAST* b) const -> bool {
   if (a == b) return true;
   if (!a || !b) return false;
-  if (!same(a->templateParameterList, b->templateParameterList)) return false;
+  // Compare parameter lists under the heads' depth correspondence.
+  if (!TemplateEquivalence{unit_, {a->depth, b->depth, parameterCountOf(a)}}
+           .same(a->templateParameterList, b->templateParameterList))
+    return false;
   if (!a->requiresClause || !b->requiresClause)
     return a->requiresClause == b->requiresClause;
 
