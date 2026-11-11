@@ -422,7 +422,19 @@ void ASTRewriter::NestedNameSpecifierVisitor::resolveDependentQualifier(
                               copy->identifier->value()));
     return;
   }
-  if (!resolved || resolved == copy->symbol) return;
+  if (!resolved) {
+    // A missing member of a concrete qualifier is a substitution failure.
+    auto prefix = copy->nestedNameSpecifier;
+    auto scope = prefix ? prefix->symbol : nullptr;
+    if (scope && scope->type() && !isDependent(rewrite.unit_, scope->type())) {
+      rewrite.error(
+          copy->identifierLoc,
+          std::format("no type named '{}' in '{}'", copy->identifier->value(),
+                      to_string(scope->type())));
+    }
+    return;
+  }
+  if (resolved == copy->symbol) return;
 
   if (!copy->nestedNameSpecifier && memberScope)
     (void)checkMemberAccess(translationUnit(), binder()->scope(), resolved,
