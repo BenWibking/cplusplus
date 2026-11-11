@@ -3601,6 +3601,27 @@ auto Codegen::globalLinkage(VariableSymbol* variable) const -> ir::Linkage {
   return symbolLinkage(variable);
 }
 
+// Whether |var| is an implicit specialization of a variable template that is
+// only declared extern, such as
+//   template <auto K> extern const T v;
+// Its specializations declare storage defined in another translation unit.
+[[nodiscard]] static auto isExternTemplateSpecialization(VariableSymbol* var)
+    -> bool {
+  auto canon = var->canonical();
+  if (!canon->isSpecialization() || canon->initializer() ||
+      canon->definition())
+    return false;
+  auto primary = canon->primaryTemplateSymbol();
+  if (!primary) return false;
+  primary = primary->canonical();
+  if (!primary->isExtern() || primary->initializer() || primary->definition())
+    return false;
+  for (auto redecl : primary->redeclarations()) {
+    if (!redecl->isExtern() || redecl->initializer()) return false;
+  }
+  return true;
+}
+
 auto Codegen::findOrCreateGlobal(Symbol* symbol)
     -> std::optional<ir::GlobalRef> {
   auto variableSymbol = symbol_cast<VariableSymbol>(symbol);
@@ -3674,8 +3695,11 @@ auto Codegen::findOrCreateGlobal(Symbol* symbol)
   std::vector<ir::TypeRef> resultTypes;
   resultTypes.push_back(varType);
 
+  // An implicit specialization of an extern-only variable template also
+  // declares storage defined in another translation unit.
   const auto isExternalOnly =
-      declaresExternalVariable(variableSymbol, linkageKind);
+      declaresExternalVariable(variableSymbol, linkageKind) ||
+      isExternTemplateSpecialization(variableSymbol);
 
   ir::Initializer initializer;
   bool needsRegionInit = false;
@@ -3690,6 +3714,10 @@ auto Codegen::findOrCreateGlobal(Symbol* symbol)
 
   if (isExternalOnly && linkageAttr == ir::Linkage::Weak) {
     linkageAttr = ir::Linkage::ExternalWeak;
+  } else if (isExternalOnly) {
+    // A declaration names storage defined elsewhere: it has external linkage
+    // even when the declared entity has internal or vague linkage.
+    linkageAttr = ir::Linkage::External;
   }
 
   if (!initializer && !isExternalOnly && !needsRegionInit) {
@@ -4092,6 +4120,7 @@ void Codegen::emitGlobalVarInit(VariableSymbol* var, ir::GlobalRef global) {
   if (linkage == ir::Linkage::AvailableExternally) return;
   auto canonicalVar = var->canonical();
   auto defVar = canonicalVar->resolvedDefinition();
+  if (isExternTemplateSpecialization(var)) return;
 
   auto destructor = objectDestructor(defVar->type());
 
