@@ -7,6 +7,7 @@ set(SOURCES
     mlir_emitter_control_flow.cc
     cxx_dialect_conversions.cc
     cxx_llvm_translation.cc
+    llvm_codegen.cc
 )
 
 add_library(cxx-mlir ${SOURCES})
@@ -53,6 +54,7 @@ if (CXX_ENABLE_LLVM_OPTIMIZER)
     if (NOT LLVM_LINK_LLVM_DYLIB)
         llvm_map_components_to_libnames(cxx_mlir_llvm_libs
             passes
+            AllTargetsAsmParsers
             AllTargetsCodeGens
             AllTargetsDescs
             AllTargetsInfos
