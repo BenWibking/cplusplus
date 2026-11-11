@@ -167,7 +167,9 @@ export function gen_builtins_interp_h({ output }: { output: string }) {
   }
 
   lines.push(`    case ${enumName("__builtin_is_constant_evaluated")}:`);
-  lines.push(`      return ConstValue{std::intmax_t(1)};`);
+  lines.push(
+    `      return ConstValue{std::intmax_t(manifestlyConstantEvaluated_ ? 1 : 0)};`,
+  );
   lines.push(``);
   lines.push(`    case ${enumName("__builtin_expect")}:`);
   lines.push(`      if (args.size() >= 1) return args[0];`);

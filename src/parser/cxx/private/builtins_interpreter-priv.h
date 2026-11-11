@@ -445,7 +445,7 @@ auto cxx::ASTInterpreter::evaluateBuiltinCall(cxx::BuiltinFunctionKind kind,
       return evaluateBuiltinVectorReduce(ast);
 
     case BuiltinFunctionKind::T___BUILTIN_IS_CONSTANT_EVALUATED:
-      return ConstValue{std::intmax_t(1)};
+      return ConstValue{std::intmax_t(manifestlyConstantEvaluated_ ? 1 : 0)};
 
     case BuiltinFunctionKind::T___BUILTIN_EXPECT:
       if (args.size() >= 1) return args[0];

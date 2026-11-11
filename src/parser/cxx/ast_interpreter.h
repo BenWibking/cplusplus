@@ -209,6 +209,17 @@ class ASTInterpreter {
   void abortEvaluation() { aborted_ = true; }
   void throwException(std::shared_ptr<ConstStorage> object, const Type* type);
 
+  // Whether evaluation is manifestly constant-evaluated. Sema evaluates
+  // constant expressions, where __builtin_is_constant_evaluated() is true.
+  // Code generation folds ordinary run-time expressions, where it is false.
+  [[nodiscard]] auto manifestlyConstantEvaluated() const -> bool {
+    return manifestlyConstantEvaluated_;
+  }
+
+  void setManifestlyConstantEvaluated(bool value) {
+    manifestlyConstantEvaluated_ = value;
+  }
+
  private:
   using ExpressionResult = std::optional<ConstValue>;
 
@@ -1181,5 +1192,6 @@ class ASTInterpreter {
   std::optional<ThrownException> thrown_;
   std::vector<std::shared_ptr<ConstStorage>> exceptionObjects_;
   std::vector<ThrownException> handled_;
+  bool manifestlyConstantEvaluated_ = true;
 };
 }  // namespace cxx
