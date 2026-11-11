@@ -20,6 +20,7 @@
 
 #include <cxx/ast.h>
 #include <cxx/ast_interpreter.h>
+#include <cxx/ast_visitor.h>
 #include <cxx/codegen/codegen.h>
 #include <cxx/control.h>
 #include <cxx/memory_layout.h>
@@ -57,6 +58,75 @@ struct Codegen::StatementVisitor {
   void operator()(DeclarationStatementAST* ast);
   void operator()(TryBlockStatementAST* ast);
 };
+
+namespace {
+
+// Whether skipping |ast| would remove a jump target reachable from outside
+// it: a label, or a case or default label of an enclosing switch. Lambda
+// bodies are separate functions, so their labels do not count.
+class JumpTargetFinder final : public ASTVisitor {
+ public:
+  [[nodiscard]] static auto contains(StatementAST* ast) -> bool {
+    JumpTargetFinder finder;
+    finder.accept(ast);
+    return finder.found_;
+  }
+
+  [[nodiscard]] auto preVisit(AST*) -> bool override { return !found_; }
+
+  void visit(LabeledStatementAST*) override { found_ = true; }
+
+  void visit(CaseStatementAST* ast) override {
+    if (switchDepth_ == 0) found_ = true;
+    ASTVisitor::visit(ast);
+  }
+
+  void visit(DefaultStatementAST* ast) override {
+    if (switchDepth_ == 0) found_ = true;
+    ASTVisitor::visit(ast);
+  }
+
+  void visit(SwitchStatementAST* ast) override {
+    ++switchDepth_;
+    ASTVisitor::visit(ast);
+    --switchDepth_;
+  }
+
+  void visit(LambdaExpressionAST*) override {}
+
+ private:
+  int switchDepth_ = 0;
+  bool found_ = false;
+};
+
+// The branch an if statement always takes, when its condition is a constant
+// expression and the other branch holds no jump target. Code generation then
+// emits only that branch at every optimization level, as Clang does, so a
+// discarded branch leaves no references behind. The condition is folded as
+// an ordinary run-time expression: __builtin_is_constant_evaluated() is false.
+auto constantBranch(TranslationUnit* unit, IfStatementAST* ast)
+    -> std::optional<bool> {
+  auto* condition = ast->condition;
+  while (auto* cast = ast_cast<ImplicitCastExpressionAST>(condition)) {
+    condition = cast->expression;
+  }
+  // A condition declaration names a variable both branches can use.
+  if (!condition || ast_cast<ConditionExpressionAST>(condition)) return {};
+  std::optional<bool> taken = ast->constexprValue;
+  if (!taken.has_value()) {
+    ASTInterpreter interpreter{unit};
+    interpreter.setManifestlyConstantEvaluated(false);
+    auto value = interpreter.evaluate(ast->condition);
+    if (!value) return {};
+    taken = interpreter.toBool(*value);
+    if (!taken.has_value()) return {};
+  }
+  auto* discarded = *taken ? ast->elseStatement : ast->statement;
+  if (discarded && JumpTargetFinder::contains(discarded)) return {};
+  return taken;
+}
+
+}  // namespace
 
 struct Codegen::ExceptionDeclarationVisitor {
   Codegen& gen;
@@ -160,6 +230,14 @@ void Codegen::StatementVisitor::operator()(CompoundStatementAST* ast) {
 }
 
 void Codegen::StatementVisitor::operator()(IfStatementAST* ast) {
+  if (auto taken = constantBranch(gen.unit_, ast)) {
+    gen.pushCleanup();
+    gen.statement(ast->initializer);
+    gen.statement(*taken ? ast->statement : ast->elseStatement);
+    gen.popCleanup(lastTokenLocation(ast));
+    return;
+  }
+
   auto trueBlock = gen.newBlock();
   auto falseBlock = gen.newBlock();
   auto mergeBlock = gen.newBlock();
