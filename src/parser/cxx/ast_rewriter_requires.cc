@@ -157,9 +157,24 @@ auto ASTRewriter::typeConstraintExpression(
   idExpression->type = unit->control()->getBoolType();
   idExpression->valueCategory = ValueCategory::kPrValue;
 
-  parameter->setConstraintExpression(idExpression);
+  // A constrained parameter pack folds its constraint with &&.
+  ExpressionAST* constraint = idExpression;
+  if (parameter->isParameterPack()) {
+    auto fold = RightFoldExpressionAST::create(arena);
+    fold->lparenLoc = typeConstraint->identifierLoc;
+    fold->expression = idExpression;
+    fold->opLoc = typeConstraint->identifierLoc;
+    fold->ellipsisLoc = typeConstraint->identifierLoc;
+    fold->rparenLoc = typeConstraint->identifierLoc;
+    fold->op = TokenKind::T_AMP_AMP;
+    fold->type = unit->control()->getBoolType();
+    fold->valueCategory = ValueCategory::kPrValue;
+    constraint = fold;
+  }
 
-  return idExpression;
+  parameter->setConstraintExpression(constraint);
+
+  return constraint;
 }
 
 auto ASTRewriter::associatedConstraints(TranslationUnit* unit, Symbol* symbol)
