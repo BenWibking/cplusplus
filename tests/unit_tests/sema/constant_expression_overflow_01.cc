@@ -8,6 +8,8 @@ constexpr _BitInt(33) bitint_min = -4294967295LL - 1;
 constexpr unsigned _BitInt(33) unsigned_bitint_zero = 0;
 constexpr unsigned _BitInt(33) unsigned_bitint_one = 1;
 constexpr unsigned _BitInt(33) unsigned_bitint_max = 8589934591LL;
+constexpr int truncated_negative_float = -2.75f;
+constexpr unsigned truncated_positive_float = 2.75f;
 
 static_assert(2147483646 + 1 == 2147483647);
 static_assert(int_min + 1 == -2147483647);
@@ -36,6 +38,17 @@ static_assert(-0x80000000U == 0x80000000U);
 static_assert(0xffffffffffffffffULL + 1ULL == 0ULL);
 static_assert(unsigned_bitint_max + unsigned_bitint_one ==
               unsigned_bitint_zero);
+static_assert(truncated_negative_float == -2);
+static_assert(truncated_positive_float == 2);
+
+// expected-error@+1 {{constexpr variable must be initialized}}
+constexpr int signed_float_upper_overflow = 0x1p31f;
+
+// expected-error@+1 {{constexpr variable must be initialized}}
+constexpr unsigned unsigned_float_negative = -1.0f;
+
+// expected-error@+1 {{constexpr variable must be initialized}}
+constexpr unsigned unsigned_float_upper_overflow = 0x1p32f;
 
 // expected-error@+1 {{static assertion expression is not an integral constant expression}}
 static_assert(2147483647 + 1);

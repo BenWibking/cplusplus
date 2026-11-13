@@ -44,14 +44,12 @@
 
 namespace cxx {
 namespace {
-template <typename Integer>
+template <typename Integer, bool IsSigned>
 auto floatingToInteger(long double value,
-                       int bits = std::numeric_limits<Integer>::digits +
-                                  std::numeric_limits<Integer>::is_signed)
+                       int bits = static_cast<int>(sizeof(Integer) * 8))
     -> std::optional<Integer> {
-  const auto bound =
-      std::ldexp(1.0L, bits - std::numeric_limits<Integer>::is_signed);
-  const auto lower = std::numeric_limits<Integer>::is_signed ? -bound : 0.0L;
+  const auto bound = std::ldexp(1.0L, bits - IsSigned);
+  const auto lower = IsSigned ? -bound : 0.0L;
   const auto truncated = std::trunc(value);
   if (!std::isfinite(truncated) || truncated < lower || truncated >= bound)
     return std::nullopt;
@@ -60,7 +58,7 @@ auto floatingToInteger(long double value,
 
 struct ToInt {
   auto operator()(ConstFloat value) const -> std::optional<std::intmax_t> {
-    return floatingToInteger<std::intmax_t>(value.toLongDouble());
+    return floatingToInteger<std::intmax_t, true>(value.toLongDouble());
   }
 
   auto operator()(bool v) const -> std::optional<std::intmax_t> {
@@ -72,7 +70,7 @@ struct ToInt {
   }
 
   auto operator()(long double v) const -> std::optional<std::intmax_t> {
-    return floatingToInteger<std::intmax_t>(v);
+    return floatingToInteger<std::intmax_t, true>(v);
   }
 
   auto operator()(const std::shared_ptr<ConstComplex>& v) const
@@ -88,7 +86,7 @@ struct ToInt {
 
 struct ToUInt {
   auto operator()(ConstFloat value) const -> std::optional<std::uintmax_t> {
-    return floatingToInteger<std::uintmax_t>(value.toLongDouble());
+    return floatingToInteger<std::uintmax_t, false>(value.toLongDouble());
   }
 
   auto operator()(bool v) const -> std::optional<std::uintmax_t> {
@@ -100,7 +98,7 @@ struct ToUInt {
   }
 
   auto operator()(long double v) const -> std::optional<std::uintmax_t> {
-    return floatingToInteger<std::uintmax_t>(v);
+    return floatingToInteger<std::uintmax_t, false>(v);
   }
 
   auto operator()(const std::shared_ptr<ConstComplex>& v) const
@@ -501,12 +499,14 @@ auto ASTInterpreter::toIntegralType(const ConstValue& value, const Type* type)
   if (floating) {
     if (representation->isSigned) {
       auto result =
-          floatingToInteger<ConstInt::Wide>(*floating, representation->bits);
+          floatingToInteger<ConstInt::Wide, true>(*floating,
+                                                  representation->bits);
       if (!result) return std::nullopt;
       raw = *result;
     } else {
       auto result =
-          floatingToInteger<ConstInt::UWide>(*floating, representation->bits);
+          floatingToInteger<ConstInt::UWide, false>(*floating,
+                                                    representation->bits);
       if (!result) return std::nullopt;
       raw = static_cast<ConstInt::Wide>(*result);
     }
