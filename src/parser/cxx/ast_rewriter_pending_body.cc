@@ -437,6 +437,7 @@ void ASTRewriter::requireExplicitInstantiationMember(TranslationUnit* unit,
                                                      SourceLocation location) {
   if (function->isExcludedFromExplicitInstantiation()) return;
   if (function->isTemplatePattern()) return;
+  if (function->isExplicitlySpecialized()) return;
   if (!unit->typeTraits().is_user_provided(function)) return;
   auto definition = function->resolvedDefinition();
   attachPatternDefinition(unit, definition);

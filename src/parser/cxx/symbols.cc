@@ -1434,7 +1434,7 @@ auto is_inline_or_templated(FunctionSymbol* function) -> bool {
   if (!function) return false;
   if (!function->isSpecialization()) function = function->canonical();
   if (function->isInline()) return true;
-  if (function->resolvedDefinition()->isExplicitSpecialization()) return false;
+  if (function->isExplicitlySpecialized()) return false;
   if (auto declaration = function->templateDeclaration()) {
     if (declaration->templateParameterList) return true;
   } else if (function->isSpecialization()) {
@@ -3660,8 +3660,11 @@ namespace {
 
 auto FunctionSymbol::isExplicitlySpecialized() const -> bool {
   auto canonical = this->canonical();
+  if (!canonical->isSpecialization() && !canonical->instantiationPattern())
+    return false;
   if (declaresExplicitSpecialization(canonical->definition())) return true;
-  return std::ranges::any_of(canonical->declarations(),
+  if (declaresExplicitSpecialization(canonical)) return true;
+  return std::ranges::any_of(canonical->redeclarations(),
                              declaresExplicitSpecialization);
 }
 
