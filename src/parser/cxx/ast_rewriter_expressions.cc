@@ -1999,6 +1999,8 @@ auto ASTRewriter::ExpressionVisitor::operator()(BracedInitListAST* ast)
   copy->valueCategory = ast->valueCategory;
   copy->type = ast->type;
   copy->lbraceLoc = ast->lbraceLoc;
+  copy->initialization.isParenthesizedAggregate =
+      ast->initialization.isParenthesizedAggregate;
 
   copy->expressionList = rewrite.rewriteExpressionList(ast->expressionList);
 
