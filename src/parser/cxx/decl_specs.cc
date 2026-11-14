@@ -752,6 +752,9 @@ void DeclSpecs::finish() {
     type_ = makeAtomicType(type_, atomicQualifier->atomicLoc);
   if (isConst) type_ = translationUnit()->typeTraits().add_const(type_);
   if (isVolatile) type_ = translationUnit()->typeTraits().add_volatile(type_);
+  if (isRestrict)
+    type_ =
+        translationUnit()->typeTraits().add_cv(type_, CvQualifiers::kRestrict);
 }
 
 auto DeclSpecs::makeAtomicType(const Type* type, SourceLocation location) const

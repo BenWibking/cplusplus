@@ -122,6 +122,10 @@ enum class CvQualifiers {
   kConst = 1,
   kVolatile = 2,
   kConstVolatile = kConst | kVolatile,
+  kRestrict = 4,
+  kConstRestrict = kConst | kRestrict,
+  kVolatileRestrict = kVolatile | kRestrict,
+  kConstVolatileRestrict = kConst | kVolatile | kRestrict,
 };
 
 [[nodiscard]] constexpr auto operator|(CvQualifiers a, CvQualifiers b)
@@ -136,7 +140,7 @@ enum class CvQualifiers {
 
 [[nodiscard]] constexpr auto operator~(CvQualifiers a) -> CvQualifiers {
   return CvQualifiers(~std::to_underlying(a) &
-                      std::to_underlying(CvQualifiers::kConstVolatile));
+                      std::to_underlying(CvQualifiers::kConstVolatileRestrict));
 }
 
 constexpr auto operator|=(CvQualifiers& a, CvQualifiers b) -> CvQualifiers& {
@@ -155,6 +159,10 @@ constexpr auto operator&=(CvQualifiers& a, CvQualifiers b) -> CvQualifiers& {
 
 [[nodiscard]] constexpr auto has_volatile(CvQualifiers cv) -> bool {
   return (cv & CvQualifiers::kVolatile) != CvQualifiers::kNone;
+}
+
+[[nodiscard]] constexpr auto has_restrict(CvQualifiers cv) -> bool {
+  return (cv & CvQualifiers::kRestrict) != CvQualifiers::kNone;
 }
 
 [[nodiscard]] constexpr auto is_at_least_as_cv_qualified(CvQualifiers cv,

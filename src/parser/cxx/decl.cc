@@ -215,6 +215,8 @@ struct GetDeclaratorType {
         type_ = unit->typeTraits().add_const(type_);
       } else if (ast_cast<VolatileQualifierAST>(it->value)) {
         type_ = unit->typeTraits().add_volatile(type_);
+      } else if (ast_cast<RestrictQualifierAST>(it->value)) {
+        type_ = unit->typeTraits().add_cv(type_, CvQualifiers::kRestrict);
       }
     }
 
@@ -233,6 +235,9 @@ struct GetDeclaratorType {
       type_ = unit->typeTraits().add_rvalue_reference(type_);
     } else {
       type_ = unit->typeTraits().add_lvalue_reference(type_);
+    }
+    if (ast->isRestrict) {
+      type_ = unit->typeTraits().add_cv(type_, CvQualifiers::kRestrict);
     }
 
     type_ = applyTypeAttributes(unit, ast->attributeList, type_,
@@ -293,6 +298,8 @@ struct GetDeclaratorType {
         cvQualifiers |= CvQualifiers::kConst;
       else if (ast_cast<VolatileQualifierAST>(it->value))
         cvQualifiers |= CvQualifiers::kVolatile;
+      else if (ast_cast<RestrictQualifierAST>(it->value))
+        cvQualifiers |= CvQualifiers::kRestrict;
     }
 
     RefQualifier refQualifier = RefQualifier::kNone;

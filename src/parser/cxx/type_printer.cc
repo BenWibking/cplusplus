@@ -355,35 +355,46 @@ class TypePrinter {
     specifiers_.append("__float128");
   }
 
+  [[nodiscard]] auto acceptQualifiedDeclarator(const QualType* type) -> bool {
+    if (alias_ && type->elementType() == alias_->type()) return false;
+    const Type* elementType = nullptr;
+    std::string declaratorOperator;
+    if (auto pointerType = type_cast<PointerType>(type->elementType())) {
+      elementType = pointerType->elementType();
+      declaratorOperator = "*";
+    } else if (auto referenceType =
+                   type_cast<LvalueReferenceType>(type->elementType())) {
+      elementType = referenceType->elementType();
+      declaratorOperator = "&";
+    } else if (auto referenceType =
+                   type_cast<RvalueReferenceType>(type->elementType())) {
+      elementType = referenceType->elementType();
+      declaratorOperator = "&&";
+    } else {
+      return false;
+    }
+
+    accept(elementType);
+    if (type->isConst()) declaratorOperator += " const";
+    if (type->isVolatile()) declaratorOperator += " volatile";
+    if (type->isRestrict()) declaratorOperator += " __restrict__";
+    if (auto space = type->addressSpace()) {
+      declaratorOperator +=
+          std::format(" __attribute__((address_space({})))", *space);
+    }
+    ptrOps_ = declaratorOperator + ptrOps_;
+    return true;
+  }
+
   void operator()(const QualType* type) {
     if (auto added = qualifiersAddedToAlias(type)) {
       if (has_const(*added)) specifiers_.append("const ");
       if (has_volatile(*added)) specifiers_.append("volatile ");
+      if (has_restrict(*added)) specifiers_.append("__restrict__ ");
       accept(alias_->type());
       return;
     }
-    auto ptrTy = type_cast<PointerType>(type->elementType());
-    if (ptrTy && (!alias_ || ptrTy != alias_->type())) {
-      accept(ptrTy->elementType());
-
-      std::string op = "*";
-
-      if (type->isConst()) {
-        op += " const";
-      }
-
-      if (type->isVolatile()) {
-        op += " volatile";
-      }
-
-      if (auto space = type->addressSpace()) {
-        op += std::format(" __attribute__((address_space({})))", *space);
-      }
-
-      ptrOps_ = op + ptrOps_;
-
-      return;
-    }
+    if (acceptQualifiedDeclarator(type)) return;
 
     if (type->isConst()) {
       specifiers_.append("const ");
@@ -391,6 +402,10 @@ class TypePrinter {
 
     if (type->isVolatile()) {
       specifiers_.append("volatile ");
+    }
+
+    if (type->isRestrict()) {
+      specifiers_.append("__restrict__ ");
     }
 
     if (auto space = type->addressSpace()) {
@@ -506,19 +521,9 @@ class TypePrinter {
 
     signature.append(")");
 
-    switch (type->cvQualifiers()) {
-      case CvQualifiers::kConst:
-        signature.append(" const");
-        break;
-      case CvQualifiers::kVolatile:
-        signature.append(" volatile");
-        break;
-      case CvQualifiers::kConstVolatile:
-        signature.append(" const volatile");
-        break;
-      default:
-        break;
-    }
+    if (has_const(type->cvQualifiers())) signature.append(" const");
+    if (has_volatile(type->cvQualifiers())) signature.append(" volatile");
+    if (has_restrict(type->cvQualifiers())) signature.append(" __restrict__");
 
     switch (type->refQualifier()) {
       case RefQualifier::kLvalue:
