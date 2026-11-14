@@ -156,6 +156,7 @@ class TypeTraits {
 
   [[nodiscard]] auto is_const(const Type* type) const -> bool;
   [[nodiscard]] auto is_volatile(const Type* type) const -> bool;
+  [[nodiscard]] auto is_restrict(const Type* type) const -> bool;
   [[nodiscard]] auto is_atomic(const Type* type) const -> bool;
   [[nodiscard]] auto is_signed(const Type* type) const -> bool;
   [[nodiscard]] auto is_unsigned(const Type* type) const -> bool;
@@ -275,6 +276,7 @@ class TypeTraits {
   [[nodiscard]] auto remove_all_extents(const Type* type) const -> const Type*;
   [[nodiscard]] auto remove_const(const Type* type) const -> const Type*;
   [[nodiscard]] auto remove_volatile(const Type* type) const -> const Type*;
+  [[nodiscard]] auto remove_restrict(const Type* type) const -> const Type*;
   [[nodiscard]] auto remove_address_space(const Type* type) const
       -> const Type*;
   [[nodiscard]] auto add_cv(const Type* type, CvQualifiers cv) const

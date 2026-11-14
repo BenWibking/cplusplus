@@ -14485,12 +14485,24 @@ const pendingInstantiationStateNames: Record<
   3: "Resolved",
 };
 /** @category Enumerations */
-export type CvQualifiers = "None" | "Const" | "Volatile" | "ConstVolatile";
+export type CvQualifiers =
+  | "None"
+  | "Const"
+  | "Volatile"
+  | "ConstVolatile"
+  | "Restrict"
+  | "ConstRestrict"
+  | "VolatileRestrict"
+  | "ConstVolatileRestrict";
 const cvQualifiersNames: Record<number, CvQualifiers> = {
   0: "None",
   1: "Const",
   2: "Volatile",
   3: "ConstVolatile",
+  4: "Restrict",
+  5: "ConstRestrict",
+  6: "VolatileRestrict",
+  7: "ConstVolatileRestrict",
 };
 /** @category Enumerations */
 export type ThreadLocalKind = "None" | "Cxx" | "Gnu";

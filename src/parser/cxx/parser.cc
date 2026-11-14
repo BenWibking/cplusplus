@@ -8025,6 +8025,7 @@ auto Parser::parse_function_declarator(FunctionDeclaratorChunkAST*& yyast,
     CvQualifiers cv = CvQualifiers::kNone;
     if (cvQualifiers.isConst) cv |= CvQualifiers::kConst;
     if (cvQualifiers.isVolatile) cv |= CvQualifiers::kVolatile;
+    if (cvQualifiers.isRestrict) cv |= CvQualifiers::kRestrict;
     binder_.setSpeculativeValue(parameters->cvQualifiers(), cv,
                                 [parameters](CvQualifiers value) {
                                   parameters->setCvQualifiers(value);

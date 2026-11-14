@@ -435,19 +435,54 @@ struct IsVolatile {
   auto operator()(const Type*) const -> bool { return false; }
 };
 
+struct IsRestrict {
+  auto operator()(const QualType* type) const -> bool {
+    return type->isRestrict();
+  }
+
+  auto operator()(const BoundedArrayType* type) const -> bool {
+    return visit(*this, type->elementType());
+  }
+
+  auto operator()(const UnboundedArrayType* type) const -> bool {
+    return visit(*this, type->elementType());
+  }
+
+  auto operator()(const UnresolvedBoundedArrayType* type) const -> bool {
+    return visit(*this, type->elementType());
+  }
+
+  auto operator()(const Type*) const -> bool { return false; }
+};
+
 struct IsLvalueReference {
   auto operator()(const LvalueReferenceType*) const -> bool { return true; }
+
+  auto operator()(const QualType* type) const -> bool {
+    return visit(*this, type->elementType());
+  }
+
   auto operator()(const Type*) const -> bool { return false; }
 };
 
 struct IsRvalueReference {
   auto operator()(const RvalueReferenceType*) const -> bool { return true; }
+
+  auto operator()(const QualType* type) const -> bool {
+    return visit(*this, type->elementType());
+  }
+
   auto operator()(const Type*) const -> bool { return false; }
 };
 
 struct IsReference {
   auto operator()(const LvalueReferenceType*) const -> bool { return true; }
   auto operator()(const RvalueReferenceType*) const -> bool { return true; }
+
+  auto operator()(const QualType* type) const -> bool {
+    return visit(*this, type->elementType());
+  }
+
   auto operator()(const Type*) const -> bool { return false; }
 };
 
@@ -482,6 +517,14 @@ struct RemoveReference {
 
   auto operator()(const RvalueReferenceType* type) const -> const Type* {
     return type->elementType();
+  }
+
+  auto operator()(const QualType* type) const -> const Type* {
+    auto elementType = type->elementType();
+    if (!type_cast<LvalueReferenceType>(elementType) &&
+        !type_cast<RvalueReferenceType>(elementType))
+      return type;
+    return visit(*this, elementType);
   }
 
   auto operator()(auto type) const -> const Type* { return type; }
@@ -593,14 +636,20 @@ struct AddTypeQualifiers {
     return type;
   }
 
+  [[nodiscard]] auto qualifyReference(const Type* type) const -> const Type* {
+    auto referenceQualifiers = qualifiers & CvQualifiers::kRestrict;
+    if (referenceQualifiers == CvQualifiers::kNone) return type;
+    return control()->getQualType(type, referenceQualifiers);
+  }
+
   [[nodiscard]] auto operator()(const LvalueReferenceType* type) const
       -> const Type* {
-    return type;
+    return qualifyReference(type);
   }
 
   [[nodiscard]] auto operator()(const RvalueReferenceType* type) const
       -> const Type* {
-    return type;
+    return qualifyReference(type);
   }
 
   [[nodiscard]] auto operator()(auto type) const -> const Type* {
@@ -1805,6 +1854,10 @@ auto TypeTraits::is_volatile(const Type* type) const -> bool {
   return type && visit(IsVolatile{}, type);
 }
 
+auto TypeTraits::is_restrict(const Type* type) const -> bool {
+  return type && visit(IsRestrict{}, type);
+}
+
 auto TypeTraits::is_atomic(const Type* type) const -> bool {
   return type_cast<AtomicType>(unqualified_type(type)) != nullptr;
 }
@@ -2768,6 +2821,11 @@ auto TypeTraits::remove_const(const Type* type) const -> const Type* {
 auto TypeTraits::remove_volatile(const Type* type) const -> const Type* {
   if (!type) return type;
   return RemoveQualifiers{*this, CvQualifiers::kVolatile}.apply(type);
+}
+
+auto TypeTraits::remove_restrict(const Type* type) const -> const Type* {
+  if (!type) return type;
+  return RemoveQualifiers{*this, CvQualifiers::kRestrict}.apply(type);
 }
 
 auto TypeTraits::remove_address_space(const Type* type) const -> const Type* {

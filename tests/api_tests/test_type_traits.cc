@@ -18,13 +18,81 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <cxx/ast.h>
+#include <cxx/ast_visitor.h>
 #include <cxx/symbols.h>
 #include <cxx/type_traits.h>
+#include <cxx/views/symbols.h>
 #include <gtest/gtest.h>
 
 #include "test_utils.h"
 
 using namespace cxx;
+
+namespace {
+
+class LocalVariableCollector final : public ASTVisitor {
+ public:
+  void visit(InitDeclaratorAST* ast) override {
+    if (auto* candidate = symbol_cast<VariableSymbol>(ast->symbol);
+        candidate && candidate->enclosingFunction()) {
+      variable = candidate;
+    }
+    ASTVisitor::visit(ast);
+  }
+
+  VariableSymbol* variable = nullptr;
+};
+
+}  // namespace
+
+TEST(TypeTraits, PreservesRestrictQualifiedParameters) {
+  auto source = R"(
+    using Restricted = int* __restrict__;
+    void restrict_copy(int* __restrict direct, Restricted alias,
+                       int* __restrict__ alternate,
+                       int& __restrict__ reference,
+                       int* ordinary) {
+      int* __restrict__ local = direct;
+      direct[0] = alias[0] + alternate[0] + reference + ordinary[0];
+      local = ordinary;
+      ordinary = direct;
+      local[1] = ordinary[1];
+    }
+  )"_cxx;
+
+  ASSERT_EQ(source.diagnosticsClient.errorCount(), 0);
+  auto functions = views::each_function(source.get("restrict_copy"));
+  ASSERT_EQ(std::ranges::distance(functions), 1);
+  auto* function = *functions.begin();
+  const auto parameters = function->parameters();
+  ASSERT_EQ(parameters.size(), 5u);
+  auto traits = source.unit.typeTraits();
+  EXPECT_TRUE(traits.is_restrict(parameters[0]->type()));
+  EXPECT_TRUE(traits.is_restrict(parameters[1]->type()));
+  EXPECT_TRUE(traits.is_restrict(parameters[2]->type()));
+  EXPECT_TRUE(traits.is_restrict(parameters[3]->type()));
+  EXPECT_TRUE(traits.is_lvalue_reference(parameters[3]->type()));
+  EXPECT_TRUE(
+      type_cast<IntType>(traits.remove_reference(parameters[3]->type())));
+  EXPECT_FALSE(traits.is_restrict(parameters[4]->type()));
+
+  auto unrestricted = traits.remove_restrict(parameters[0]->type());
+  EXPECT_FALSE(traits.is_restrict(unrestricted));
+  EXPECT_TRUE(traits.is_pointer(unrestricted));
+
+  auto* functionType = type_cast<FunctionType>(function->type());
+  ASSERT_NE(functionType, nullptr);
+  ASSERT_EQ(functionType->parameterTypes().size(), 5u);
+  for (auto* parameterType : functionType->parameterTypes()) {
+    EXPECT_FALSE(traits.is_restrict(parameterType));
+  }
+
+  LocalVariableCollector collector;
+  collector.accept(function->declaration());
+  ASSERT_NE(collector.variable, nullptr);
+  EXPECT_TRUE(traits.is_restrict(collector.variable->type()));
+}
 
 TEST(TypeTraits, SeparatesValueOperationAndDestructorTriviality) {
   auto source = R"(

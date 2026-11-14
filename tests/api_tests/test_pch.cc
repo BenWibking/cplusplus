@@ -307,6 +307,45 @@ int origin;
   ASSERT_TRUE(symbol_cast<VariableSymbol>(findMember(globalScope, "origin")));
 }
 
+TEST(PrecompiledHeader, RestoresRestrictQualifiers) {
+  Prefix prefix{R"(
+int* __restrict__ restricted_pointer;
+extern int& __restrict__ restricted_reference;
+struct Owner { void access() __restrict__; };
+)"};
+
+  const auto data = prefix.emit();
+  ASSERT_TRUE(prefix.errors().empty());
+  ASSERT_FALSE(data.empty());
+
+  DiagnosticsClient diagnostics;
+  TranslationUnit consumer{&diagnostics};
+  consumer.setSource("", "consumer.cc");
+  PrecompiledHeaderReader reader{&consumer, keys()};
+  ASSERT_TRUE(reader(data)) << reader.error();
+
+  auto traits = consumer.typeTraits();
+  auto* pointer = symbol_cast<VariableSymbol>(
+      findMember(consumer.globalScope(), "restricted_pointer"));
+  ASSERT_NE(pointer, nullptr);
+  EXPECT_TRUE(traits.is_restrict(pointer->type()));
+
+  auto* reference = symbol_cast<VariableSymbol>(
+      findMember(consumer.globalScope(), "restricted_reference"));
+  ASSERT_NE(reference, nullptr);
+  EXPECT_TRUE(traits.is_restrict(reference->type()));
+  EXPECT_TRUE(traits.is_lvalue_reference(reference->type()));
+
+  auto* owner =
+      symbol_cast<ClassSymbol>(findMember(consumer.globalScope(), "Owner"));
+  ASSERT_NE(owner, nullptr);
+  auto functions = views::each_function(findMember(owner, "access"));
+  ASSERT_EQ(std::ranges::distance(functions), 1);
+  auto* functionType = type_cast<FunctionType>((*functions.begin())->type());
+  ASSERT_NE(functionType, nullptr);
+  EXPECT_TRUE(has_restrict(functionType->cvQualifiers()));
+}
+
 TEST(PrecompiledHeader, RestoresAggregateInitializationForms) {
   Prefix prefix{R"(
 struct Pair { int first; int second = 5; };

@@ -67,6 +67,20 @@ TEST(TypePrinter, QualTypes) {
   ASSERT_EQ(to_string(control.getQualType(control.getUnsignedCharType(),
                                           CvQualifiers::kConstVolatile)),
             "const volatile unsigned char");
+
+  ASSERT_EQ(to_string(control.getQualType(
+                control.getPointerType(control.getUnsignedCharType()),
+                CvQualifiers::kConstVolatileRestrict)),
+            "unsigned char* const volatile __restrict__");
+
+  ASSERT_EQ(to_string(control.getQualType(
+                control.getLvalueReferenceType(control.getIntType()),
+                CvQualifiers::kRestrict)),
+            "int& __restrict__");
+
+  ASSERT_EQ(to_string(control.getFunctionType(control.getVoidType(), {}, false,
+                                              CvQualifiers::kRestrict)),
+            "void () __restrict__");
 }
 
 TEST(TypePrinter, PointerTypes) {

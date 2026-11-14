@@ -9728,9 +9728,11 @@ auto SemanticDecoder::readTypeFloat128Type(ByteReader& in) -> const cxx::Type* {
 auto SemanticDecoder::readTypeQualType(ByteReader& in) -> const cxx::Type* {
   const cxx::Type* argument1 = typeAt(TypeRef{in.varU32()});
   static_assert(
-      static_cast<std::uint32_t>(::cxx::CvQualifiers::kConstVolatile) + 1 == 4);
+      static_cast<std::uint32_t>(::cxx::CvQualifiers::kConstVolatileRestrict) +
+          1 ==
+      8);
   ::cxx::CvQualifiers argument2 =
-      static_cast<::cxx::CvQualifiers>(readEnum(in, 4));
+      static_cast<::cxx::CvQualifiers>(readEnum(in, 8));
   std::optional<unsigned int> argument3;
   if (in.boolean()) {
     unsigned int value4 = static_cast<unsigned int>(in.varU32());
@@ -9783,9 +9785,11 @@ auto SemanticDecoder::readTypeFunctionType(ByteReader& in) -> const cxx::Type* {
   }
   bool argument6 = in.boolean();
   static_assert(
-      static_cast<std::uint32_t>(::cxx::CvQualifiers::kConstVolatile) + 1 == 4);
+      static_cast<std::uint32_t>(::cxx::CvQualifiers::kConstVolatileRestrict) +
+          1 ==
+      8);
   ::cxx::CvQualifiers argument7 =
-      static_cast<::cxx::CvQualifiers>(readEnum(in, 4));
+      static_cast<::cxx::CvQualifiers>(readEnum(in, 8));
   static_assert(static_cast<std::uint32_t>(::cxx::RefQualifier::kRvalue) + 1 ==
                 3);
   ::cxx::RefQualifier argument8 =
@@ -11376,9 +11380,11 @@ void SemanticDecoder::readSymbolFunctionParametersSymbol(
   readSymbolScopeSymbol(in, self);
   // ::cxx::FunctionParametersSymbol::cvQualifiers_
   static_assert(
-      static_cast<std::uint32_t>(::cxx::CvQualifiers::kConstVolatile) + 1 == 4);
+      static_cast<std::uint32_t>(::cxx::CvQualifiers::kConstVolatileRestrict) +
+          1 ==
+      8);
   ::cxx::CvQualifiers value1 =
-      static_cast<::cxx::CvQualifiers>(readEnum(in, 4));
+      static_cast<::cxx::CvQualifiers>(readEnum(in, 8));
   self->setCvQualifiers(std::move(value1));
 }
 

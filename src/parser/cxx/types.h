@@ -278,6 +278,10 @@ class QualType final : public Type,
   [[nodiscard]] auto isVolatile() const -> bool {
     return has_volatile(cvQualifiers());
   }
+
+  [[nodiscard]] auto isRestrict() const -> bool {
+    return has_restrict(cvQualifiers());
+  }
 };
 
 class BoundedArrayType final : public Type,
