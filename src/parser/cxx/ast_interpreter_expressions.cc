@@ -1656,6 +1656,18 @@ auto ASTInterpreter::applySubobjectPath(DesignatedObject object,
   if (selected.object) object.object = std::move(selected.object);
 
   for (auto subobject : ListView(path)) {
+    std::shared_ptr<ConstObject> nestedObject;
+    if (object.object && !object.object->lifetimeEnded()) {
+      auto value = object.object->subobject(subobject);
+      if (!value && anonymous_member_class(subobject)) {
+        // Flattened anonymous members use the enclosing storage and address.
+        // Neither a value copy nor an absent address-path step designates it.
+        continue;
+      }
+      auto nested =
+          value ? std::get_if<std::shared_ptr<ConstObject>>(value) : nullptr;
+      if (nested) nestedObject = *nested;
+    }
     std::shared_ptr<ConstAddress> address;
     if (object.address) {
       auto current = typedAddress(*object.address);
@@ -1717,13 +1729,6 @@ auto ASTInterpreter::applySubobjectPath(DesignatedObject object,
           address->setElementType(elementType);
         }
       }
-    }
-    std::shared_ptr<ConstObject> nestedObject;
-    if (object.object) {
-      auto value = memberValue(object.object, subobject);
-      auto nested =
-          value ? std::get_if<std::shared_ptr<ConstObject>>(&*value) : nullptr;
-      if (nested) nestedObject = *nested;
     }
     object = {std::move(nestedObject), std::move(address)};
     if (!object.object && !object.address) return {};
