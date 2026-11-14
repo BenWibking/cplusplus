@@ -3523,6 +3523,12 @@ void Codegen::processPendingFunctions() {
 
     auto target = sym->resolvedDefinition();
 
+    // Code generation can reach a function whose instantiated body semantic
+    // analysis deferred and never requested, such as a base constructor that
+    // only a constexpr derived constructor calls. Complete it before emission.
+    if (target->hasPendingBody())
+      (void)ASTRewriter::completePendingBodyFor(unit_, target);
+
     if (auto funcDecl = target->declaration()) {
       (void)declaration(funcDecl);
     }
