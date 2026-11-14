@@ -1719,7 +1719,14 @@ auto ASTInterpreter::applySubobjectPath(DesignatedObject object,
       }
     }
     std::shared_ptr<ConstObject> nestedObject;
-    if (object.object) {
+    if (object.object && !object.object->subobject(subobject) &&
+        anonymous_member_class(subobject)) {
+      // An anonymous struct or union's members are stored flattened in the
+      // enclosing object, so the enclosing object is the subobject's storage.
+      // memberValue() would gather a copy, and writes through it would be
+      // lost and outlive it.
+      nestedObject = object.object;
+    } else if (object.object) {
       auto value = memberValue(object.object, subobject);
       auto nested =
           value ? std::get_if<std::shared_ptr<ConstObject>>(&*value) : nullptr;
