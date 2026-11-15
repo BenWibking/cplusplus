@@ -3541,7 +3541,8 @@ auto FunctionSymbol::isConstructor() const -> bool {
   auto functionType = type_cast<FunctionType>(type());
   if (!functionType) return false;
   if (!functionType->returnType()) return false;
-  if (unaligned_type(functionType->returnType())->kind() != TypeKind::kVoid) {
+  if (unattributed_type(functionType->returnType())->kind() !=
+      TypeKind::kVoid) {
     return false;
   }
 

@@ -128,9 +128,10 @@ class Control {
   [[nodiscard]] auto getFloat8E4M3FNType() -> const Float8E4M3FNType*;
   [[nodiscard]] auto getFloat8E5M2Type() -> const Float8E5M2Type*;
   [[nodiscard]] auto getFloat128Type() -> const Float128Type*;
-  [[nodiscard]] auto getAlignedType(const Type* elementType,
-                                    std::size_t alignment)
-      -> const AlignedType*;
+  [[nodiscard]] auto getAttributedType(
+      const Type* elementType, std::size_t alignment,
+      TypeAttributeFlags attributeFlags = TypeAttributeFlags::kNone)
+      -> const AttributedType*;
   [[nodiscard]] auto getQualType(
       const Type* elementType, CvQualifiers cvQualifiers,
       std::optional<std::uint32_t> addressSpace = std::nullopt)

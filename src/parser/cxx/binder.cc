@@ -1662,7 +1662,12 @@ auto Binder::aliasedType(SourceLocation identifierLoc, TypeIdAST* typeId,
   if (!typeId) return nullptr;
   auto type =
       applyTypeAttributes(unit_, attributeList, typeId->type, identifierLoc);
-  return applyTypeAttributes(unit_, gnuAttributeList, type, identifierLoc);
+  type = applyTypeAttributes(unit_, gnuAttributeList, type, identifierLoc);
+  auto attributeFlags = sourceTypeAttributeFlags(attributeList) |
+                        sourceTypeAttributeFlags(gnuAttributeList);
+  if (attributeFlags != TypeAttributeFlags::kNone)
+    type = control()->getAttributedType(type, 0, attributeFlags);
+  return type;
 }
 
 auto Binder::declareTypeAlias(SourceLocation identifierLoc,
@@ -2456,13 +2461,19 @@ void Binder::validatePackedAttributes(
 void Binder::applyDeclarationAttributes(
     Symbol* symbol, List<AttributeSpecifierAST*>* attributes,
     DeclaratorAST* declarator) {
-  validatePackedAttributes(symbol, attributes);
-  validatePackedAttributes(symbol, declaratorIdAttributes(declarator));
-  validatePackedAttributes(symbol, terminatingAttributes(declarator));
+  auto* declaratorAttributes = declaratorIdAttributes(declarator);
+  auto* trailingAttributes = terminatingAttributes(declarator);
+  for (auto* attributeList :
+       {attributes, declaratorAttributes, trailingAttributes}) {
+    validatePackedAttributes(symbol, attributeList);
+  }
   if (!symbol) {
+    (void)sourceTypeAttributeFlags(attributes);
+    (void)sourceTypeAttributeFlags(declaratorAttributes);
+    (void)sourceTypeAttributeFlags(trailingAttributes);
     (void)alignedAttribute(attributes);
-    (void)alignedAttribute(declaratorIdAttributes(declarator));
-    (void)alignedAttribute(terminatingAttributes(declarator));
+    (void)alignedAttribute(declaratorAttributes);
+    (void)alignedAttribute(trailingAttributes);
     return;
   }
   if (symbol->isVariable() || symbol->isField() || symbol->isParameter()) {
@@ -2473,19 +2484,29 @@ void Binder::applyDeclarationAttributes(
           symbol->location(),
           "volatile-qualified objects are not supported by the device profile");
   }
-  auto entityAttributes =
-      collectAttributes(unit_, declaratorIdAttributes(declarator));
-  auto gnuAttributes =
-      collectGnuAttributes(unit_, terminatingAttributes(declarator));
+  auto entityAttributes = collectAttributes(unit_, declaratorAttributes);
+  auto gnuAttributes = collectGnuAttributes(unit_, trailingAttributes);
   auto collected = collectAttributes(unit_, attributes);
+  const bool hasSourceTypeAttributes =
+      findAttribute(&collected, AttributeKind::kMayAlias) ||
+      findAttribute(&entityAttributes, AttributeKind::kMayAlias) ||
+      findAttribute(&gnuAttributes, AttributeKind::kMayAlias);
   collected = mergeAttributes(std::move(collected), &entityAttributes);
   collected = mergeAttributes(std::move(collected), &gnuAttributes);
   applyAttributeMap(symbol, std::move(collected));
 
   if (auto function = symbol_cast<FunctionSymbol>(symbol)) {
     applyConstructorAttribute(function, attributes);
-    applyConstructorAttribute(function, declaratorIdAttributes(declarator));
-    applyConstructorAttribute(function, terminatingAttributes(declarator));
+    applyConstructorAttribute(function, declaratorAttributes);
+    applyConstructorAttribute(function, trailingAttributes);
+  }
+
+  if (hasSourceTypeAttributes) {
+    const auto sourceAttributeFlags =
+        sourceTypeAttributeFlags(attributes) |
+        sourceTypeAttributeFlags(declaratorAttributes) |
+        sourceTypeAttributeFlags(trailingAttributes);
+    applySourceTypeAttributes(symbol, sourceAttributeFlags);
   }
 
   std::optional<int> requestedAlignment;
@@ -2495,8 +2516,8 @@ void Binder::applyDeclarationAttributes(
     requestedAlignment = std::max(requestedAlignment.value_or(0), *requested);
   };
   mergeAlignment(attributes);
-  mergeAlignment(declaratorIdAttributes(declarator));
-  mergeAlignment(terminatingAttributes(declarator));
+  mergeAlignment(declaratorAttributes);
+  mergeAlignment(trailingAttributes);
   applyAlignedAttribute(symbol, requestedAlignment);
 
   std::vector<AttributeRef> deviceAttributes;
@@ -3965,8 +3986,8 @@ auto redeclarationTypesEquivalent(TranslationUnit* unit,
   auto incomingReferencedType = indirectElementType(incomingType);
   if (existingReferencedType || incomingReferencedType) {
     if (!existingReferencedType || !incomingReferencedType) return false;
-    if (unaligned_type(existingType)->kind() !=
-        unaligned_type(incomingType)->kind())
+    if (unattributed_type(existingType)->kind() !=
+        unattributed_type(incomingType)->kind())
       return false;
     return redeclarationTypesEquivalent(unit, existingReferencedType,
                                         incomingReferencedType,
@@ -4238,6 +4259,26 @@ auto Binder::alignedAttribute(List<AttributeSpecifierAST*>* attributeList)
   return strictest;
 }
 
+auto Binder::sourceTypeAttributeFlags(
+    List<AttributeSpecifierAST*>* attributeList) -> TypeAttributeFlags {
+  auto attributeFlags = TypeAttributeFlags::kNone;
+  for (auto attribute :
+       findAttributes(unit_, attributeList, AttributeKind::kMayAlias)) {
+    if (attribute.argumentClause)
+      error(attribute.location, "'may_alias' attribute takes no arguments");
+    attributeFlags |= TypeAttributeFlags::kMayAlias;
+  }
+  return attributeFlags;
+}
+
+void Binder::applySourceTypeAttributes(Symbol* symbol,
+                                       TypeAttributeFlags attributeFlags) {
+  auto* typeAlias = symbol_cast<TypeAliasSymbol>(symbol);
+  if (!typeAlias || attributeFlags == TypeAttributeFlags::kNone) return;
+  typeAlias->setType(
+      control()->getAttributedType(typeAlias->type(), 0, attributeFlags));
+}
+
 void Binder::applyAlignedAttribute(
     Symbol* symbol, List<AttributeSpecifierAST*>* attributeList) {
   applyAlignedAttribute(symbol, alignedAttribute(attributeList));
@@ -4252,9 +4293,7 @@ void Binder::applyAlignedAttribute(Symbol* symbol,
     if (!type || traits.is_void(type) || traits.is_function(type) ||
         traits.is_reference(type))
       return;
-    if (auto alignedType = type_cast<AlignedType>(type))
-      type = alignedType->elementType();
-    typeAlias->setType(control()->getAlignedType(type, *requested));
+    typeAlias->setType(control()->getAttributedType(type, *requested));
     return;
   }
 

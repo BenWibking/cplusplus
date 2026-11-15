@@ -245,7 +245,8 @@ class SemanticEncoder final : public SemanticEncoderBase {
   void writeTypeComplexType(ByteWriter& out, const cxx::ComplexType* self);
   void writeTypeAtomicType(ByteWriter& out, const cxx::AtomicType* self);
   void writeTypeSveType(ByteWriter& out, const cxx::SveType* self);
-  void writeTypeAlignedType(ByteWriter& out, const cxx::AlignedType* self);
+  void writeTypeAttributedType(ByteWriter& out,
+                               const cxx::AttributedType* self);
   void writeSymbolSymbol(ByteWriter& out, cxx::Symbol* self);
   void writeSymbolScopeSymbol(ByteWriter& out, cxx::ScopeSymbol* self);
   void writeSymbolNamespaceSymbol(ByteWriter& out, cxx::NamespaceSymbol* self);
@@ -991,7 +992,7 @@ class SemanticDecoder final : public SemanticDecoderBase {
   [[nodiscard]] auto readTypeComplexType(ByteReader& in) -> const cxx::Type*;
   [[nodiscard]] auto readTypeAtomicType(ByteReader& in) -> const cxx::Type*;
   [[nodiscard]] auto readTypeSveType(ByteReader& in) -> const cxx::Type*;
-  [[nodiscard]] auto readTypeAlignedType(ByteReader& in) -> const cxx::Type*;
+  [[nodiscard]] auto readTypeAttributedType(ByteReader& in) -> const cxx::Type*;
   void readSymbolSymbol(ByteReader& in, cxx::Symbol* self);
   void readSymbolScopeSymbol(ByteReader& in, cxx::ScopeSymbol* self);
   void readSymbolNamespaceSymbol(ByteReader& in, cxx::NamespaceSymbol* self);

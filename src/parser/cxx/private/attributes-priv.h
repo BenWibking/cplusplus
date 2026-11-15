@@ -167,6 +167,11 @@ inline constexpr AttributeSpelling kLocalIdSpellings[] = {
     {AttributeSyntax::kCxx, "cxx", "local_id", AttributeKind::kLocalId},
 };
 
+inline constexpr AttributeSpelling kMayAliasSpellings[] = {
+    {AttributeSyntax::kGnu, "", "may_alias", AttributeKind::kMayAlias},
+    {AttributeSyntax::kCxx, "gnu", "may_alias", AttributeKind::kMayAlias},
+};
+
 inline constexpr AttributeSpelling kMaybeUnusedSpellings[] = {
     {AttributeSyntax::kCxx, "", "maybe_unused", AttributeKind::kMaybeUnused},
     {AttributeSyntax::kGnu, "", "unused", AttributeKind::kMaybeUnused},
@@ -560,6 +565,19 @@ inline constexpr AttributeInfo kAttributeInfos[] = {
                          "unsigned ints, to the local invocation id.",
     },
     {
+        .kind = AttributeKind::kMayAlias,
+        .name = "may_alias",
+        .standardValue = 0,
+        .spellings = kMayAliasSpellings,
+        .availability = AttributeAvailability::kAlways,
+        .cplusplusOnly = false,
+        .arguments = std::span<const std::string_view>{},
+        .optionalArguments = false,
+        .subjects = "typedefs, structures, unions and enumerations",
+        .documentation = "Allows lvalue accesses through the attributed type "
+                         "to alias objects of any type.",
+    },
+    {
         .kind = AttributeKind::kMaybeUnused,
         .name = "maybe_unused",
         .standardValue = 201603,
@@ -774,6 +792,7 @@ inline constexpr const AttributeSpelling* kSortedAttributeSpellings[] = {
     &kGnuInlineSpellings[0],
     &kImportModuleSpellings[0],
     &kImportNameSpellings[0],
+    &kMayAliasSpellings[0],
     &kNoinlineSpellings[0],
     &kNoreturnSpellings[1],
     &kNothrowSpellings[0],
@@ -818,6 +837,7 @@ inline constexpr const AttributeSpelling* kSortedAttributeSpellings[] = {
     &kAlwaysInlineSpellings[1],
     &kConstructorSpellings[1],
     &kGnuInlineSpellings[1],
+    &kMayAliasSpellings[1],
     &kNoinlineSpellings[1],
     &kNoreturnSpellings[2],
     &kNothrowSpellings[1],

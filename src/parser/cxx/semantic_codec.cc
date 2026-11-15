@@ -414,8 +414,9 @@ void SemanticEncoder::writeType(ByteWriter& out, const cxx::Type* type) {
     case cxx::TypeKind::kSve:
       writeTypeSveType(out, static_cast<const cxx::SveType*>(type));
       break;
-    case cxx::TypeKind::kAligned:
-      writeTypeAlignedType(out, static_cast<const cxx::AlignedType*>(type));
+    case cxx::TypeKind::kAttributed:
+      writeTypeAttributedType(out,
+                              static_cast<const cxx::AttributedType*>(type));
       break;
   }
 }
@@ -2091,12 +2092,14 @@ void SemanticEncoder::writeTypeSveType(
   out.varU32(static_cast<std::uint32_t>(self->sveKind()));
 }
 
-void SemanticEncoder::writeTypeAlignedType(
-    ByteWriter& out, [[maybe_unused]] const cxx::AlignedType* self) {
+void SemanticEncoder::writeTypeAttributedType(
+    ByteWriter& out, [[maybe_unused]] const cxx::AttributedType* self) {
   // elementType
   out.varU32(static_cast<std::uint32_t>(typeRef(self->elementType())));
   // alignment
   out.varU64(static_cast<std::uint64_t>(self->alignment()));
+  // attributeFlags
+  out.varU32(static_cast<std::uint32_t>(self->attributeFlags()));
 }
 
 void SemanticEncoder::writeSymbolSymbol(ByteWriter& out,
@@ -8283,8 +8286,8 @@ auto SemanticDecoder::typeAt(TypeRef ref) -> const cxx::Type* {
     case cxx::TypeKind::kSve:
       type = readTypeSveType(in);
       break;
-    case cxx::TypeKind::kAligned:
-      type = readTypeAlignedType(in);
+    case cxx::TypeKind::kAttributed:
+      type = readTypeAttributedType(in);
       break;
   }
   types_[index - 1] = type;
@@ -10066,10 +10069,17 @@ auto SemanticDecoder::readTypeSveType(ByteReader& in) -> const cxx::Type* {
   return control()->getSveType(std::move(argument1));
 }
 
-auto SemanticDecoder::readTypeAlignedType(ByteReader& in) -> const cxx::Type* {
+auto SemanticDecoder::readTypeAttributedType(ByteReader& in)
+    -> const cxx::Type* {
   const cxx::Type* argument1 = typeAt(TypeRef{in.varU32()});
   unsigned long argument2 = static_cast<unsigned long>(in.varU64());
-  return control()->getAlignedType(std::move(argument1), std::move(argument2));
+  static_assert(
+      static_cast<std::uint32_t>(::cxx::TypeAttributeFlags::kMayAlias) + 1 ==
+      2);
+  ::cxx::TypeAttributeFlags argument3 =
+      static_cast<::cxx::TypeAttributeFlags>(readEnum(in, 2));
+  return control()->getAttributedType(
+      std::move(argument1), std::move(argument2), std::move(argument3));
 }
 
 void SemanticDecoder::readSymbolSymbol([[maybe_unused]] ByteReader& in,

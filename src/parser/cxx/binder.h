@@ -278,6 +278,12 @@ class Binder {
   [[nodiscard]] auto alignedAttribute(
       List<AttributeSpecifierAST*>* attributeList) -> std::optional<int>;
 
+  [[nodiscard]] auto sourceTypeAttributeFlags(
+      List<AttributeSpecifierAST*>* attributeList) -> TypeAttributeFlags;
+
+  void applySourceTypeAttributes(Symbol* symbol,
+                                 TypeAttributeFlags attributeFlags);
+
   void applyAlignedAttribute(Symbol* symbol,
                              List<AttributeSpecifierAST*>* attributeList);
 

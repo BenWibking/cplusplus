@@ -22,6 +22,7 @@
 #include <cxx/ast.h>
 #include <cxx/ast_interpreter.h>
 #include <cxx/ast_rewriter.h>
+#include <cxx/attributes.h>
 #include <cxx/control.h>
 #include <cxx/dependent_types.h>
 #include <cxx/diagnostics_client.h>
@@ -606,9 +607,11 @@ struct AddTypeQualifiers {
   }
 
   [[nodiscard]] auto apply(const Type* type) const -> const Type* {
-    if (auto alignedType = type_cast<AlignedType>(type)) {
-      auto elementType = apply(alignedType->elementType());
-      return control()->getAlignedType(elementType, alignedType->alignment());
+    if (auto attributedType = type_cast<AttributedType>(type)) {
+      auto elementType = apply(attributedType->elementType());
+      return control()->getAttributedType(elementType,
+                                          attributedType->alignment(),
+                                          attributedType->attributeFlags());
     }
     return visit(*this, type);
   }
@@ -723,10 +726,12 @@ struct RemoveQualifiers {
   }
 
   [[nodiscard]] auto apply(const Type* type) const -> const Type* {
-    if (auto alignedType = type_cast<AlignedType>(type)) {
-      auto elementType = apply(alignedType->elementType());
-      if (elementType == alignedType->elementType()) return type;
-      return control()->getAlignedType(elementType, alignedType->alignment());
+    if (auto attributedType = type_cast<AttributedType>(type)) {
+      auto elementType = apply(attributedType->elementType());
+      if (elementType == attributedType->elementType()) return type;
+      return control()->getAttributedType(elementType,
+                                          attributedType->alignment(),
+                                          attributedType->attributeFlags());
     }
     return visit(*this, type);
   }
@@ -1816,7 +1821,7 @@ auto TypeTraits::is_vector_element_type(const Type* type, VectorKind kind) const
     -> bool {
   if (is_floating_point(type)) return true;
   if (!is_integral(type)) return false;
-  if (unaligned_type(type)->kind() == TypeKind::kBool)
+  if (unattributed_type(type)->kind() == TypeKind::kBool)
     return kind == VectorKind::kExt;
   return true;
 }
@@ -1924,6 +1929,34 @@ auto TypeTraits::is_volatile(const Type* type) const -> bool {
 
 auto TypeTraits::is_restrict(const Type* type) const -> bool {
   return type && visit(IsRestrict{}, type);
+}
+
+auto TypeTraits::source_type_attribute_flags(const Type* type) const
+    -> TypeAttributeFlags {
+  auto attributeFlags = TypeAttributeFlags::kNone;
+  while (type) {
+    if (auto attributedType = type_cast<AttributedType>(type)) {
+      attributeFlags |= attributedType->attributeFlags();
+      type = attributedType->elementType();
+      continue;
+    }
+    if (auto qualType = type_cast<QualType>(type)) {
+      type = qualType->elementType();
+      continue;
+    }
+    break;
+  }
+
+  const AttributeMap* attributes = nullptr;
+  if (auto classType = type_cast<ClassType>(type))
+    attributes = classType->symbol()->attributes();
+  else if (auto enumType = type_cast<EnumType>(type))
+    attributes = enumType->symbol()->attributes();
+  else if (auto enumType = type_cast<ScopedEnumType>(type))
+    attributes = enumType->symbol()->attributes();
+  if (findAttribute(attributes, AttributeKind::kMayAlias))
+    attributeFlags |= TypeAttributeFlags::kMayAlias;
+  return attributeFlags;
 }
 
 auto TypeTraits::is_atomic(const Type* type) const -> bool {
@@ -2093,9 +2126,9 @@ auto TypeTraits::overload_set_operand(const Type* type) const
 
 auto TypeTraits::remove_reference(const Type* type) const -> const Type* {
   if (!type) return type;
-  if (auto alignedType = type_cast<AlignedType>(type)) {
-    auto elementType = remove_reference(alignedType->elementType());
-    if (elementType == alignedType->elementType()) return type;
+  if (auto attributedType = type_cast<AttributedType>(type)) {
+    auto elementType = remove_reference(attributedType->elementType());
+    if (elementType == attributedType->elementType()) return type;
     return elementType;
   }
   return visit(RemoveReference{}, type);
@@ -2103,14 +2136,14 @@ auto TypeTraits::remove_reference(const Type* type) const -> const Type* {
 
 auto TypeTraits::add_lvalue_reference(const Type* type) const -> const Type* {
   if (!type) return type;
-  if (type_cast<AlignedType>(type))
+  if (type_cast<AttributedType>(type))
     return control()->getLvalueReferenceType(type);
   return visit(AddLvalueReference{*this}, type);
 }
 
 auto TypeTraits::add_rvalue_reference(const Type* type) const -> const Type* {
   if (!type) return type;
-  if (type_cast<AlignedType>(type))
+  if (type_cast<AttributedType>(type))
     return control()->getRvalueReferenceType(type);
   return visit(AddRvalueReference{*this}, type);
 }
@@ -2235,8 +2268,8 @@ auto TypeTraits::address_of_function(FunctionSymbol* function) const
 }
 
 auto TypeTraits::is_same(const Type* a, const Type* b) const -> bool {
-  a = unaligned_type(a);
-  b = unaligned_type(b);
+  a = unattributed_type(a);
+  b = unattributed_type(b);
   if (a == b) return true;
   if (!a || !b) return false;
   if (a->kind() != b->kind()) return false;
@@ -2315,7 +2348,7 @@ auto TypeTraits::corresponding_integer_type(const Type* type,
     return type;
   }
 
-  switch (unaligned_type(type)->kind()) {
+  switch (unattributed_type(type)->kind()) {
     case TypeKind::kSignedChar:
     case TypeKind::kUnsignedChar:
     case TypeKind::kChar:
@@ -2537,14 +2570,14 @@ auto TypeTraits::is_narrowing_conversion(const Type* from, const Type* to) const
   if (is_floating_point(from) && is_integral(to)) return true;
 
   if (is_floating_point(from) && is_floating_point(to)) {
-    if ((unaligned_type(from)->kind() == TypeKind::kFloat16 &&
-         unaligned_type(to)->kind() == TypeKind::kBFloat16) ||
-        (unaligned_type(from)->kind() == TypeKind::kBFloat16 &&
-         unaligned_type(to)->kind() == TypeKind::kFloat16) ||
-        (unaligned_type(from)->kind() == TypeKind::kFloat8E4M3FN &&
-         unaligned_type(to)->kind() == TypeKind::kFloat8E5M2) ||
-        (unaligned_type(from)->kind() == TypeKind::kFloat8E5M2 &&
-         unaligned_type(to)->kind() == TypeKind::kFloat8E4M3FN))
+    if ((unattributed_type(from)->kind() == TypeKind::kFloat16 &&
+         unattributed_type(to)->kind() == TypeKind::kBFloat16) ||
+        (unattributed_type(from)->kind() == TypeKind::kBFloat16 &&
+         unattributed_type(to)->kind() == TypeKind::kFloat16) ||
+        (unattributed_type(from)->kind() == TypeKind::kFloat8E4M3FN &&
+         unattributed_type(to)->kind() == TypeKind::kFloat8E5M2) ||
+        (unattributed_type(from)->kind() == TypeKind::kFloat8E5M2 &&
+         unattributed_type(to)->kind() == TypeKind::kFloat8E4M3FN))
       return true;
     auto fromSize = control()->memoryLayout()->sizeOf(from);
     auto toSize = control()->memoryLayout()->sizeOf(to);
@@ -3460,7 +3493,7 @@ auto TypeTraits::promoted_integer_type(const Type* type) const -> const Type* {
     return promotedType ? promotedType : underlyingType;
   }
 
-  switch (unaligned_type(source)->kind()) {
+  switch (unattributed_type(source)->kind()) {
     case TypeKind::kBool:
       return control()->getIntType();
 
@@ -3531,8 +3564,8 @@ auto TypeTraits::is_integral_promotion(const Type* from, const Type* to) const
 auto TypeTraits::is_floating_point_promotion(const Type* from,
                                              const Type* to) const -> bool {
   if (!from || !to) return false;
-  const auto sourceKind = unaligned_type(remove_cv(from))->kind();
-  const auto targetKind = unaligned_type(remove_cv(to))->kind();
+  const auto sourceKind = unattributed_type(remove_cv(from))->kind();
+  const auto targetKind = unattributed_type(remove_cv(to))->kind();
   if (sourceKind == TypeKind::kHalf)
     return targetKind == TypeKind::kFloat;
   return sourceKind == TypeKind::kFloat && targetKind == TypeKind::kDouble;
@@ -3728,7 +3761,8 @@ auto TypeTraits::is_covariant_return_type(const Type* overriddenReturnType,
 
   auto overridden = remove_cv(overriddenReturnType);
   auto overrider = remove_cv(overriderReturnType);
-  if (unaligned_type(overridden)->kind() != unaligned_type(overrider)->kind())
+  if (unattributed_type(overridden)->kind() !=
+      unattributed_type(overrider)->kind())
     return false;
 
   auto classOf = [this](const Type* type) -> const Type* {
