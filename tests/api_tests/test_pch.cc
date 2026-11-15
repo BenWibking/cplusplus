@@ -803,6 +803,9 @@ struct Packet {
   unsigned value;
 };
 typedef unsigned AlignedValue __attribute__((aligned(16)));
+typedef unsigned AlignedAliasValue
+    __attribute__((aligned(16), may_alias));
+struct __attribute__((may_alias)) AliasPacket { unsigned value; };
 )"};
 
   const auto data = prefix.emit();
@@ -835,10 +838,27 @@ typedef unsigned AlignedValue __attribute__((aligned(16)));
   auto alignedValue = symbol_cast<TypeAliasSymbol>(
       findMember(consumer.globalScope(), "AlignedValue"));
   ASSERT_TRUE(alignedValue);
-  auto alignedType = type_cast<AlignedType>(alignedValue->type());
-  ASSERT_TRUE(alignedType);
-  EXPECT_EQ(alignedType->alignment(), 16u);
-  EXPECT_TRUE(type_cast<UnsignedIntType>(alignedType->elementType()));
+  auto attributedType = type_cast<AttributedType>(alignedValue->type());
+  ASSERT_TRUE(attributedType);
+  EXPECT_EQ(attributedType->alignment(), 16u);
+  EXPECT_TRUE(type_cast<UnsignedIntType>(attributedType->elementType()));
+
+  auto alignedAliasValue = symbol_cast<TypeAliasSymbol>(
+      findMember(consumer.globalScope(), "AlignedAliasValue"));
+  ASSERT_TRUE(alignedAliasValue);
+  auto alignedAliasType =
+      type_cast<AttributedType>(alignedAliasValue->type());
+  ASSERT_TRUE(alignedAliasType);
+  EXPECT_EQ(alignedAliasType->alignment(), 16u);
+  EXPECT_EQ(alignedAliasType->attributeFlags(),
+            TypeAttributeFlags::kMayAlias);
+
+  auto aliasPacket = symbol_cast<ClassSymbol>(
+      findMember(consumer.globalScope(), "AliasPacket"));
+  ASSERT_TRUE(aliasPacket);
+  EXPECT_EQ(consumer.typeTraits().source_type_attribute_flags(
+                aliasPacket->type()),
+            TypeAttributeFlags::kMayAlias);
 }
 
 TEST(PrecompiledHeader, RestoresPackedEnumSemantics) {

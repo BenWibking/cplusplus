@@ -109,13 +109,37 @@ class Type;
 CXX_FOR_EACH_TYPE_KIND(PROCESS_TYPE)
 #undef PROCESS_TYPE
 
-// AlignedType is layout sugar. Semantic type visitors intentionally see its
-// underlying type, so it is not part of CXX_FOR_EACH_TYPE_KIND.
-class AlignedType;
+// AttributedType carries source-only properties that do not participate in C++
+// type identity. Semantic type visitors intentionally see its underlying type,
+// so it is not part of CXX_FOR_EACH_TYPE_KIND.
+class AttributedType;
 
 #define PROCESS_TYPE(K) k##K,
-enum class TypeKind { CXX_FOR_EACH_TYPE_KIND(PROCESS_TYPE) kAligned };
+enum class TypeKind { CXX_FOR_EACH_TYPE_KIND(PROCESS_TYPE) kAttributed };
 #undef PROCESS_TYPE
+
+enum class TypeAttributeFlags {
+  kNone = 0,
+  kMayAlias = 1,
+};
+
+[[nodiscard]] constexpr auto operator|(TypeAttributeFlags a,
+                                       TypeAttributeFlags b)
+    -> TypeAttributeFlags {
+  return TypeAttributeFlags(std::to_underlying(a) | std::to_underlying(b));
+}
+
+[[nodiscard]] constexpr auto operator&(TypeAttributeFlags a,
+                                       TypeAttributeFlags b)
+    -> TypeAttributeFlags {
+  return TypeAttributeFlags(std::to_underlying(a) & std::to_underlying(b));
+}
+
+constexpr auto operator|=(TypeAttributeFlags& a, TypeAttributeFlags b)
+    -> TypeAttributeFlags& {
+  a = a | b;
+  return a;
+}
 
 enum class CvQualifiers {
   kNone = 0,

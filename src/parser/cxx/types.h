@@ -841,20 +841,20 @@ class SveType final : public Type, public std::tuple<SveTypeKind> {
   }
 };
 
-/**
- * A source type carrying an exact GNU typedef alignment.
- *
- * The requested alignment affects object layout without creating a distinct
- * C++ type. Semantic visitors and type casts therefore desugar this node, while
- * MemoryLayout and persistence inspect it directly.
- */
-class AlignedType final : public Type,
-                          public std::tuple<const Type*, std::size_t> {
+/** Source properties that do not create a distinct C++ type. */
+class AttributedType final
+    : public Type,
+      public std::tuple<const Type*, std::size_t, TypeAttributeFlags> {
  public:
-  static constexpr TypeKind Kind = TypeKind::kAligned;
+  static constexpr TypeKind Kind = TypeKind::kAttributed;
 
-  AlignedType(const Type* elementType, std::size_t alignment)
-      : Type(Kind), tuple(elementType, alignment) {}
+  /**
+   * `alignment` is the exact GNU typedef alignment, or zero when absent.
+   * Attribute flags describe source access behavior and are identity-neutral.
+   */
+  AttributedType(const Type* elementType, std::size_t alignment,
+                 TypeAttributeFlags attributeFlags)
+      : Type(Kind), tuple(elementType, alignment, attributeFlags) {}
 
   [[nodiscard]] auto elementType() const -> const Type* {
     return std::get<0>(*this);
@@ -863,12 +863,16 @@ class AlignedType final : public Type,
   [[nodiscard]] auto alignment() const -> std::size_t {
     return std::get<1>(*this);
   }
+
+  [[nodiscard]] auto attributeFlags() const -> TypeAttributeFlags {
+    return std::get<2>(*this);
+  }
 };
 
 template <typename Visitor>
 auto visit(Visitor&& visitor, const Type* type) {
-  while (type && type->kind() == TypeKind::kAligned) {
-    type = static_cast<const AlignedType*>(type)->elementType();
+  while (type && type->kind() == TypeKind::kAttributed) {
+    type = static_cast<const AttributedType*>(type)->elementType();
   }
 
 #define PROCESS_TYPE(K) \
@@ -886,17 +890,17 @@ auto visit(Visitor&& visitor, const Type* type) {
 
 template <typename T>
 [[nodiscard]] auto type_cast(const Type* type) -> const T* {
-  if constexpr (T::Kind != TypeKind::kAligned) {
-    while (type && type->kind() == TypeKind::kAligned) {
-      type = static_cast<const AlignedType*>(type)->elementType();
+  if constexpr (T::Kind != TypeKind::kAttributed) {
+    while (type && type->kind() == TypeKind::kAttributed) {
+      type = static_cast<const AttributedType*>(type)->elementType();
     }
   }
   return type && type->kind() == T::Kind ? static_cast<const T*>(type)
                                          : nullptr;
 }
 
-/** Removes outer GNU typedef alignment sugar without changing the type. */
-[[nodiscard]] auto unaligned_type(const Type* type) -> const Type*;
+/** Removes outer identity-neutral source attributes without changing the type. */
+[[nodiscard]] auto unattributed_type(const Type* type) -> const Type*;
 
 [[nodiscard]] inline auto isPlaceholderType(const Type* type) -> bool {
   return type_cast<AutoType>(type) || type_cast<DecltypeAutoType>(type);

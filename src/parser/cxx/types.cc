@@ -111,9 +111,9 @@ auto containsPlaceholderType(const Type* type) -> bool {
   return visit(ContainsPlaceholderType{}, type);
 }
 
-auto unaligned_type(const Type* type) -> const Type* {
-  while (auto alignedType = type_cast<AlignedType>(type)) {
-    type = alignedType->elementType();
+auto unattributed_type(const Type* type) -> const Type* {
+  while (auto attributedType = type_cast<AttributedType>(type)) {
+    type = attributedType->elementType();
   }
   return type;
 }

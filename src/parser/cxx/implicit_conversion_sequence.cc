@@ -131,7 +131,7 @@ using ReferenceBinding = ImplicitConversionSequence::ReferenceBinding;
 [[nodiscard]] auto convertsToBoolFromPointer(
     TypeTraits& traits, const ImplicitConversionSequence& seq) -> bool {
   auto target = conversionTargetType(traits, seq);
-  if (!target || unaligned_type(target)->kind() != TypeKind::kBool)
+  if (!target || unattributed_type(target)->kind() != TypeKind::kBool)
     return false;
 
   auto source = decayedSourceType(traits, seq);

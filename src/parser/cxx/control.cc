@@ -257,7 +257,7 @@ struct Control::Private {
   Float8E5M2Type float8E5M2Type;
   Float128Type float128Type;
 
-  TypeSet<AlignedType> alignedTypes;
+  TypeSet<AttributedType> attributedTypes;
   TypeSet<QualType> qualTypes;
   TypeSet<BoundedArrayType> boundedArrayTypes;
   TypeSet<UnboundedArrayType> unboundedArrayTypes;
@@ -451,10 +451,10 @@ auto Control::canonicalTypeIdentities(const std::vector<const Type*>& types)
 }
 
 auto Control::canonicalTypeIdentity(const Type* type) -> const Type* {
-  if (!type || d->alignedTypes.empty()) return type;
+  if (!type || d->attributedTypes.empty()) return type;
 
-  if (auto alignedType = type_cast<AlignedType>(type)) {
-    return canonicalTypeIdentity(alignedType->elementType());
+  if (auto attributedType = type_cast<AttributedType>(type)) {
+    return canonicalTypeIdentity(attributedType->elementType());
   }
 
   if (auto qualType = type_cast<QualType>(type)) {
@@ -613,7 +613,7 @@ auto Control::canonicalTypeIdentity(const Type* type) -> const Type* {
 
 void Control::canonicalizeTypeArguments(
     std::vector<TemplateArgument>& arguments) {
-  if (d->alignedTypes.empty()) return;
+  if (d->attributedTypes.empty()) return;
   for (auto& argument : arguments) {
     auto type = std::get_if<const Type*>(&argument);
     if (type) *type = canonicalTypeIdentity(*type);
@@ -973,12 +973,17 @@ auto Control::getFloat128Type() -> const Float128Type* {
   return &d->float128Type;
 }
 
-auto Control::getAlignedType(const Type* elementType, std::size_t alignment)
-    -> const AlignedType* {
-  if (auto alignedType = type_cast<AlignedType>(elementType)) {
-    elementType = alignedType->elementType();
+auto Control::getAttributedType(const Type* elementType, std::size_t alignment,
+                                TypeAttributeFlags attributeFlags)
+    -> const AttributedType* {
+  if (auto attributedType = type_cast<AttributedType>(elementType)) {
+    if (alignment == 0) alignment = attributedType->alignment();
+    attributeFlags |= attributedType->attributeFlags();
+    elementType = attributedType->elementType();
   }
-  return internType(d->alignedTypes, elementType, alignment);
+  if (alignment == 0 && attributeFlags == TypeAttributeFlags::kNone)
+    cxx_runtime_error("attributed type requires a source attribute");
+  return internType(d->attributedTypes, elementType, alignment, attributeFlags);
 }
 
 auto Control::getQualType(const Type* elementType, CvQualifiers cvQualifiers,

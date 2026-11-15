@@ -157,6 +157,8 @@ class TypeTraits {
   [[nodiscard]] auto is_const(const Type* type) const -> bool;
   [[nodiscard]] auto is_volatile(const Type* type) const -> bool;
   [[nodiscard]] auto is_restrict(const Type* type) const -> bool;
+  [[nodiscard]] auto source_type_attribute_flags(const Type* type) const
+      -> TypeAttributeFlags;
   [[nodiscard]] auto is_atomic(const Type* type) const -> bool;
   [[nodiscard]] auto is_signed(const Type* type) const -> bool;
   [[nodiscard]] auto is_unsigned(const Type* type) const -> bool;

@@ -6928,7 +6928,7 @@ auto TypeChecker::Visitor::vector_comparison_type(const Type* type)
   auto elementType = vectorType->elementType();
 
   if (vectorType->vectorKind() == VectorKind::kExt &&
-      unaligned_type(elementType)->kind() == TypeKind::kBool)
+      unattributed_type(elementType)->kind() == TypeKind::kBool)
     return vectorType;
 
   auto elementSize = control()->memoryLayout()->sizeOf(elementType);
@@ -7216,7 +7216,8 @@ void TypeChecker::Visitor::operator()(BinaryExpressionAST* ast) {
                                                          ast->rightExpression);
         auto resultType = common ? vector_comparison_type(common) : nullptr;
         if (resultType &&
-            unaligned_type(element_type_of(common))->kind() == TypeKind::kBool)
+            unattributed_type(element_type_of(common))->kind() ==
+                TypeKind::kBool)
           resultType = nullptr;
         if (!resultType) {
           error(ast->firstSourceLocation(),

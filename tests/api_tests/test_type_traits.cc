@@ -94,6 +94,71 @@ TEST(TypeTraits, PreservesRestrictQualifiedParameters) {
   EXPECT_TRUE(traits.is_restrict(collector.variable->type()));
 }
 
+TEST(TypeTraits, PreservesSourceTypeAttributes) {
+  auto source = R"(
+    typedef int MayAliasInt __attribute__((may_alias));
+    using CxxMayAlias [[gnu::may_alias]] = int;
+    typedef MayAliasInt InheritedMayAlias;
+    typedef const MayAliasInt ConstMayAlias;
+    typedef unsigned AlignedMayAlias
+        __attribute__((aligned(16), may_alias));
+    typedef AlignedMayAlias ReducedAlignment
+        __attribute__((aligned(2)));
+    typedef int* MayAliasPointer __attribute__((may_alias));
+    using Plain = int;
+
+    struct __attribute__((may_alias)) TaggedRecord { int value; };
+    enum __attribute__((may_alias)) TaggedEnum { tagged_value };
+    enum class __attribute__((may_alias)) TaggedScopedEnum { value };
+  )"_cxx;
+
+  ASSERT_EQ(source.diagnosticsClient.errorCount(), 0);
+  auto traits = source.unit.typeTraits();
+  const auto hasMayAlias = [&](const Type* type) {
+    return (traits.source_type_attribute_flags(type) &
+            TypeAttributeFlags::kMayAlias) != TypeAttributeFlags::kNone;
+  };
+  const auto aliasType = [&](std::string_view name) {
+    auto* alias = source.getAs<TypeAliasSymbol>(name);
+    EXPECT_NE(alias, nullptr);
+    return alias ? alias->type() : nullptr;
+  };
+
+  auto* mayAliasInt = aliasType("MayAliasInt");
+  EXPECT_TRUE(hasMayAlias(mayAliasInt));
+  EXPECT_TRUE(traits.is_same(mayAliasInt, source.unit.control()->getIntType()));
+  EXPECT_TRUE(hasMayAlias(aliasType("CxxMayAlias")));
+  EXPECT_TRUE(hasMayAlias(aliasType("InheritedMayAlias")));
+  EXPECT_TRUE(hasMayAlias(aliasType("ConstMayAlias")));
+  EXPECT_FALSE(hasMayAlias(aliasType("Plain")));
+
+  auto* aligned = type_cast<AttributedType>(aliasType("AlignedMayAlias"));
+  ASSERT_NE(aligned, nullptr);
+  EXPECT_EQ(aligned->alignment(), 16u);
+  EXPECT_TRUE(hasMayAlias(aligned));
+
+  auto* reduced = type_cast<AttributedType>(aliasType("ReducedAlignment"));
+  ASSERT_NE(reduced, nullptr);
+  EXPECT_EQ(reduced->alignment(), 2u);
+  EXPECT_TRUE(hasMayAlias(reduced));
+
+  auto* pointer = type_cast<AttributedType>(aliasType("MayAliasPointer"));
+  ASSERT_NE(pointer, nullptr);
+  EXPECT_TRUE(type_cast<PointerType>(pointer->elementType()));
+  EXPECT_TRUE(hasMayAlias(pointer));
+
+  auto* record = source.getAs<ClassSymbol>("TaggedRecord");
+  ASSERT_NE(record, nullptr);
+  EXPECT_TRUE(hasMayAlias(record->type()));
+  auto* enumeration = source.getAs<EnumSymbol>("TaggedEnum");
+  ASSERT_NE(enumeration, nullptr);
+  EXPECT_TRUE(hasMayAlias(enumeration->type()));
+  auto* scopedEnumeration =
+      source.getAs<ScopedEnumSymbol>("TaggedScopedEnum");
+  ASSERT_NE(scopedEnumeration, nullptr);
+  EXPECT_TRUE(hasMayAlias(scopedEnumeration->type()));
+}
+
 TEST(TypeTraits, SeparatesValueOperationAndDestructorTriviality) {
   auto source = R"(
     struct Guard {

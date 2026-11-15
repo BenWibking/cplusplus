@@ -170,6 +170,12 @@
     "documentation": "Binds an unsigned int, or a vector of 2 or 3 unsigned ints, to the local invocation id."
   },
   {
+    "name": "may_alias",
+    "spellings": ["GNU", "CXX:gnu"],
+    "subjects": "typedefs, structures, unions and enumerations",
+    "documentation": "Allows lvalue accesses through the attributed type to alias objects of any type."
+  },
+  {
     "name": "maybe_unused",
     "standardValue": 201603,
     "spellings": [

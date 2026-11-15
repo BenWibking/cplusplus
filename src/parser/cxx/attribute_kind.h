@@ -47,6 +47,7 @@ enum class AttributeKind {
   kKernel,
   kLikely,
   kLocalId,
+  kMayAlias,
   kMaybeUnused,
   kNoUniqueAddress,
   kNodiscard,
