@@ -92,6 +92,25 @@ TEST(Arena, KeepsAlignmentAcrossChunks) {
   }
 }
 
+TEST(Arena, OversizedRequestsDoNotSetTheSizeOfSubsequentChunks) {
+  Arena arena;
+  constexpr std::size_t large = 1024 * 1024;
+  (void)arena.allocate(large, 1);
+  const auto afterLarge = arena.mark();
+
+  auto* node = arena.make<int>(42);
+  EXPECT_GT(arena.mark().chunk, afterLarge.chunk);
+  const auto firstRegularChunk = arena.mark().chunk;
+  for (std::size_t bytes = 0; bytes < large; bytes += 4096) {
+    (void)arena.allocate(4096);
+  }
+  EXPECT_GT(arena.mark().chunk, firstRegularChunk);
+  EXPECT_EQ(*node, 42);
+
+  arena.rewind(afterLarge);
+  EXPECT_EQ(arena.make<int>(10), node);
+}
+
 TEST(Arena, SupportsOveralignedAllocationsAfterGrowthAndRewind) {
   Arena arena;
   const auto mark = arena.mark();
@@ -107,4 +126,5 @@ TEST(Arena, SupportsOveralignedAllocationsAfterGrowthAndRewind) {
   auto* second = arena.allocate(1, 1024 * 1024);
 
   ASSERT_EQ(reinterpret_cast<std::uintptr_t>(second) % (1024 * 1024), 0);
+  EXPECT_EQ(second, first);
 }
