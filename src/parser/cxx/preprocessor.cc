@@ -666,8 +666,13 @@ struct Preprocessor::Private {
       macros_;
   // Borrowed, sorted initial definitions; expansion uses the normal macro map.
   const PredefinedMacros* predefinedMacros_ = nullptr;
-  // Explicit undefinitions, allocated only when the base environment changes.
-  std::unique_ptr<std::unordered_set<const PredefinedMacro*>>
+  // Borrowed target-specific tables, in increasing precedence order.
+  std::span<const PredefinedMacros> predefinedOverrides_;
+  // Union of initial-byte masks lets ordinary source identifiers skip all
+  // tables.
+  std::uint64_t predefinedInitials_ = 0;
+  // Names suppressed across all layers, borrowing immutable identifier bytes.
+  std::unique_ptr<std::unordered_set<std::string_view>>
       undefinedPredefinedMacros_;
   std::unordered_set<const cxx::Identifier*> taintedIdents_;
   std::unordered_map<std::string, Macro> builtinMacros_;
@@ -1950,11 +1955,17 @@ auto PredefinedMacros::find(std::string_view name) const
 
 auto Preprocessor::Private::predefinedMacro(std::string_view name) const
     -> const PredefinedMacro* {
-  const auto* definition =
-      predefinedMacros_ ? predefinedMacros_->find(name) : nullptr;
-  const bool undefined = definition && undefinedPredefinedMacros_ &&
-                         undefinedPredefinedMacros_->contains(definition);
-  return undefined ? nullptr : definition;
+  if (!(predefinedInitials_ & PredefinedMacros::initialMask(name))) {
+    return nullptr;
+  }
+  if (undefinedPredefinedMacros_ &&
+      undefinedPredefinedMacros_->contains(name)) {
+    return nullptr;
+  }
+  for (const auto& table : std::views::reverse(predefinedOverrides_)) {
+    if (const auto* definition = table.find(name)) return definition;
+  }
+  return predefinedMacros_->find(name);
 }
 
 auto Preprocessor::Private::findMacro(std::string_view name) -> const Macro* {
@@ -1980,21 +1991,32 @@ auto Preprocessor::Private::materializePredefinedMacro(
 
 void Preprocessor::Private::materializePredefinedMacros() {
   if (!predefinedMacros_) return;
-  for (const auto& definition : predefinedMacros_->definitions()) {
-    (void)findMacro(definition.identifier());
+  const auto materialize = [this](const PredefinedMacros& table) {
+    for (const auto& definition : table.definitions()) {
+      const auto name = definition.identifier();
+      if (macros_.contains(name)) continue;
+      if (undefinedPredefinedMacros_ &&
+          undefinedPredefinedMacros_->contains(name)) {
+        continue;
+      }
+      (void)materializePredefinedMacro(definition);
+    }
+  };
+  for (const auto& table : std::views::reverse(predefinedOverrides_)) {
+    materialize(table);
   }
+  materialize(*predefinedMacros_);
 }
 
 void Preprocessor::Private::undefMacro(std::string_view name) {
   if (auto it = macros_.find(name); it != macros_.end()) macros_.erase(it);
-  const auto* definition =
-      predefinedMacros_ ? predefinedMacros_->find(name) : nullptr;
+  const auto* definition = predefinedMacro(name);
   if (!definition) return;
   if (!undefinedPredefinedMacros_) {
     undefinedPredefinedMacros_ =
-        std::make_unique<std::unordered_set<const PredefinedMacro*>>();
+        std::make_unique<std::unordered_set<std::string_view>>();
   }
-  undefinedPredefinedMacros_->emplace(definition);
+  undefinedPredefinedMacros_->emplace(definition->identifier());
 }
 
 auto Preprocessor::Private::lookupMacro(const Tok& tk)
@@ -4664,6 +4686,8 @@ auto Preprocessor::snapshot() const -> PreprocessorSnapshot {
 
 void Preprocessor::restore(const PreprocessorSnapshot& snapshot) {
   d->predefinedMacros_ = nullptr;
+  d->predefinedOverrides_ = {};
+  d->predefinedInitials_ = 0;
   d->undefinedPredefinedMacros_.reset();
   d->date_ = snapshot.date;
   d->time_ = snapshot.time;
@@ -4725,8 +4749,12 @@ void Preprocessor::restore(const PreprocessorSnapshot& snapshot) {
   }
 }
 
-void Preprocessor::setPredefinedMacros(const PredefinedMacros& macros) {
-  d->predefinedMacros_ = &macros;
+void Preprocessor::setPredefinedMacros(
+    const PredefinedMacros& base, std::span<const PredefinedMacros> overrides) {
+  d->predefinedMacros_ = &base;
+  d->predefinedOverrides_ = overrides;
+  d->predefinedInitials_ = base.initials_;
+  for (const auto& table : overrides) d->predefinedInitials_ |= table.initials_;
   d->undefinedPredefinedMacros_.reset();
 }
 

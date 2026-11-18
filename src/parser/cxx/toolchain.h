@@ -25,12 +25,14 @@
 #include <cxx/triple.h>
 
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace cxx {
 class Preprocessor;
+class PredefinedMacros;
 class MemoryLayout;
 
 enum class LinkerFlavor {
@@ -134,7 +136,8 @@ class Toolchain {
   void addSystemFrameworkPath(std::string path);
   void addBuiltinIncludePath();
 
-  void addCommonMacros();
+  // Installs common constants and optional target-specific definition tables.
+  void addCommonMacros(std::span<const PredefinedMacros> overrides = {});
   void addCommonC23Macros();
   void addCommonCxx26Macros();
   void addFeatureTestMacros();

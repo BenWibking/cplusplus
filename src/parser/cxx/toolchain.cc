@@ -238,249 +238,254 @@ void Toolchain::addBuiltinIncludePath() {
   addSystemIncludePath(std::format("{}/include", resourceDir));
 }
 
-void Toolchain::addCommonMacros() {
-  defineMacro("__ATOMIC_ACQUIRE", "2");
-  defineMacro("__ATOMIC_ACQ_REL", "4");
-  defineMacro("__ATOMIC_CONSUME", "1");
-  defineMacro("__ATOMIC_RELAXED", "0");
-  defineMacro("__ATOMIC_RELEASE", "3");
-  defineMacro("__ATOMIC_SEQ_CST", "5");
-  defineMacro("__BOOL_WIDTH__", "1");
+void Toolchain::addCommonMacros(std::span<const PredefinedMacros> overrides) {
+  static constexpr PredefinedMacro definitions[] = {
+      {"__ATOMIC_ACQUIRE", "2"},
+      {"__ATOMIC_ACQ_REL", "4"},
+      {"__ATOMIC_CONSUME", "1"},
+      {"__ATOMIC_RELAXED", "0"},
+      {"__ATOMIC_RELEASE", "3"},
+      {"__ATOMIC_SEQ_CST", "5"},
+      {"__BOOL_WIDTH__", "1"},
+      {"__CHAR16_TYPE__", "unsigned short"},
+      {"__CHAR32_TYPE__", "unsigned int"},
+      {"__CHAR_BIT__", "8"},
+      {"__CLANG_ATOMIC_BOOL_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_CHAR16_T_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_CHAR32_T_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_CHAR8_T_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_CHAR_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_INT_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_LLONG_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_LONG_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_POINTER_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_SHORT_LOCK_FREE", "2"},
+      {"__CLANG_ATOMIC_WCHAR_T_LOCK_FREE", "2"},
+      {"__CONSTANT_CFSTRINGS__", "1"},
+      {"__DBL_DECIMAL_DIG__", "17"},
+      {"__DBL_DENORM_MIN__", "4.9406564584124654e-324"},
+      {"__DBL_DIG__", "15"},
+      {"__DBL_EPSILON__", "2.2204460492503131e-16"},
+      {"__DBL_HAS_DENORM__", "1"},
+      {"__DBL_HAS_INFINITY__", "1"},
+      {"__DBL_HAS_QUIET_NAN__", "1"},
+      {"__DBL_MANT_DIG__", "53"},
+      {"__DBL_MAX_10_EXP__", "308"},
+      {"__DBL_MAX_EXP__", "1024"},
+      {"__DBL_MAX__", "1.7976931348623157e+308"},
+      {"__DBL_MIN_10_EXP__", "(-307)"},
+      {"__DBL_MIN_EXP__", "(-1021)"},
+      {"__DBL_MIN__", "2.2250738585072014e-308"},
+      {"__DBL_NORM_MAX__", "1.7976931348623157e+308"},
+      {"__DECIMAL_DIG__", "__LDBL_DECIMAL_DIG__"},
+      {"__FINITE_MATH_ONLY__", "0"},
+      {"__FLT_DECIMAL_DIG__", "9"},
+      {"__FLT_DENORM_MIN__", "1.40129846e-45F"},
+      {"__FLT_DIG__", "6"},
+      {"__FLT_EPSILON__", "1.19209290e-7F"},
+      {"__FLT_HAS_DENORM__", "1"},
+      {"__FLT_HAS_INFINITY__", "1"},
+      {"__FLT_HAS_QUIET_NAN__", "1"},
+      {"__FLT_MANT_DIG__", "24"},
+      {"__FLT_MAX_10_EXP__", "38"},
+      {"__FLT_MAX_EXP__", "128"},
+      {"__FLT_MAX__", "3.40282347e+38F"},
+      {"__FLT_MIN_10_EXP__", "(-37)"},
+      {"__FLT_MIN_EXP__", "(-125)"},
+      {"__FLT_MIN__", "1.17549435e-38F"},
+      {"__FLT_NORM_MAX__", "3.40282347e+38F"},
+      {"__FLT_RADIX__", "2"},
+      {"__FPCLASS_NEGINF", "0x0004"},
+      {"__FPCLASS_NEGNORMAL", "0x0008"},
+      {"__FPCLASS_NEGSUBNORMAL", "0x0010"},
+      {"__FPCLASS_NEGZERO", "0x0020"},
+      {"__FPCLASS_POSINF", "0x0200"},
+      {"__FPCLASS_POSNORMAL", "0x0100"},
+      {"__FPCLASS_POSSUBNORMAL", "0x0080"},
+      {"__FPCLASS_POSZERO", "0x0040"},
+      {"__FPCLASS_QNAN", "0x0002"},
+      {"__FPCLASS_SNAN", "0x0001"},
+      {"__GCC_CONSTRUCTIVE_SIZE", "64"},
+      {"__GCC_DESTRUCTIVE_SIZE", "64"},
+      {"__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1", "1"},
+      {"__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2", "1"},
+      {"__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4", "1"},
+      {"__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8", "1"},
+      {"__INT16_C(c)", "c"},
+      {"__INT16_C_SUFFIX__", ""},
+      {"__INT16_FMTd__", "\"hd\""},
+      {"__INT16_FMTi__", "\"hi\""},
+      {"__INT16_MAX__", "32767"},
+      {"__INT16_TYPE__", "short"},
+      {"__INT32_C(c)", "c"},
+      {"__INT32_C_SUFFIX__", ""},
+      {"__INT32_FMTd__", "\"d\""},
+      {"__INT32_FMTi__", "\"i\""},
+      {"__INT32_MAX__", "2147483647"},
+      {"__INT32_TYPE__", "int"},
+      {"__INT8_C(c)", "c"},
+      {"__INT8_C_SUFFIX__", ""},
+      {"__INT8_FMTd__", "\"hhd\""},
+      {"__INT8_FMTi__", "\"hhi\""},
+      {"__INT8_MAX__", "127"},
+      {"__INT8_TYPE__", "signed char"},
+      {"__INTMAX_WIDTH__", "64"},
+      {"__INT_FAST16_FMTd__", "\"hd\""},
+      {"__INT_FAST16_FMTi__", "\"hi\""},
+      {"__INT_FAST16_MAX__", "32767"},
+      {"__INT_FAST16_TYPE__", "short"},
+      {"__INT_FAST16_WIDTH__", "16"},
+      {"__INT_FAST32_FMTd__", "\"d\""},
+      {"__INT_FAST32_FMTi__", "\"i\""},
+      {"__INT_FAST32_MAX__", "2147483647"},
+      {"__INT_FAST32_TYPE__", "int"},
+      {"__INT_FAST32_WIDTH__", "32"},
+      {"__INT_FAST64_WIDTH__", "64"},
+      {"__INT_FAST8_FMTd__", "\"hhd\""},
+      {"__INT_FAST8_FMTi__", "\"hhi\""},
+      {"__INT_FAST8_MAX__", "127"},
+      {"__INT_FAST8_TYPE__", "signed char"},
+      {"__INT_FAST8_WIDTH__", "8"},
+      {"__INT_LEAST16_FMTd__", "\"hd\""},
+      {"__INT_LEAST16_FMTi__", "\"hi\""},
+      {"__INT_LEAST16_MAX__", "32767"},
+      {"__INT_LEAST16_TYPE__", "short"},
+      {"__INT_LEAST16_WIDTH__", "16"},
+      {"__INT_LEAST32_FMTd__", "\"d\""},
+      {"__INT_LEAST32_FMTi__", "\"i\""},
+      {"__INT_LEAST32_MAX__", "2147483647"},
+      {"__INT_LEAST32_TYPE__", "int"},
+      {"__INT_LEAST32_WIDTH__", "32"},
+      {"__INT_LEAST64_WIDTH__", "64"},
+      {"__INT_LEAST8_FMTd__", "\"hhd\""},
+      {"__INT_LEAST8_FMTi__", "\"hhi\""},
+      {"__INT_LEAST8_MAX__", "127"},
+      {"__INT_LEAST8_TYPE__", "signed char"},
+      {"__INT_LEAST8_WIDTH__", "8"},
+      {"__INT_MAX__", "2147483647"},
+      {"__INT_WIDTH__", "32"},
+      {"__LDBL_HAS_DENORM__", "1"},
+      {"__LDBL_HAS_INFINITY__", "1"},
+      {"__LDBL_HAS_QUIET_NAN__", "1"},
+      {"__LLONG_WIDTH__", "64"},
+      {"__LONG_LONG_MAX__", "9223372036854775807LL"},
+      {"__MEMORY_SCOPE_DEVICE", "1"},
+      {"__MEMORY_SCOPE_SINGLE", "4"},
+      {"__MEMORY_SCOPE_SYSTEM", "0"},
+      {"__MEMORY_SCOPE_WRKGRP", "2"},
+      {"__MEMORY_SCOPE_WVFRNT", "3"},
+      {"__NO_INLINE__", "1"},
+      {"__OPENCL_MEMORY_SCOPE_ALL_SVM_DEVICES", "3"},
+      {"__OPENCL_MEMORY_SCOPE_DEVICE", "2"},
+      {"__OPENCL_MEMORY_SCOPE_SUB_GROUP", "4"},
+      {"__OPENCL_MEMORY_SCOPE_WORK_GROUP", "1"},
+      {"__OPENCL_MEMORY_SCOPE_WORK_ITEM", "0"},
+      {"__OPTIMIZE_SIZE__", "1"},
+      {"__ORDER_BIG_ENDIAN__", "4321"},
+      {"__ORDER_LITTLE_ENDIAN__", "1234"},
+      {"__ORDER_PDP_ENDIAN__", "3412"},
+      {"__PRAGMA_REDEFINE_EXTNAME", "1"},
+      {"__SCHAR_MAX__", "127"},
+      {"__SHRT_MAX__", "32767"},
+      {"__SHRT_WIDTH__", "16"},
+      {"__SIG_ATOMIC_WIDTH__", "32"},
+      {"__SIZEOF_DOUBLE__", "8"},
+      {"__SIZEOF_FLOAT__", "4"},
+      {"__SIZEOF_INT__", "4"},
+      {"__SIZEOF_LONG_LONG__", "8"},
+      {"__SIZEOF_SHORT__", "2"},
+      {"__STDC_EMBED_EMPTY__", "2"},
+      {"__STDC_EMBED_FOUND__", "1"},
+      {"__STDC_EMBED_NOT_FOUND__", "0"},
+      {"__STDC_UTF_16__", "1"},
+      {"__STDC_UTF_32__", "1"},
+      {"__UINT16_C(c)", "c"},
+      {"__UINT16_C_SUFFIX__", ""},
+      {"__UINT16_FMTX__", "\"hX\""},
+      {"__UINT16_FMTo__", "\"ho\""},
+      {"__UINT16_FMTu__", "\"hu\""},
+      {"__UINT16_FMTx__", "\"hx\""},
+      {"__UINT16_MAX__", "65535"},
+      {"__UINT16_TYPE__", "unsigned short"},
+      {"__UINT32_C(c)", "c##U"},
+      {"__UINT32_C_SUFFIX__", "U"},
+      {"__UINT32_FMTX__", "\"X\""},
+      {"__UINT32_FMTo__", "\"o\""},
+      {"__UINT32_FMTu__", "\"u\""},
+      {"__UINT32_FMTx__", "\"x\""},
+      {"__UINT32_MAX__", "4294967295U"},
+      {"__UINT32_TYPE__", "unsigned int"},
+      {"__UINT8_C(c)", "c"},
+      {"__UINT8_C_SUFFIX__", ""},
+      {"__UINT8_FMTX__", "\"hhX\""},
+      {"__UINT8_FMTo__", "\"hho\""},
+      {"__UINT8_FMTu__", "\"hhu\""},
+      {"__UINT8_FMTx__", "\"hhx\""},
+      {"__UINT8_MAX__", "255"},
+      {"__UINT8_TYPE__", "unsigned char"},
+      {"__UINTMAX_WIDTH__", "64"},
+      {"__UINT_FAST16_FMTX__", "\"hX\""},
+      {"__UINT_FAST16_FMTo__", "\"ho\""},
+      {"__UINT_FAST16_FMTu__", "\"hu\""},
+      {"__UINT_FAST16_FMTx__", "\"hx\""},
+      {"__UINT_FAST16_MAX__", "65535"},
+      {"__UINT_FAST16_TYPE__", "unsigned short"},
+      {"__UINT_FAST32_FMTX__", "\"X\""},
+      {"__UINT_FAST32_FMTo__", "\"o\""},
+      {"__UINT_FAST32_FMTu__", "\"u\""},
+      {"__UINT_FAST32_FMTx__", "\"x\""},
+      {"__UINT_FAST32_MAX__", "4294967295U"},
+      {"__UINT_FAST32_TYPE__", "unsigned int"},
+      {"__UINT_FAST8_FMTX__", "\"hhX\""},
+      {"__UINT_FAST8_FMTo__", "\"hho\""},
+      {"__UINT_FAST8_FMTu__", "\"hhu\""},
+      {"__UINT_FAST8_FMTx__", "\"hhx\""},
+      {"__UINT_FAST8_MAX__", "255"},
+      {"__UINT_FAST8_TYPE__", "unsigned char"},
+      {"__UINT_LEAST16_FMTX__", "\"hX\""},
+      {"__UINT_LEAST16_FMTo__", "\"ho\""},
+      {"__UINT_LEAST16_FMTu__", "\"hu\""},
+      {"__UINT_LEAST16_FMTx__", "\"hx\""},
+      {"__UINT_LEAST16_MAX__", "65535"},
+      {"__UINT_LEAST16_TYPE__", "unsigned short"},
+      {"__UINT_LEAST32_FMTX__", "\"X\""},
+      {"__UINT_LEAST32_FMTo__", "\"o\""},
+      {"__UINT_LEAST32_FMTu__", "\"u\""},
+      {"__UINT_LEAST32_FMTx__", "\"x\""},
+      {"__UINT_LEAST32_MAX__", "4294967295U"},
+      {"__UINT_LEAST32_TYPE__", "unsigned int"},
+      {"__UINT_LEAST8_FMTX__", "\"hhX\""},
+      {"__UINT_LEAST8_FMTo__", "\"hho\""},
+      {"__UINT_LEAST8_FMTu__", "\"hhu\""},
+      {"__UINT_LEAST8_FMTx__", "\"hhx\""},
+      {"__UINT_LEAST8_MAX__", "255"},
+      {"__UINT_LEAST8_TYPE__", "unsigned char"},
+      {"__VERSION__", "\"cxx-frontend\""},
+      {"__clang__", "1"},
+      {"__clang_literal_encoding__", "\"UTF-8\""},
+      {"__clang_major__", "23"},
+      {"__clang_minor__", "1"},
+      {"__clang_patchlevel__", "5"},
+      {"__clang_version__", "\"23.1.5 \""},
+      {"__llvm__", "1"},
+  };
+  static constexpr PredefinedMacros common{definitions};
+  preprocessor_->setPredefinedMacros(common, overrides);
+
   defineMacro("__BYTE_ORDER__", memoryLayout()->byteOrder() ==
                                         MemoryLayout::ByteOrder::kLittleEndian
                                     ? "__ORDER_LITTLE_ENDIAN__"
                                     : "__ORDER_BIG_ENDIAN__");
-  defineMacro("__CHAR16_TYPE__", "unsigned short");
-  defineMacro("__CHAR32_TYPE__", "unsigned int");
-  defineMacro("__CHAR_BIT__", "8");
-  defineMacro("__CLANG_ATOMIC_BOOL_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_CHAR16_T_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_CHAR32_T_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_CHAR8_T_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_CHAR_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_INT_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_LLONG_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_LONG_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_POINTER_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_SHORT_LOCK_FREE", "2");
-  defineMacro("__CLANG_ATOMIC_WCHAR_T_LOCK_FREE", "2");
-  defineMacro("__CONSTANT_CFSTRINGS__", "1");
-  defineMacro("__DBL_DECIMAL_DIG__", "17");
-  defineMacro("__DBL_DENORM_MIN__", "4.9406564584124654e-324");
-  defineMacro("__DBL_DIG__", "15");
-  defineMacro("__DBL_EPSILON__", "2.2204460492503131e-16");
-  defineMacro("__DBL_HAS_DENORM__", "1");
-  defineMacro("__DBL_HAS_INFINITY__", "1");
-  defineMacro("__DBL_HAS_QUIET_NAN__", "1");
-  defineMacro("__DBL_MANT_DIG__", "53");
-  defineMacro("__DBL_MAX_10_EXP__", "308");
-  defineMacro("__DBL_MAX_EXP__", "1024");
-  defineMacro("__DBL_MAX__", "1.7976931348623157e+308");
-  defineMacro("__DBL_MIN_10_EXP__", "(-307)");
-  defineMacro("__DBL_MIN_EXP__", "(-1021)");
-  defineMacro("__DBL_MIN__", "2.2250738585072014e-308");
-  defineMacro("__DBL_NORM_MAX__", "1.7976931348623157e+308");
-  defineMacro("__DECIMAL_DIG__", "__LDBL_DECIMAL_DIG__");
-  defineMacro("__FINITE_MATH_ONLY__", "0");
-  defineMacro("__FLT_DECIMAL_DIG__", "9");
-  defineMacro("__FLT_DENORM_MIN__", "1.40129846e-45F");
-  defineMacro("__FLT_DIG__", "6");
-  defineMacro("__FLT_EPSILON__", "1.19209290e-7F");
-  defineMacro("__FLT_HAS_DENORM__", "1");
-  defineMacro("__FLT_HAS_INFINITY__", "1");
-  defineMacro("__FLT_HAS_QUIET_NAN__", "1");
-  defineMacro("__FLT_MANT_DIG__", "24");
-  defineMacro("__FLT_MAX_10_EXP__", "38");
-  defineMacro("__FLT_MAX_EXP__", "128");
-  defineMacro("__FLT_MAX__", "3.40282347e+38F");
-  defineMacro("__FLT_MIN_10_EXP__", "(-37)");
-  defineMacro("__FLT_MIN_EXP__", "(-125)");
-  defineMacro("__FLT_MIN__", "1.17549435e-38F");
-  defineMacro("__FLT_NORM_MAX__", "3.40282347e+38F");
-  defineMacro("__FLT_RADIX__", "2");
-  defineMacro("__FPCLASS_NEGINF", "0x0004");
-  defineMacro("__FPCLASS_NEGNORMAL", "0x0008");
-  defineMacro("__FPCLASS_NEGSUBNORMAL", "0x0010");
-  defineMacro("__FPCLASS_NEGZERO", "0x0020");
-  defineMacro("__FPCLASS_POSINF", "0x0200");
-  defineMacro("__FPCLASS_POSNORMAL", "0x0100");
-  defineMacro("__FPCLASS_POSSUBNORMAL", "0x0080");
-  defineMacro("__FPCLASS_POSZERO", "0x0040");
-  defineMacro("__FPCLASS_QNAN", "0x0002");
-  defineMacro("__FPCLASS_SNAN", "0x0001");
-  defineMacro("__GCC_CONSTRUCTIVE_SIZE", "64");
-  defineMacro("__GCC_DESTRUCTIVE_SIZE", "64");
-  defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1", "1");
-  defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2", "1");
-  defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4", "1");
-  defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8", "1");
-  defineMacro("__INT16_C(c)", "c");
-  defineMacro("__INT16_C_SUFFIX__", "");
-  defineMacro("__INT16_FMTd__", "\"hd\"");
-  defineMacro("__INT16_FMTi__", "\"hi\"");
-  defineMacro("__INT16_MAX__", "32767");
-  defineMacro("__INT16_TYPE__", "short");
-  defineMacro("__INT32_C(c)", "c");
-  defineMacro("__INT32_C_SUFFIX__", "");
-  defineMacro("__INT32_FMTd__", "\"d\"");
-  defineMacro("__INT32_FMTi__", "\"i\"");
-  defineMacro("__INT32_MAX__", "2147483647");
-  defineMacro("__INT32_TYPE__", "int");
-  defineMacro("__INT8_C(c)", "c");
-  defineMacro("__INT8_C_SUFFIX__", "");
-  defineMacro("__INT8_FMTd__", "\"hhd\"");
-  defineMacro("__INT8_FMTi__", "\"hhi\"");
-  defineMacro("__INT8_MAX__", "127");
-  defineMacro("__INT8_TYPE__", "signed char");
-  defineMacro("__INTMAX_WIDTH__", "64");
-  defineMacro("__INT_FAST16_FMTd__", "\"hd\"");
-  defineMacro("__INT_FAST16_FMTi__", "\"hi\"");
-  defineMacro("__INT_FAST16_MAX__", "32767");
-  defineMacro("__INT_FAST16_TYPE__", "short");
-  defineMacro("__INT_FAST16_WIDTH__", "16");
-  defineMacro("__INT_FAST32_FMTd__", "\"d\"");
-  defineMacro("__INT_FAST32_FMTi__", "\"i\"");
-  defineMacro("__INT_FAST32_MAX__", "2147483647");
-  defineMacro("__INT_FAST32_TYPE__", "int");
-  defineMacro("__INT_FAST32_WIDTH__", "32");
-  defineMacro("__INT_FAST64_WIDTH__", "64");
-  defineMacro("__INT_FAST8_FMTd__", "\"hhd\"");
-  defineMacro("__INT_FAST8_FMTi__", "\"hhi\"");
-  defineMacro("__INT_FAST8_MAX__", "127");
-  defineMacro("__INT_FAST8_TYPE__", "signed char");
-  defineMacro("__INT_FAST8_WIDTH__", "8");
-  defineMacro("__INT_LEAST16_FMTd__", "\"hd\"");
-  defineMacro("__INT_LEAST16_FMTi__", "\"hi\"");
-  defineMacro("__INT_LEAST16_MAX__", "32767");
-  defineMacro("__INT_LEAST16_TYPE__", "short");
-  defineMacro("__INT_LEAST16_WIDTH__", "16");
-  defineMacro("__INT_LEAST32_FMTd__", "\"d\"");
-  defineMacro("__INT_LEAST32_FMTi__", "\"i\"");
-  defineMacro("__INT_LEAST32_MAX__", "2147483647");
-  defineMacro("__INT_LEAST32_TYPE__", "int");
-  defineMacro("__INT_LEAST32_WIDTH__", "32");
-  defineMacro("__INT_LEAST64_WIDTH__", "64");
-  defineMacro("__INT_LEAST8_FMTd__", "\"hhd\"");
-  defineMacro("__INT_LEAST8_FMTi__", "\"hhi\"");
-  defineMacro("__INT_LEAST8_MAX__", "127");
-  defineMacro("__INT_LEAST8_TYPE__", "signed char");
-  defineMacro("__INT_LEAST8_WIDTH__", "8");
-  defineMacro("__INT_MAX__", "2147483647");
-  defineMacro("__INT_WIDTH__", "32");
-  defineMacro("__LDBL_HAS_DENORM__", "1");
-  defineMacro("__LDBL_HAS_INFINITY__", "1");
-  defineMacro("__LDBL_HAS_QUIET_NAN__", "1");
   defineMacro(
       memoryLayout()->byteOrder() == MemoryLayout::ByteOrder::kLittleEndian
           ? "__LITTLE_ENDIAN__"
           : "__BIG_ENDIAN__",
       "1");
-  defineMacro("__LLONG_WIDTH__", "64");
-  defineMacro("__LONG_LONG_MAX__", "9223372036854775807LL");
-  defineMacro("__MEMORY_SCOPE_DEVICE", "1");
-  defineMacro("__MEMORY_SCOPE_SINGLE", "4");
-  defineMacro("__MEMORY_SCOPE_SYSTEM", "0");
-  defineMacro("__MEMORY_SCOPE_WRKGRP", "2");
-  defineMacro("__MEMORY_SCOPE_WVFRNT", "3");
-  defineMacro("__NO_INLINE__", "1");
-  defineMacro("__OPENCL_MEMORY_SCOPE_ALL_SVM_DEVICES", "3");
-  defineMacro("__OPENCL_MEMORY_SCOPE_DEVICE", "2");
-  defineMacro("__OPENCL_MEMORY_SCOPE_SUB_GROUP", "4");
-  defineMacro("__OPENCL_MEMORY_SCOPE_WORK_GROUP", "1");
-  defineMacro("__OPENCL_MEMORY_SCOPE_WORK_ITEM", "0");
-  defineMacro("__ORDER_BIG_ENDIAN__", "4321");
-  defineMacro("__ORDER_LITTLE_ENDIAN__", "1234");
-  defineMacro("__ORDER_PDP_ENDIAN__", "3412");
-  defineMacro("__PRAGMA_REDEFINE_EXTNAME", "1");
-  defineMacro("__SCHAR_MAX__", "127");
-  defineMacro("__SHRT_MAX__", "32767");
-  defineMacro("__SHRT_WIDTH__", "16");
-  defineMacro("__SIG_ATOMIC_WIDTH__", "32");
-  defineMacro("__SIZEOF_DOUBLE__", "8");
-  defineMacro("__SIZEOF_FLOAT__", "4");
   if (memoryLayout()->hasInt128Type()) defineMacro("__SIZEOF_INT128__", "16");
-  defineMacro("__SIZEOF_INT__", "4");
-  defineMacro("__SIZEOF_LONG_LONG__", "8");
-  defineMacro("__SIZEOF_SHORT__", "2");
-  defineMacro("__STDC_EMBED_EMPTY__", "2");
-  defineMacro("__STDC_EMBED_FOUND__", "1");
-  defineMacro("__STDC_EMBED_NOT_FOUND__", "0");
   if (triple().isSPIRV())
     defineMacro("__STDC_HOSTED__", "0");
   else
     defineMacro("__STDC_HOSTED__", "1");
-  defineMacro("__STDC_UTF_16__", "1");
-  defineMacro("__STDC_UTF_32__", "1");
-  defineMacro("__UINT16_C(c)", "c");
-  defineMacro("__UINT16_C_SUFFIX__", "");
-  defineMacro("__UINT16_FMTX__", "\"hX\"");
-  defineMacro("__UINT16_FMTo__", "\"ho\"");
-  defineMacro("__UINT16_FMTu__", "\"hu\"");
-  defineMacro("__UINT16_FMTx__", "\"hx\"");
-  defineMacro("__UINT16_MAX__", "65535");
-  defineMacro("__UINT16_TYPE__", "unsigned short");
-  defineMacro("__UINT32_C(c)", "c##U");
-  defineMacro("__UINT32_C_SUFFIX__", "U");
-  defineMacro("__UINT32_FMTX__", "\"X\"");
-  defineMacro("__UINT32_FMTo__", "\"o\"");
-  defineMacro("__UINT32_FMTu__", "\"u\"");
-  defineMacro("__UINT32_FMTx__", "\"x\"");
-  defineMacro("__UINT32_MAX__", "4294967295U");
-  defineMacro("__UINT32_TYPE__", "unsigned int");
-  defineMacro("__UINT8_C(c)", "c");
-  defineMacro("__UINT8_C_SUFFIX__", "");
-  defineMacro("__UINT8_FMTX__", "\"hhX\"");
-  defineMacro("__UINT8_FMTo__", "\"hho\"");
-  defineMacro("__UINT8_FMTu__", "\"hhu\"");
-  defineMacro("__UINT8_FMTx__", "\"hhx\"");
-  defineMacro("__UINT8_MAX__", "255");
-  defineMacro("__UINT8_TYPE__", "unsigned char");
-  defineMacro("__UINTMAX_WIDTH__", "64");
-  defineMacro("__UINT_FAST16_FMTX__", "\"hX\"");
-  defineMacro("__UINT_FAST16_FMTo__", "\"ho\"");
-  defineMacro("__UINT_FAST16_FMTu__", "\"hu\"");
-  defineMacro("__UINT_FAST16_FMTx__", "\"hx\"");
-  defineMacro("__UINT_FAST16_MAX__", "65535");
-  defineMacro("__UINT_FAST16_TYPE__", "unsigned short");
-  defineMacro("__UINT_FAST32_FMTX__", "\"X\"");
-  defineMacro("__UINT_FAST32_FMTo__", "\"o\"");
-  defineMacro("__UINT_FAST32_FMTu__", "\"u\"");
-  defineMacro("__UINT_FAST32_FMTx__", "\"x\"");
-  defineMacro("__UINT_FAST32_MAX__", "4294967295U");
-  defineMacro("__UINT_FAST32_TYPE__", "unsigned int");
-  defineMacro("__UINT_FAST8_FMTX__", "\"hhX\"");
-  defineMacro("__UINT_FAST8_FMTo__", "\"hho\"");
-  defineMacro("__UINT_FAST8_FMTu__", "\"hhu\"");
-  defineMacro("__UINT_FAST8_FMTx__", "\"hhx\"");
-  defineMacro("__UINT_FAST8_MAX__", "255");
-  defineMacro("__UINT_FAST8_TYPE__", "unsigned char");
-  defineMacro("__OPTIMIZE_SIZE__", "1");
-  defineMacro("__UINT_LEAST16_FMTX__", "\"hX\"");
-  defineMacro("__UINT_LEAST16_FMTo__", "\"ho\"");
-  defineMacro("__UINT_LEAST16_FMTu__", "\"hu\"");
-  defineMacro("__UINT_LEAST16_FMTx__", "\"hx\"");
-  defineMacro("__UINT_LEAST16_MAX__", "65535");
-  defineMacro("__UINT_LEAST16_TYPE__", "unsigned short");
-  defineMacro("__UINT_LEAST32_FMTX__", "\"X\"");
-  defineMacro("__UINT_LEAST32_FMTo__", "\"o\"");
-  defineMacro("__UINT_LEAST32_FMTu__", "\"u\"");
-  defineMacro("__UINT_LEAST32_FMTx__", "\"x\"");
-  defineMacro("__UINT_LEAST32_MAX__", "4294967295U");
-  defineMacro("__UINT_LEAST32_TYPE__", "unsigned int");
-  defineMacro("__UINT_LEAST8_FMTX__", "\"hhX\"");
-  defineMacro("__UINT_LEAST8_FMTo__", "\"hho\"");
-  defineMacro("__UINT_LEAST8_FMTu__", "\"hhu\"");
-  defineMacro("__UINT_LEAST8_FMTx__", "\"hhx\"");
-  defineMacro("__UINT_LEAST8_MAX__", "255");
-  defineMacro("__UINT_LEAST8_TYPE__", "unsigned char");
-  defineMacro("__VERSION__", "\"cxx-frontend\"");
-  defineMacro("__clang__", "1");
-  defineMacro("__clang_literal_encoding__", "\"UTF-8\"");
-  defineMacro("__clang_major__", "23");
-  defineMacro("__clang_minor__", "1");
-  defineMacro("__clang_patchlevel__", "5");
-  defineMacro("__clang_version__", "\"23.1.5 \"");
-  defineMacro("__llvm__", "1");
 }
 
 void Toolchain::addCommonC23Macros() {

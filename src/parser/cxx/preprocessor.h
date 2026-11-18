@@ -99,6 +99,7 @@ class PredefinedMacros {
         std::abort();
       }
       previous = name;
+      initials_ |= initialMask(name);
       lengths_ |= std::uint64_t{1} << (name.size() & 63);
       if (name.size() > common) {
         const auto ch = static_cast<unsigned char>(name[common]);
@@ -115,6 +116,16 @@ class PredefinedMacros {
       -> const PredefinedMacro*;
 
  private:
+  friend class Preprocessor;
+
+  [[nodiscard]] static constexpr auto initialMask(std::string_view name)
+      -> std::uint64_t {
+    if (name.empty()) return 0;
+    return std::uint64_t{1} << (static_cast<unsigned char>(name.front()) & 63);
+  }
+
+  // Possible first identifier bytes modulo 64, combined at registration.
+  std::uint64_t initials_ = 0;
   // Borrowed definitions, sorted by identifier, with unique names.
   std::span<const PredefinedMacro> definitions_;
   // Shared identifier prefix, borrowing spelling bytes from the first row.
@@ -237,11 +248,13 @@ class Preprocessor final : public SourceResolver {
   void setDisableCurrentDirSearch(bool disable);
 
   // Installs the immutable base environment before the first undefinition or
-  // preprocessing operation. Explicit definitions override this environment.
-  // Registration borrows the table without inspecting its rows; restore
-  // replaces it with the complete environment in the snapshot.
-  void setPredefinedMacros(const PredefinedMacros& macros);
-  void setPredefinedMacros(PredefinedMacros&&) = delete;
+  // preprocessing operation. Later override tables take precedence over earlier
+  // ones and the base. Explicit definitions take precedence over all tables.
+  // The tables and the override span are borrowed until restore or replacement.
+  void setPredefinedMacros(const PredefinedMacros& base,
+                           std::span<const PredefinedMacros> overrides = {});
+  void setPredefinedMacros(PredefinedMacros&&,
+                           std::span<const PredefinedMacros> = {}) = delete;
 
   void defineMacro(const std::string& name, const std::string& body);
 

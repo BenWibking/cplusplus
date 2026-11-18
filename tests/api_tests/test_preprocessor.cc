@@ -273,6 +273,41 @@ TEST(Preprocessor, PredefinedIndexPreservesPrefixesAndLongIdentifiers) {
   EXPECT_EQ(empty.find("A"), nullptr);
 }
 
+TEST(Preprocessor, TargetPredefinesShadowCommonDefinitionsThroughRestore) {
+  static constexpr PredefinedMacro common[] = {
+      {"BASE_ONLY", "3"}, {"LIMIT", "1"}, {"MAPPED(x)", "x"}, {"REMOVED", "1"}};
+  static constexpr PredefinedMacro target[] = {{"LIMIT", "2"},
+                                               {"MAPPED(x)", "x ## U"},
+                                               {"REMOVED", "2"},
+                                               {"Target", "4"}};
+  static constexpr PredefinedMacro variant[] = {{"LIMIT", "5"}};
+  static constexpr PredefinedMacros base{common};
+  static constexpr PredefinedMacros overrides[] = {PredefinedMacros{target},
+                                                   PredefinedMacros{variant}};
+  Control control;
+  MacroDiagnostics diagnostics;
+  Preprocessor original{&control, &diagnostics};
+  original.setPredefinedMacros(base, overrides);
+  original.undefMacro("REMOVED");
+  original.defineMacro("LIMIT", "5");
+  EXPECT_TRUE(diagnostics.messages.empty());
+  original.defineMacro("LIMIT", "7");
+  EXPECT_EQ(diagnostics.messages,
+            (std::vector<std::string>{"'LIMIT' macro redefined"}));
+  Preprocessor restored{&control, &diagnostics};
+  restored.setPredefinedMacros(base, overrides);
+  restored.restore(original.snapshot());
+  for (auto* preprocessor : {&original, &restored}) {
+    EXPECT_EQ(preprocessSpellings(*preprocessor, R"(
+#if !defined(BASE_ONLY) || !defined(Target) || defined(REMOVED)
+#error incorrect target definitions
+#endif
+BASE_ONLY LIMIT Target MAPPED(6) REMOVED
+)"),
+              (std::vector<std::string>{"3", "7", "4", "6U", "REMOVED"}));
+  }
+}
+
 TEST(Preprocessor, IncludeContinuationRetainsRequestState) {
   Control control;
   DiagnosticsClient diagnostics;
