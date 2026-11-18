@@ -497,9 +497,9 @@ namespace {
                                             SourceLocation location)
     -> const Type* {
   const auto at = attribute.location ? attribute.location : location;
-  const auto vectorKind = vectorKindOf(attribute.kind());
-  const auto sizeKind = vectorSizeKindOf(attribute.kind());
-  const auto attributeName = attribute.spelling->name;
+  const auto vectorKind = vectorKindOf(attribute.kind);
+  const auto sizeKind = vectorSizeKindOf(attribute.kind);
+  const auto attributeName = attribute.name();
 
   auto sizeExpression = attributeArgumentExpression(attribute.argumentClause);
 
@@ -611,10 +611,10 @@ auto applyTypeAttributes(TranslationUnit* unit,
                          const Type* type, SourceLocation location)
     -> const Type* {
   if (!type || !attributeList) return type;
-  for (const auto& attribute : knownAttributes(unit, attributeList)) {
-    if (attribute.kind() == AttributeKind::kAddressSpace) {
+  for (const auto& attribute : knownAttributes(attributeList)) {
+    if (attribute.kind == AttributeKind::kAddressSpace) {
       type = applyAddressSpaceAttribute(unit, attribute, type, location);
-    } else if (isVectorTypeAttribute(attribute.kind())) {
+    } else if (isVectorTypeAttribute(attribute.kind)) {
       type = applyVectorTypeAttribute(unit, attribute, type, location);
     }
   }

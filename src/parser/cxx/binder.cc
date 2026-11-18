@@ -1265,14 +1265,14 @@ void Binder::bind(ElaboratedTypeSpecifierAST* ast, DeclSpecs& declSpecs,
     if (!classSymbol->isComplete()) {
       applyDeclarationAttributes(classSymbol, ast->attributeList);
     } else {
-      for (auto attribute : knownAttributes(unit_, ast->attributeList)) {
-        if (attribute.kind() != AttributeKind::kPacked &&
-            attribute.kind() != AttributeKind::kAligned)
+      for (auto attribute : knownAttributes(ast->attributeList)) {
+        if (attribute.kind != AttributeKind::kPacked &&
+            attribute.kind != AttributeKind::kAligned)
           continue;
         warning(attribute.location,
                 std::format("'{}' attribute declaration must precede "
                             "definition",
-                            attribute.spelling->name));
+                            attribute.name()));
       }
     }
 
@@ -1655,8 +1655,8 @@ auto Binder::aliasedType(SourceLocation identifierLoc, TypeIdAST* typeId,
       applyTypeAttributes(unit_, attributeList, typeId->type, identifierLoc);
   type = applyTypeAttributes(unit_, gnuAttributeList, type, identifierLoc);
   auto attributeFlags =
-      sourceTypeAttributeFlags(knownAttributes(unit_, attributeList)) |
-      sourceTypeAttributeFlags(knownAttributes(unit_, gnuAttributeList));
+      sourceTypeAttributeFlags(knownAttributes(attributeList)) |
+      sourceTypeAttributeFlags(knownAttributes(gnuAttributeList));
   if (attributeFlags != TypeAttributeFlags::kNone)
     type = control()->getAttributedType(type, 0, attributeFlags);
   return type;
@@ -2431,7 +2431,7 @@ void Binder::applyFunctionDefinitionKind(FunctionSymbol* functionSymbol,
 void Binder::validatePackedAttributes(
     Symbol* symbol, std::span<const AttributeRef> attributes) {
   for (auto attribute : attributes) {
-    if (attribute.kind() != AttributeKind::kPacked) continue;
+    if (attribute.kind != AttributeKind::kPacked) continue;
     if (attribute.argumentClause) {
       error(attribute.location, "'packed' attribute takes no arguments");
       continue;
@@ -2461,9 +2461,8 @@ void Binder::applyDeclarationAttributes(
   }
   // Constructor priority and attribute placement are scoped to each sequence.
   const std::vector<AttributeRef> groups[] = {
-      knownAttributes(unit_, attributes),
-      knownAttributes(unit_, declaratorAttributes),
-      knownAttributes(unit_, trailingAttributes)};
+      knownAttributes(attributes), knownAttributes(declaratorAttributes),
+      knownAttributes(trailingAttributes)};
   for (const auto& group : groups) validatePackedAttributes(symbol, group);
   if (!symbol) {
     for (const auto& group : groups) (void)sourceTypeAttributeFlags(group);
@@ -2495,7 +2494,7 @@ void Binder::applyDeclarationAttributes(
     if (auto alignment = alignedAttribute(group))
       requestedAlignment = std::max(requestedAlignment.value_or(0), *alignment);
     for (auto attribute : group) {
-      if (attributeInfo(attribute.kind()).availability !=
+      if (attributeInfo(attribute.kind).availability !=
           AttributeAvailability::kDeviceProfile)
         continue;
       deviceAttributes.push_back(attribute);
@@ -2519,8 +2518,7 @@ void Binder::inheritDeclarationAttributes(Symbol* symbol, Symbol* pattern) {
 void Binder::applyEnableIfAttributes(FunctionSymbol* function,
                                      List<AttributeSpecifierAST*>* attributes) {
   auto conditions = function->enableIfConditions();
-  for (auto attribute :
-       findAttributes(unit_, attributes, AttributeKind::kEnableIf)) {
+  for (auto attribute : findAttributes(attributes, AttributeKind::kEnableIf)) {
     auto clause = attribute.argumentClause;
     if (!clause || !clause->expressionList || !clause->expressionList->next ||
         clause->expressionList->next->next) {
@@ -2658,8 +2656,7 @@ void Binder::applyDeclarationAttributes(SimpleDeclarationAST* ast) {
   if (!ast) return;
 
   if (!ast->initDeclaratorList) {
-    validatePackedAttributes(nullptr,
-                             knownAttributes(unit_, ast->attributeList));
+    validatePackedAttributes(nullptr, knownAttributes(ast->attributeList));
   }
 
   for (auto initDeclarator : ListView{ast->initDeclaratorList}) {
@@ -4029,7 +4026,7 @@ auto Binder::alignedAttribute(std::span<const AttributeRef> attributeList)
     -> std::optional<int> {
   std::optional<int> strictest;
   for (auto attribute : attributeList) {
-    if (attribute.kind() != AttributeKind::kAligned) continue;
+    if (attribute.kind != AttributeKind::kAligned) continue;
     std::optional<int> requested;
     auto clause = attribute.argumentClause;
     if (!clause || !clause->expressionList) {
@@ -4083,7 +4080,7 @@ auto Binder::sourceTypeAttributeFlags(
     std::span<const AttributeRef> attributeList) -> TypeAttributeFlags {
   auto attributeFlags = TypeAttributeFlags::kNone;
   for (auto attribute : attributeList) {
-    if (attribute.kind() != AttributeKind::kMayAlias) continue;
+    if (attribute.kind != AttributeKind::kMayAlias) continue;
     if (attribute.argumentClause)
       error(attribute.location, "'may_alias' attribute takes no arguments");
     attributeFlags |= TypeAttributeFlags::kMayAlias;
@@ -4101,8 +4098,8 @@ void Binder::applySourceTypeAttributes(Symbol* symbol,
 
 void Binder::applyAlignedAttribute(
     Symbol* symbol, List<AttributeSpecifierAST*>* attributeList) {
-  applyAlignedAttribute(
-      symbol, alignedAttribute(knownAttributes(unit_, attributeList)));
+  applyAlignedAttribute(symbol,
+                        alignedAttribute(knownAttributes(attributeList)));
 }
 
 void Binder::applyAlignedAttribute(Symbol* symbol,

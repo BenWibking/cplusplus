@@ -898,6 +898,11 @@ struct __attribute__((packed)) KnownFirst;
 struct [[packed]] KnownFirst;
 [[nothrow]] void ordinary();
 [[gnu::nothrow]] void noThrow();
+int [[gnu::vector_size(16), vendor::label("word")]] word;
+template <class T> struct Packet {
+  T [[gnu::vector_size(16)]] scalar;
+  T lanes [[gnu::vector_size(16)]];
+};
 )"};
   const auto data = prefix.emit();
   ASSERT_TRUE(prefix.errors().empty());
@@ -909,6 +914,15 @@ struct [[packed]] KnownFirst;
   consumer.control()->setMemoryLayout(&memoryLayout);
   PrecompiledHeaderReader reader{&consumer, keys()};
   ASSERT_TRUE(reader(data)) << reader.error();
+  auto word = findMember(consumer.globalScope(), "word");
+  ASSERT_TRUE(word && word->attributes());
+  ASSERT_EQ(word->attributes()->size(), 1u);
+  const auto& label = word->attributes()->front();
+  ASSERT_TRUE(label.attributeNamespace && label.name);
+  EXPECT_EQ(label.attributeNamespace->name(), "vendor");
+  EXPECT_EQ(label.name->name(), "label");
+  ASSERT_EQ(label.arguments.size(), 1u);
+  EXPECT_EQ(label.arguments.front()->name(), "word");
   consumer.setSource(R"(
 struct Ordinary { char tag; int value; };
 struct Wire { char tag; int value; };
@@ -920,6 +934,8 @@ static_assert(sizeof(UnknownFirst) == sizeof(Wire));
 static_assert(sizeof(KnownFirst) == sizeof(Wire));
 static_assert(!noexcept(ordinary()));
 static_assert(noexcept(noThrow()));
+static_assert(sizeof(Packet<int>::scalar) == 4);
+static_assert(sizeof(Packet<int>::lanes) == 16);
 )",
                      "consumer.cc");
   consumer.resume({.analysisMode = ParserAnalysisMode::kFull});

@@ -417,6 +417,7 @@ auto ASTRewriter::attribute(AttributeAST* ast) -> AttributeAST* {
   copy->attributeArgumentClause =
       attributeArgumentClause(ast->attributeArgumentClause);
   copy->ellipsisLoc = ast->ellipsisLoc;
+  copy->attributeKind = ast->attributeKind;
 
   return copy;
 }

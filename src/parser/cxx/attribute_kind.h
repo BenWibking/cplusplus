@@ -24,6 +24,8 @@
 namespace cxx {
 
 enum class AttributeKind {
+  kUnknown,
+  kIgnored,
   kAbiTag,
   kAddressSpace,
   kAlias,
