@@ -2797,7 +2797,8 @@ auto Parser::parse_type_requirement(RequirementAST*& yyast) -> bool {
   DeclSpecs specs{unit_};
   SpecifierAST* typeSpecifier = nullptr;
   if (parse_named_type_specifier(typeSpecifier, specs,
-                                 TypeNameContext::kTypeOnly)) {
+                                 TypeNameContext::kTypeOnly,
+                                 TypeSpecifierGrammar::kTypeRequirement)) {
     specs.finish();
     ast->typeId = TypeIdAST::create(pool_);
     ast->typeId->typeSpecifierList = make_list_node(pool_, typeSpecifier);
@@ -2854,9 +2855,12 @@ auto Parser::parse_return_type_requirement(SourceLocation& minusGreaterLoc,
     -> bool {
   if (!match(TokenKind::T_MINUS_GREATER, minusGreaterLoc)) return false;
 
-  if (!parse_type_constraint(typeConstraint, false)) {
+  NestedNameSpecifierAST* nestedNameSpecifier = nullptr;
+  parse_optional_nested_name_specifier(
+      nestedNameSpecifier, NestedNameSpecifierContext::kNonDeclarative);
+  if (!parse_type_constraint(typeConstraint, nestedNameSpecifier,
+                             TypeConstraintContext::kRequired))
     parse_error("expected type constraint");
-  }
 
   return true;
 }
@@ -6650,7 +6654,9 @@ auto Parser::parse_simple_type_specifier(SpecifierAST*& yyast, DeclSpecs& specs,
   if (parse_atomic_type_specifier(yyast, specs)) return true;
   if (parse_bitint_type_specifier(yyast, specs)) return true;
   if (parse_pack_index_type_specifier(yyast, specs)) return true;
-  if (parse_named_type_specifier(yyast, specs, context)) return true;
+  if (parse_named_type_specifier(yyast, specs, context,
+                                 TypeSpecifierGrammar::kSimple))
+    return true;
   if (parse_decltype_specifier_type_specifier(yyast, specs)) return true;
 
   return false;
@@ -6726,7 +6732,8 @@ auto Parser::parse_complex_type_specifier(SpecifierAST*& yyast,
 }
 
 auto Parser::parse_named_type_specifier(SpecifierAST*& yyast, DeclSpecs& specs,
-                                        TypeNameContext context) -> bool {
+                                        TypeNameContext context,
+                                        TypeSpecifierGrammar grammar) -> bool {
   if (specs.isUnsigned || specs.isSigned || specs.isShort || specs.isLong ||
       specs.complexTypeSpecifier)
     return false;
@@ -6734,21 +6741,39 @@ auto Parser::parse_named_type_specifier(SpecifierAST*& yyast, DeclSpecs& specs,
   if (checkUnqualifiedCompletion()) return false;
   if (!lookat(TokenKind::T_IDENTIFIER) && !lookat_nested_name_specifier_start())
     return false;
-
-  if (rejects_plain_type_name(context)) return false;
+  if ((grammar == TypeSpecifierGrammar::kTypeRequirement ||
+       !LA(1).isOneOf(TokenKind::T_AUTO, TokenKind::T_DECLTYPE)) &&
+      rejects_plain_type_name(context))
+    return false;
 
   LookaheadParser lookahead{this};
-
   NestedNameSpecifierAST* nestedNameSpecifier = nullptr;
   parse_optional_nested_name_specifier(
       nestedNameSpecifier, NestedNameSpecifierContext::kNonDeclarative);
+
+  // Both a constrained placeholder and a type name can start with the same
+  // qualifier. Only the terminal identifier can name the concept.
+  if (grammar == TypeSpecifierGrammar::kSimple &&
+      lookat(TokenKind::T_IDENTIFIER) &&
+      LA(1).isOneOf(TokenKind::T_AUTO, TokenKind::T_DECLTYPE,
+                    TokenKind::T_LESS)) {
+    TypeConstraintAST* typeConstraint = nullptr;
+    const auto constraintContext = LA(1).is(TokenKind::T_LESS)
+                                       ? TypeConstraintContext::kTentative
+                                       : TypeConstraintContext::kRequired;
+    if (parse_type_constraint(typeConstraint, nestedNameSpecifier,
+                              constraintContext)) {
+      if (!parse_placeholder_type_specifier(yyast, specs, typeConstraint))
+        return false;
+      lookahead.commit();
+      return true;
+    }
+  }
 
   SourceLocation templateLoc;
   const auto isTemplateIntroduced = match(TokenKind::T_TEMPLATE, templateLoc);
 
   if (!lookat(TokenKind::T_IDENTIFIER)) return false;
-
-  auto id = unit_->identifier(currentLocation());
 
   UnqualifiedIdAST* unqualifiedId = nullptr;
   if (!parse_type_name(unqualifiedId, nestedNameSpecifier, isTemplateIntroduced,
@@ -7518,47 +7543,18 @@ auto Parser::parse_decltype_specifier(DecltypeSpecifierAST*& yyast) -> bool {
   return true;
 }
 
-auto Parser::lookat_placeholder_type_specifier_start() -> bool {
-  if (lookat(TokenKind::T_AUTO)) return true;
-  if (lookat(TokenKind::T_IDENTIFIER, TokenKind::T_AUTO)) return true;
-  if (lookat(TokenKind::T_IDENTIFIER, TokenKind::T_DECLTYPE)) return true;
-  if (lookat(TokenKind::T_IDENTIFIER)) {
-    return lookat(TokenKind::T_IDENTIFIER, TokenKind::T_LESS) ||
-           lookat(TokenKind::T_IDENTIFIER, TokenKind::T_COLON_COLON);
-  }
-  return lookat_nested_name_specifier_start();
-}
-
 auto Parser::parse_placeholder_type_specifier(SpecifierAST*& yyast,
-                                              DeclSpecs& specs) -> bool {
-  if (!lookat_placeholder_type_specifier_start()) return false;
-
-  TypeConstraintAST* typeConstraint = nullptr;
-
-  auto lookat_placeholder_type_specifier = [&] {
-    LookaheadParser lookahead{this};
-
-    (void)parse_type_constraint(typeConstraint, true);
-
-    if (!lookat(TokenKind::T_AUTO) &&
-        !lookat(TokenKind::T_DECLTYPE, TokenKind::T_LPAREN, TokenKind::T_AUTO,
-                TokenKind::T_RPAREN))
-      return false;
-
-    lookahead.commit();
-
-    return true;
-  };
-
-  if (!lookat_placeholder_type_specifier()) return false;
-
+                                              DeclSpecs& specs,
+                                              TypeConstraintAST* typeConstraint)
+    -> bool {
   if (SourceLocation autoLoc; match(TokenKind::T_AUTO, autoLoc)) {
     auto ast = AutoTypeSpecifierAST::create(pool_);
     yyast = ast;
     ast->autoLoc = autoLoc;
 
     specs.accept(ast);
-  } else {
+  } else if (lookat(TokenKind::T_DECLTYPE, TokenKind::T_LPAREN,
+                    TokenKind::T_AUTO, TokenKind::T_RPAREN)) {
     auto ast = DecltypeAutoSpecifierAST::create(pool_);
     yyast = ast;
 
@@ -7568,6 +7564,8 @@ auto Parser::parse_placeholder_type_specifier(SpecifierAST*& yyast,
     expect(TokenKind::T_RPAREN, ast->rparenLoc);
 
     specs.accept(ast);
+  } else {
+    return false;
   }
 
   if (typeConstraint) {
@@ -11694,9 +11692,12 @@ auto Parser::parse_constraint_type_parameter(TemplateParameterAST*& yyast)
     -> bool {
   TypeConstraintAST* typeConstraint = nullptr;
 
-  if (!parse_type_constraint(typeConstraint, false)) {
+  NestedNameSpecifierAST* nestedNameSpecifier = nullptr;
+  parse_optional_nested_name_specifier(
+      nestedNameSpecifier, NestedNameSpecifierContext::kNonDeclarative);
+  if (!parse_type_constraint(typeConstraint, nestedNameSpecifier,
+                             TypeConstraintContext::kTentative))
     return false;
-  }
 
   SourceLocation ellipsisLoc;
 
@@ -11740,52 +11741,46 @@ auto Parser::parse_type_parameter_key(SourceLocation& classKeyLoc) -> bool {
 }
 
 auto Parser::parse_type_constraint(TypeConstraintAST*& yyast,
-                                   bool parsingPlaceholderTypeSpec) -> bool {
-  NestedNameSpecifierAST* nestedNameSpecifier = nullptr;
-  SourceLocation identifierLoc;
-  const Identifier* identifier = nullptr;
-  ConceptSymbol* conceptSymbol = nullptr;
-
-  auto lookat_type_constraint = [&] {
-    LookaheadParser lookahead{this};
-
-    parse_optional_nested_name_specifier(
-        nestedNameSpecifier, NestedNameSpecifierContext::kNonDeclarative);
-
-    if (!match(TokenKind::T_IDENTIFIER, identifierLoc)) return false;
-
-    identifier = unit_->identifier(identifierLoc);
-
-    Symbol* symbol = nullptr;
-    if (nestedNameSpecifier && nestedNameSpecifier->symbol) {
-      symbol = qualifiedLookup(nestedNameSpecifier->symbol, identifier);
-    } else {
-      symbol = lookupUnqualifiedName(identifier);
+                                   NestedNameSpecifierAST* nestedNameSpecifier,
+                                   TypeConstraintContext context) -> bool {
+  if (!lookat(TokenKind::T_IDENTIFIER)) return false;
+  auto identifier = unit_->identifier(currentLocation());
+  bool ambiguous = false;
+  auto symbol =
+      nestedNameSpecifier
+          ? qualifiedLookupIncludingInlineNamespaces(
+                control_, nestedNameSpecifier->symbol, identifier, &ambiguous)
+          : unqualifiedLookupIncludingInlineNamespaces(
+                control_, lexicalScope(), identifier, false, &ambiguous);
+  auto conceptSymbol = ambiguous ? nullptr : symbol_cast<ConceptSymbol>(symbol);
+  if (!conceptSymbol) {
+    // A non-dependent invalid qualifier rules out either reading of the name.
+    // The enclosing production still owns tentative diagnostics and recovery.
+    const bool invalidQualifier =
+        nestedNameSpecifier && !nestedNameSpecifier->symbol &&
+        binder_.reportUnresolvedNestedNameSpecifier(nestedNameSpecifier);
+    if (!invalidQualifier) {
+      if (context == TypeConstraintContext::kTentative) return false;
+      if (ambiguous)
+        parse_error(
+            std::format("reference to '{}' is ambiguous", identifier->name()));
+      else
+        parse_error(
+            std::format("'{}' does not name a concept", identifier->name()));
     }
-
-    conceptSymbol = symbol_cast<ConceptSymbol>(symbol);
-    if (!conceptSymbol) return false;
-
-    lookahead.commit();
-
-    return true;
-  };
-
-  if (!lookat_type_constraint()) return false;
+  }
 
   auto ast = TypeConstraintAST::create(pool_);
   yyast = ast;
-
   ast->nestedNameSpecifier = nestedNameSpecifier;
-  ast->identifierLoc = identifierLoc;
+  ast->identifierLoc = consumeToken();
   ast->identifier = identifier;
   ast->symbol = conceptSymbol;
 
-  if (match(TokenKind::T_LESS, ast->lessLoc)) {
-    if (!parse_template_argument_list(ast->templateArgumentList)) {
+  if (match(TokenKind::T_LESS, ast->lessLoc) &&
+      !match(TokenKind::T_GREATER, ast->greaterLoc)) {
+    if (!parse_template_argument_list(ast->templateArgumentList))
       parse_error("expected a template argument");
-    }
-
     expect(TokenKind::T_GREATER, ast->greaterLoc);
   }
 
