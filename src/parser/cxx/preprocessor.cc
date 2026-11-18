@@ -1936,23 +1936,6 @@ auto Preprocessor::Private::paste(const Tok& left, const Tok& right,
   return genTok(lex.tokenKind(), lex.tokenText(), origin);
 }
 
-auto PredefinedMacros::find(std::string_view name) const
-    -> const PredefinedMacro* {
-  if (!(lengths_ & (std::uint64_t{1} << (name.size() & 63))) ||
-      !name.starts_with(prefix_)) {
-    return nullptr;
-  }
-  if (name.size() > prefix_.size()) {
-    const auto ch = static_cast<unsigned char>(name[prefix_.size()]);
-    if (!(nextCharacters_[ch / 64] & (std::uint64_t{1} << (ch & 63)))) {
-      return nullptr;
-    }
-  }
-  auto it = std::ranges::lower_bound(definitions_, name, {},
-                                     &PredefinedMacro::identifier);
-  return it != definitions_.end() && it->identifier() == name ? &*it : nullptr;
-}
-
 auto Preprocessor::Private::predefinedMacro(std::string_view name) const
     -> const PredefinedMacro* {
   if (!(predefinedInitials_ & PredefinedMacros::initialMask(name))) {

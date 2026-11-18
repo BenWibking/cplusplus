@@ -22,6 +22,7 @@
 
 #include <cxx/cxx_fwd.h>
 #include <cxx/position_independence.h>
+#include <cxx/predefined_macros.h>
 #include <cxx/triple.h>
 
 #include <memory>
@@ -32,7 +33,6 @@
 
 namespace cxx {
 class Preprocessor;
-class PredefinedMacros;
 class MemoryLayout;
 
 enum class LinkerFlavor {

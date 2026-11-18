@@ -97,6 +97,7 @@ add_library(cxx-parser
     cxx/names.cc
     cxx/parser.cc
     cxx/path.cc
+    cxx/predefined_macros.cc
     cxx/preprocessor.cc
     cxx/scope.cc
     cxx/source_location.cc
