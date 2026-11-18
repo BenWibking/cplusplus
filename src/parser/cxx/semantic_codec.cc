@@ -6696,6 +6696,8 @@ void SemanticEncoder::writeAstSimpleAttributeTokenAST(
 
 void SemanticEncoder::writecxxAttribute(
     ByteWriter& out, [[maybe_unused]] const cxx::Attribute* self) {
+  // ::cxx::Attribute::syntax
+  out.varU32(static_cast<std::uint32_t>(self->syntax));
   // ::cxx::Attribute::attributeNamespace
   out.varU32(
       static_cast<std::uint32_t>(identifierRef(self->attributeNamespace)));
@@ -17067,23 +17069,29 @@ void SemanticDecoder::readAstSimpleAttributeTokenAST(
 
 void SemanticDecoder::readcxxAttribute([[maybe_unused]] ByteReader& in,
                                        [[maybe_unused]] cxx::Attribute* self) {
+  // ::cxx::Attribute::syntax
+  static_assert(
+      static_cast<std::uint32_t>(::cxx::AttributeSyntax::kAsmLabel) + 1 == 3);
+  ::cxx::AttributeSyntax value1 =
+      static_cast<::cxx::AttributeSyntax>(readEnum(in, 3));
+  self->syntax = std::move(value1);
   // ::cxx::Attribute::attributeNamespace
-  const cxx::Identifier* value1 = identifierAt(StringRef{in.varU32()});
-  self->attributeNamespace = std::move(value1);
-  // ::cxx::Attribute::name
   const cxx::Identifier* value2 = identifierAt(StringRef{in.varU32()});
-  self->name = std::move(value2);
+  self->attributeNamespace = std::move(value2);
+  // ::cxx::Attribute::name
+  const cxx::Identifier* value3 = identifierAt(StringRef{in.varU32()});
+  self->name = std::move(value3);
   // ::cxx::Attribute::arguments
-  decltype(self->arguments) value3;
+  decltype(self->arguments) value4;
   {
-    const auto count4 = in.varCount(1);
-    for (std::uint32_t i5 = 0; ok() && i5 < count4; ++i5) {
-      decltype(value3)::value_type element6 =
+    const auto count5 = in.varCount(1);
+    for (std::uint32_t i6 = 0; ok() && i6 < count5; ++i6) {
+      decltype(value4)::value_type element7 =
           identifierAt(StringRef{in.varU32()});
-      value3.push_back(std::move(element6));
+      value4.push_back(std::move(element7));
     }
   }
-  self->arguments = std::move(value3);
+  self->arguments = std::move(value4);
 }
 
 void SemanticDecoder::readcxxMeta([[maybe_unused]] ByteReader& in,

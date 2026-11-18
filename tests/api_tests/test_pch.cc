@@ -888,6 +888,44 @@ struct __attribute__((may_alias)) AliasPacket { unsigned value; };
             TypeAttributeFlags::kMayAlias);
 }
 
+TEST(PrecompiledHeader, CompletesRecordsWithTheirDeclaredAttributeSyntax) {
+  Prefix prefix{R"(
+struct [[packed]] Ordinary;
+struct __attribute__((packed)) Wire;
+struct [[packed]] UnknownFirst;
+struct __attribute__((packed)) UnknownFirst;
+struct __attribute__((packed)) KnownFirst;
+struct [[packed]] KnownFirst;
+[[nothrow]] void ordinary();
+[[gnu::nothrow]] void noThrow();
+)"};
+  const auto data = prefix.emit();
+  ASSERT_TRUE(prefix.errors().empty());
+  ASSERT_FALSE(data.empty());
+
+  DiagnosticsClient diagnostics;
+  MemoryLayout memoryLayout{32};
+  TranslationUnit consumer{&diagnostics};
+  consumer.control()->setMemoryLayout(&memoryLayout);
+  PrecompiledHeaderReader reader{&consumer, keys()};
+  ASSERT_TRUE(reader(data)) << reader.error();
+  consumer.setSource(R"(
+struct Ordinary { char tag; int value; };
+struct Wire { char tag; int value; };
+struct UnknownFirst { char tag; int value; };
+struct KnownFirst { char tag; int value; };
+static_assert(__builtin_offsetof(Ordinary, value) == 4);
+static_assert(__builtin_offsetof(Wire, value) == 1);
+static_assert(sizeof(UnknownFirst) == sizeof(Wire));
+static_assert(sizeof(KnownFirst) == sizeof(Wire));
+static_assert(!noexcept(ordinary()));
+static_assert(noexcept(noThrow()));
+)",
+                     "consumer.cc");
+  consumer.resume({.analysisMode = ParserAnalysisMode::kFull});
+  EXPECT_EQ(diagnostics.errorCount(), 0);
+}
+
 TEST(PrecompiledHeader, RestoresPackedEnumSemantics) {
   Prefix prefix{R"(
 enum Packed { value = 255 } __attribute__((packed));

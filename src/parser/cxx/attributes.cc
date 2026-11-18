@@ -140,6 +140,8 @@ auto Attribute::operator<=>(const Attribute& other) const
   if (auto cmp = spellingOf(name) <=> spellingOf(other.name); cmp != 0)
     return cmp;
 
+  if (auto cmp = syntax <=> other.syntax; cmp != 0) return cmp;
+
   if (auto cmp = arguments.size() <=> other.arguments.size(); cmp != 0)
     return cmp;
 
@@ -189,7 +191,8 @@ void addAttribute(AttributeMap& map, Attribute attribute) {
 
   auto it = std::ranges::find_if(map, [&](const Attribute& entry) {
     return entry.name == attribute.name &&
-           entry.attributeNamespace == attribute.attributeNamespace;
+           entry.attributeNamespace == attribute.attributeNamespace &&
+           entry.syntax == attribute.syntax;
   });
 
   if (it == map.end()) {
@@ -208,6 +211,7 @@ void addAttribute(AttributeMap& map, Attribute attribute) {
   auto control = unit->control();
 
   List<AttributeAST*>* entries = nullptr;
+  auto syntax = AttributeSyntax::kCxx;
   const Identifier* usingNamespace = nullptr;
 
   if (auto cxxAttribute = ast_cast<CxxAttributeAST>(specifier)) {
@@ -218,11 +222,13 @@ void addAttribute(AttributeMap& map, Attribute attribute) {
     }
   } else if (auto gccAttribute = ast_cast<GccAttributeAST>(specifier)) {
     entries = gccAttribute->attributeList;
+    syntax = AttributeSyntax::kGnu;
   } else if (auto assembly = ast_cast<AsmAttributeAST>(specifier)) {
     if (!assembly->literal) return nullptr;
     auto components = StringLiteral::Components::from(
         assembly->literal->value(), StringLiteralEncoding::kNone);
     Attribute attribute{
+        .syntax = AttributeSyntax::kAsmLabel,
         .name = control->getIdentifier("asm"),
         .arguments = {control->getIdentifier(components.value)}};
     specifier->attributes = control->getAttributes({attribute});
@@ -235,6 +241,7 @@ void addAttribute(AttributeMap& map, Attribute attribute) {
 
   for (auto entry : ListView{entries}) {
     Attribute attribute;
+    attribute.syntax = syntax;
     attribute.attributeNamespace = usingNamespace;
 
     if (auto simple =
@@ -308,7 +315,8 @@ auto namesAttribute(const Attribute& attribute, AttributeKind kind) -> bool {
   if (!attribute.name) return false;
   return std::ranges::any_of(
       attributeInfo(kind).spellings, [&](const AttributeSpelling& spelling) {
-        return spelling.name == attribute.name->name() &&
+        return spelling.syntax == attribute.syntax &&
+               spelling.name == attribute.name->name() &&
                spelling.attributeNamespace ==
                    spellingOf(attribute.attributeNamespace);
       });
