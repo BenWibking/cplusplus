@@ -2455,6 +2455,7 @@ inline constexpr FieldDescriptor kSemanticFieldModelStorage[] = {
      FieldPersistence::kPersisted, ""},
     {"::cxx::SimpleAttributeTokenAST", "identifier",
      FieldPersistence::kPersisted, ""},
+    {"::cxx::Attribute", "syntax", FieldPersistence::kPersisted, ""},
     {"::cxx::Attribute", "attributeNamespace", FieldPersistence::kPersisted,
      ""},
     {"::cxx::Attribute", "name", FieldPersistence::kPersisted, ""},

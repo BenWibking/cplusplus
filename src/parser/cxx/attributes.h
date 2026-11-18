@@ -50,9 +50,16 @@ class MemoryLayout;
                                         std::string_view name,
                                         const MemoryLayout& layout) -> long;
 
+enum class AttributeSyntax { kGnu, kCxx, kAsmLabel };
+
 struct Attribute {
+  // Grammar that introduced this spelling.
+  AttributeSyntax syntax = AttributeSyntax::kCxx;
+  // Effective namespace, including one supplied by a C++ using-prefix.
   const Identifier* attributeNamespace = nullptr;
+  // Canonical spelling, retained for consumers of vendor extensions.
   const Identifier* name = nullptr;
+  // Interned string arguments in source order.
   std::vector<const Identifier*> arguments;
 
   /**
@@ -106,8 +113,6 @@ using KernelParameterBinding =
 
 [[nodiscard]] auto mergeAttributes(AttributeMap lhs, const AttributeMap* rhs)
     -> AttributeMap;
-
-enum class AttributeSyntax { kGnu, kCxx, kAsmLabel };
 
 enum class AttributeAvailability { kAlways, kWebAssembly, kDeviceProfile };
 

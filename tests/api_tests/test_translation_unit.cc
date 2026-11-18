@@ -192,6 +192,31 @@ TEST(Attributes, AlternateSpellingsShareTheSemanticAttribute) {
   EXPECT_EQ(cxx->kind, AttributeKind::kMaybeUnused);
 }
 
+TEST(Attributes, RetainedSpellingsRespectTheirSourceGrammar) {
+  DiagnosticsClient diagnostics;
+  TranslationUnit unit{&diagnostics};
+  for (const auto& info : attributeInfos()) {
+    for (const auto& spelling : info.spellings) {
+      SCOPED_TRACE(spelling.name);
+      SCOPED_TRACE(spelling.attributeNamespace);
+      Attribute attribute;
+      if (!spelling.attributeNamespace.empty())
+        attribute.attributeNamespace =
+            unit.control()->getIdentifier(spelling.attributeNamespace);
+      attribute.name = unit.control()->getIdentifier(spelling.name);
+      for (auto syntax : {AttributeSyntax::kCxx, AttributeSyntax::kGnu,
+                          AttributeSyntax::kAsmLabel}) {
+        SCOPED_TRACE(static_cast<int>(syntax));
+        attribute.syntax = syntax;
+        auto registered = findAttributeSpelling(
+            syntax, spelling.attributeNamespace, spelling.name);
+        EXPECT_EQ(namesAttribute(attribute, info.kind),
+                  registered && registered->kind == info.kind);
+      }
+    }
+  }
+}
+
 TEST(SourceLocations, NestedBuiltinMacroExpansionRetainsInvocationRange) {
   std::string source =
       "#define CURRENT_LINE __LINE__\n"
