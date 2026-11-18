@@ -26,6 +26,7 @@
 #include <cxx/triple.h>
 
 #include <array>
+#include <cstdint>
 #include <cstdlib>
 #include <format>
 #include <functional>
@@ -56,24 +57,33 @@ class CommentHandler {
 // An immutable toolchain definition. Tables are sorted by identifier, contain
 // one definition per identifier, and outlive every preprocessor that borrows
 // them.
-struct PredefinedMacro {
-  constexpr PredefinedMacro(std::string_view name, std::string_view body)
-      : name(name),
-        body(body),
-        identifierLength_(name.substr(0, name.find('(')).size()) {}
+class PredefinedMacro {
+ public:
+  // The directive after '#define ', including any formals and replacement.
+  template <std::size_t N>
+  consteval PredefinedMacro(const char (&text)[N])
+      : text_(text), length_(N - 1), identifierLength_(N - 1) {
+    static_assert(N - 1 <= UINT32_MAX);
+    const auto end = spelling().find_first_of("( \t\v\f\r\n");
+    if (end != std::string_view::npos)
+      identifierLength_ = static_cast<std::uint32_t>(end);
+  }
 
-  // Macro spelling, including the parameter list for a function-like macro.
-  std::string_view name;
-  // Replacement text, tokenized only when the definition is needed.
-  std::string_view body;
+  [[nodiscard]] constexpr auto spelling() const -> std::string_view {
+    return {text_, length_};
+  }
 
   [[nodiscard]] constexpr auto identifier() const -> std::string_view {
-    return {name.data(), identifierLength_};
+    return {text_, identifierLength_};
   }
 
  private:
-  // Retained identifier extent avoids rescanning declarations during lookup.
-  std::size_t identifierLength_;
+  // Borrowed bytes shared by lookup and tokenization.
+  const char* text_;
+  // Byte length of the entire directive, excluding its terminating NUL.
+  std::uint32_t length_;
+  // Byte length of the identifier at the beginning of the directive.
+  std::uint32_t identifierLength_;
 };
 
 // Compile-time index of a borrowed, sorted definition table. Negative lookup

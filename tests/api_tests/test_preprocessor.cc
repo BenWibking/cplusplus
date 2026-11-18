@@ -147,7 +147,7 @@ TEST(Preprocessor, ConcurrentConstructionProducesValidCompilationTimes) {
 
 TEST(Preprocessor, PredefinedMacrosTokenizeOnExpansionOncePerInstance) {
   static constexpr PredefinedMacro definitions[] = {
-      {"VALUE", "/* replacement list */ 3"},
+      "VALUE /* replacement list */ 3",
   };
   static constexpr PredefinedMacros predefined{definitions};
   Control control;
@@ -180,8 +180,8 @@ TEST(Preprocessor, PredefinedMacrosTokenizeOnExpansionOncePerInstance) {
 
 TEST(Preprocessor, PredefinedMacrosPreserveExpansionAndDefinitionChanges) {
   static constexpr PredefinedMacro definitions[] = {
-      {"ALIAS", "VALUE"}, {"EMPTY", ""},  {"INCREMENT(x)", "((x) + 1)"},
-      {"REMOVED", "0"},   {"VALUE", "3"},
+      "ALIAS VALUE", "EMPTY",   "GROUP\t(VALUE)", "INCREMENT(x) ((x) + 1)",
+      "REMOVED 0",   "VALUE 3",
   };
   static constexpr PredefinedMacros predefined{definitions};
   Control control;
@@ -194,7 +194,7 @@ TEST(Preprocessor, PredefinedMacrosPreserveExpansionAndDefinitionChanges) {
 #error incorrect initial environment
 #endif
 #define VALUE 3
-ALIAS EMPTY INCREMENT(4)
+ALIAS EMPTY INCREMENT(4) GROUP
 #define VALUE 5
 ALIAS
 #undef VALUE
@@ -207,19 +207,19 @@ ALIAS
 #undef ALIAS
 ALIAS
 )");
-  EXPECT_EQ(spellings,
-            (std::vector<std::string>{"3", "(", "(", "4", ")", "+", "1", ")",
-                                      "5", "VALUE", "7", "ALIAS"}));
+  EXPECT_EQ(spellings, (std::vector<std::string>{"3", "(", "(", "4", ")", "+",
+                                                 "1", ")", "(", "3", ")", "5",
+                                                 "VALUE", "7", "ALIAS"}));
   EXPECT_EQ(diagnostics.messages,
             (std::vector<std::string>{"'VALUE' macro redefined"}));
 }
 
 TEST(Preprocessor, PredefinedMacrosPreserveFormattingAndSnapshots) {
   static constexpr PredefinedMacro definitions[] = {
-      {"ALIAS", "VALUE"},
-      {"FUNCTION(x)", "x ## U"},
-      {"REMOVED", "5"},
-      {"VALUE", "3"},
+      "ALIAS VALUE",
+      "FUNCTION(x) x ## U",
+      "REMOVED 5",
+      "VALUE 3",
   };
   static constexpr PredefinedMacros predefined{definitions};
   Control control;
@@ -253,12 +253,11 @@ ALIAS FUNCTION(4)
 
 TEST(Preprocessor, PredefinedIndexPreservesPrefixesAndLongIdentifiers) {
   static constexpr PredefinedMacro definitions[] = {
-      {"A", "1"},
-      {"AB", "2"},
-      {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_long",
-       "3"},
-      {"AC(x)", "x"},
-      {"Z", "4"},
+      "A 1",
+      "AB 2",
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_long 3",
+      "AC(x) x",
+      "Z 4",
   };
   static constexpr PredefinedMacros predefined{definitions};
   for (const auto& definition : definitions) {
@@ -275,12 +274,20 @@ TEST(Preprocessor, PredefinedIndexPreservesPrefixesAndLongIdentifiers) {
 
 TEST(Preprocessor, TargetPredefinesShadowCommonDefinitionsThroughRestore) {
   static constexpr PredefinedMacro common[] = {
-      {"BASE_ONLY", "3"}, {"LIMIT", "1"}, {"MAPPED(x)", "x"}, {"REMOVED", "1"}};
-  static constexpr PredefinedMacro target[] = {{"LIMIT", "2"},
-                                               {"MAPPED(x)", "x ## U"},
-                                               {"REMOVED", "2"},
-                                               {"Target", "4"}};
-  static constexpr PredefinedMacro variant[] = {{"LIMIT", "5"}};
+      "BASE_ONLY 3",
+      "LIMIT 1",
+      "MAPPED(x) x",
+      "REMOVED 1",
+  };
+  static constexpr PredefinedMacro target[] = {
+      "LIMIT 2",
+      "MAPPED(x) x ## U",
+      "REMOVED 2",
+      "Target 4",
+  };
+  static constexpr PredefinedMacro variant[] = {
+      "LIMIT 5",
+  };
   static constexpr PredefinedMacros base{common};
   static constexpr PredefinedMacros overrides[] = {PredefinedMacros{target},
                                                    PredefinedMacros{variant}};

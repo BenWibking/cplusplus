@@ -1976,12 +1976,7 @@ auto Preprocessor::Private::findMacro(std::string_view name) -> const Macro* {
 
 auto Preprocessor::Private::materializePredefinedMacro(
     const PredefinedMacro& definition) -> const Macro* {
-  std::string source;
-  source.reserve(definition.name.size() + 1 + definition.body.size());
-  source.append(definition.name);
-  source.push_back(' ');
-  source.append(definition.body);
-  auto tokens = tokenize(source, 0, false);
+  auto tokens = tokenize(definition.spelling(), 0, false);
   auto macro =
       parseMacroDefinition(tokens.data(), tokens.data() + tokens.size());
   auto it =
