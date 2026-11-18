@@ -79,7 +79,6 @@ class [[nodiscard]] DeclSpecs {
   bool isConsteval = false;
   bool isConstinit = false;
   bool isInline = false;
-  bool isNoUniqueAddress = false;
   bool isNoreturn = false;
 
   bool isConst = false;
