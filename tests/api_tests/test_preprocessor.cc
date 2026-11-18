@@ -236,6 +236,7 @@ TEST(Preprocessor, PredefinedMacrosPreserveFormattingAndSnapshots) {
   Preprocessor original{&control, &diagnostics};
   original.setPredefinedMacros(predefined);
   original.undefMacro("REMOVED");
+  original.defineMacro("twice(x)", "x + x");
   const auto snapshot = original.snapshot();
 
   Preprocessor restored{&control, &diagnostics};
@@ -245,9 +246,11 @@ TEST(Preprocessor, PredefinedMacrosPreserveFormattingAndSnapshots) {
 #ifdef REMOVED
 #error snapshot resurrected an undefined macro
 #endif
-ALIAS FUNCTION(4)
+#if defined(twice)
+ALIAS FUNCTION(4) twice(5)
+#endif
 )"),
-            (std::vector<std::string>{"3", "4U"}));
+            (std::vector<std::string>{"3", "4U", "5", "+", "5"}));
   EXPECT_EQ(diagnostics.errorCount(), 0);
 }
 

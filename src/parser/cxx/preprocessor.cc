@@ -664,6 +664,9 @@ struct Preprocessor::Private {
   std::unordered_map<std::string, Macro, TransparentStringHash,
                      TransparentStringEqual>
       macros_;
+  // First bytes of installed macro names. Erasing a definition may leave a
+  // bit set; a possible match always goes through exact spelling lookup.
+  std::uint64_t localMacroInitials_ = 0;
   // Borrowed, sorted initial definitions; expansion uses the normal macro map.
   const PredefinedMacros* predefinedMacros_ = nullptr;
   // Borrowed target-specific tables, in increasing precedence order.
@@ -1104,8 +1107,13 @@ struct Preprocessor::Private {
   void materializePredefinedMacros();
   void undefMacro(std::string_view name);
 
+  [[nodiscard]] auto mayHaveMacro(std::string_view name) const -> bool {
+    return (localMacroInitials_ | predefinedInitials_) &
+           PredefinedMacros::initialMask(name);
+  }
+
   [[nodiscard]] auto isDefined(std::string_view id) const -> bool {
-    return macros_.contains(id) || predefinedMacro(id);
+    return mayHaveMacro(id) && (macros_.contains(id) || predefinedMacro(id));
   }
 
   [[nodiscard]] auto isDefined(const Tok& tok) const -> bool {
@@ -1258,12 +1266,18 @@ struct Preprocessor::Private {
     lastToken.setValue(value);
   }
 
+  auto installMacro(std::string name, Macro macro) -> const Macro* {
+    localMacroInitials_ |= PredefinedMacros::initialMask(name);
+    return &macros_.insert_or_assign(std::move(name), std::move(macro))
+                .first->second;
+  }
+
   void adddBuiltinMacro(
       std::string_view name,
       std::function<auto(MacroExpansionContext)->TokVector> expand) {
     auto macro = BuiltinObjectMacro(std::string(name), std::move(expand));
     builtinMacros_.insert_or_assign(std::string(name), macro);
-    macros_.insert_or_assign(std::string(name), std::move(macro));
+    installMacro(std::string(name), std::move(macro));
   }
 
   void adddBuiltinFunctionMacro(
@@ -1271,7 +1285,7 @@ struct Preprocessor::Private {
       std::function<auto(MacroExpansionContext)->TokVector> expand) {
     auto macro = BuiltinFunctionMacro(std::string(name), std::move(expand));
     builtinMacros_.insert_or_assign(std::string(name), macro);
-    macros_.insert_or_assign(std::string(name), std::move(macro));
+    installMacro(std::string(name), std::move(macro));
   }
 
   [[nodiscard]] auto hasCppAttributeExpression(
@@ -1952,6 +1966,7 @@ auto Preprocessor::Private::predefinedMacro(std::string_view name) const
 }
 
 auto Preprocessor::Private::findMacro(std::string_view name) -> const Macro* {
+  if (!mayHaveMacro(name)) return nullptr;
   if (auto it = macros_.find(name); it != macros_.end()) return &it->second;
   const auto* definition = predefinedMacro(name);
   return definition ? materializePredefinedMacro(*definition) : nullptr;
@@ -1962,9 +1977,7 @@ auto Preprocessor::Private::materializePredefinedMacro(
   auto tokens = tokenize(definition.spelling(), 0, false);
   auto macro =
       parseMacroDefinition(tokens.data(), tokens.data() + tokens.size());
-  auto it =
-      macros_.emplace(std::string(getMacroName(macro)), std::move(macro)).first;
-  return &it->second;
+  return installMacro(std::string(definition.identifier()), std::move(macro));
 }
 
 void Preprocessor::Private::materializePredefinedMacros() {
@@ -4066,7 +4079,7 @@ void Preprocessor::Private::defineMacro(const Tok* ts, const Tok* lineEnd) {
     }
   }
 
-  macros_.insert_or_assign(name, std::move(macro));
+  installMacro(std::move(name), std::move(macro));
 }
 
 static auto wantSpace(TokenKind kind) -> bool {
@@ -4688,7 +4701,7 @@ void Preprocessor::restore(const PreprocessorSnapshot& snapshot) {
   }
 
   for (const auto& [name, macro] : d->builtinMacros_) {
-    d->macros_.insert_or_assign(name, macro);
+    d->installMacro(name, macro);
   }
 
   for (const auto& name : snapshot.undefinedBuiltins) d->macros_.erase(name);
@@ -4706,12 +4719,11 @@ void Preprocessor::restore(const PreprocessorSnapshot& snapshot) {
     }
 
     if (record.isFunctionLike) {
-      d->macros_.insert_or_assign(
-          record.name, FunctionMacro(record.name, record.formals,
-                                     std::move(body), record.isVariadic));
+      d->installMacro(record.name,
+                      FunctionMacro(record.name, record.formals,
+                                    std::move(body), record.isVariadic));
     } else {
-      d->macros_.insert_or_assign(record.name,
-                                  ObjectMacro(record.name, std::move(body)));
+      d->installMacro(record.name, ObjectMacro(record.name, std::move(body)));
     }
   }
 
