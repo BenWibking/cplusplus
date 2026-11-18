@@ -1356,37 +1356,12 @@ void Parser::checkTemplateSignatureHelp(Symbol* templateSymbol) {
   });
 }
 
-void Parser::checkAttributeSignatureHelp(AttributeSyntax syntax,
-                                         AttributeTokenAST* attributeToken,
-                                         const Identifier* usingNamespace) {
-  if (!lookat(TokenKind::T_LPAREN)) return;
-
+void Parser::checkAttributeSignatureHelp(AttributeKind kind) {
+  if (kind == AttributeKind::kUnknown || !lookat(TokenKind::T_LPAREN)) return;
   auto position = findCompletionToken(1, TokenKind::T_RPAREN);
-  if (!position) return;
-
-  auto attributeNamespace = usingNamespace;
-  const Identifier* name = nullptr;
-
-  if (auto simple = ast_cast<SimpleAttributeTokenAST>(attributeToken)) {
-    name = simple->identifier;
-  } else if (auto scoped = ast_cast<ScopedAttributeTokenAST>(attributeToken)) {
-    attributeNamespace = scoped->attributeNamespace;
-    name = scoped->identifier;
-  }
-
-  if (!name) return;
-
-  auto spelling = findAttributeSpelling(
-      syntax,
-      attributeNamespace
-          ? canonicalAttributeNamespaceSpelling(attributeNamespace->name())
-          : std::string_view{},
-      canonicalAttributeSpelling(name->name()));
-
-  if (!spelling || attributeInfo(spelling->kind).arguments.empty()) return;
-
+  if (!position || attributeInfo(kind).arguments.empty()) return;
   config().complete(AttributeArgumentHintsContext{
-      .kind = spelling->kind,
+      .kind = kind,
       .activeParameter = position->argumentIndex,
   });
 }
@@ -5813,10 +5788,12 @@ auto Parser::parse_simple_declaration(DeclarationAST*& yyast,
   {
     LookaheadParser lookahead{this};
     auto tail = &declSpecifierList;
+    List<AttributeSpecifierAST*>* trailing = nullptr;
     if (isCxx() && context_allows_function_definition(ctx)) {
-      tail = parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs);
-      if (parse_notypespec_function_definition(yyast, declSpecifierList,
-                                               specs)) {
+      tail = parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs,
+                                                   trailing);
+      if (parse_notypespec_function_definition(yyast, declSpecifierList, specs,
+                                               trailing)) {
         lookahead.commit();
         return true;
       }
@@ -5827,7 +5804,8 @@ auto Parser::parse_simple_declaration(DeclarationAST*& yyast,
                                    ctx == BindingContext::kCondition
                                ? TypeNameContext::kGeneral
                                : TypeNameContext::kTypeOnly;
-    if (!parse_decl_specifier_seq(*tail, specs, typeNameContext)) return false;
+    if (!parse_decl_specifier_seq(*tail, specs, typeNameContext, trailing))
+      return false;
     if (!specs.hasTypeOrSizeSpecifier()) return false;
     lookahead.commit();
   }
@@ -6043,7 +6021,7 @@ auto Parser::parse_simple_declaration(
 
 auto Parser::parse_notypespec_function_definition(
     DeclarationAST*& yyast, List<SpecifierAST*>* declSpecifierList,
-    const DeclSpecs& specs) -> bool {
+    const DeclSpecs& specs, List<AttributeSpecifierAST*>* trailing) -> bool {
   LookaheadParser lookahead{this};
   CoreDeclaratorAST* declaratorId = nullptr;
 
@@ -6104,6 +6082,8 @@ auto Parser::parse_notypespec_function_definition(
 
   if (!isDeclaration && !isDefinition) return false;
   lookahead.commit();
+  if (trailing)
+    check_type_attributes(trailing, TypeAttributePosition::kSpecifier);
 
   auto abbreviatedHead = takeAbbreviatedTemplateHead(decl);
   auto templateHead = decl.specs.templateHead;
@@ -6351,18 +6331,87 @@ auto Parser::parse_decl_specifier(SpecifierAST*& yyast, DeclSpecs& specs,
   }
 }
 
-void Parser::parse_optional_declaration_attributes(DeclSpecs& specs) {
-  List<AttributeSpecifierAST*>* attributes = nullptr;
-  parse_optional_attribute_specifier_seq(attributes);
-  if (!attributes) return;
+void Parser::check_type_attributes(List<AttributeSpecifierAST*>* attributes,
+                                   TypeAttributePosition position) {
+  for (auto specifier : ListView{attributes}) {
+    auto scoped = ast_cast<CxxAttributeAST>(specifier);
+    if (!scoped) continue;
+    for (auto entry : ListView{scoped->attributeList}) {
+      const auto kind = entry->attributeKind;
+      switch (kind) {
+        case AttributeKind::kAddressSpace:
+        case AttributeKind::kExtVectorType:
+          if (position != TypeAttributePosition::kBetweenSpecifiers) continue;
+          break;
+        case AttributeKind::kVectorSize:
+          if (position == TypeAttributePosition::kDeclarator) continue;
+          break;
+        case AttributeKind::kNoUniqueAddress:
+        case AttributeKind::kAligned:
+        case AttributeKind::kMayAlias:
+        case AttributeKind::kPacked:
+          break;
+        default:
+          continue;
+      }
+      if (position == TypeAttributePosition::kBetweenSpecifiers) {
+        parse_error(
+            scoped->lbracketLoc,
+            "an attribute list cannot appear between declaration specifiers");
+        for (auto misplaced : ListView{scoped->attributeList})
+          misplaced->attributeKind = AttributeKind::kIgnored;
+        break;
+      }
+      const auto location = entry->firstSourceLocation();
+      if (kind == AttributeKind::kVectorSize) {
+        parse_warn(location,
+                   "'gnu::vector_size' ignored on a type specifier; "
+                   "place it on the declaration");
+      } else if (kind == AttributeKind::kNoUniqueAddress) {
+        parse_error(location,
+                    "'no_unique_address' attribute cannot be applied to types");
+      } else {
+        const auto name = attributeInfo(kind).name;
+        if (position == TypeAttributePosition::kSpecifier)
+          parse_error(
+              location,
+              std::format("'gnu::{}' attribute cannot be applied to types",
+                          name));
+        else
+          parse_warn(
+              location,
+              std::format("'gnu::{}' ignored on a declarator type; place "
+                          "it on the declaration",
+                          name));
+      }
+      entry->attributeKind = AttributeKind::kIgnored;
+    }
+  }
+}
+
+void Parser::parse_optional_declarator_type_attributes(
+    List<AttributeSpecifierAST*>*& attributes, AllowedAttributes allowed) {
+  parse_optional_attribute_specifier_seq(attributes, allowed);
+  if (attributes)
+    check_type_attributes(attributes, TypeAttributePosition::kDeclarator);
+}
+
+void Parser::parse_optional_declaration_attributes(
+    DeclSpecs& specs, List<AttributeSpecifierAST*>*& trailing) {
+  // Reaching the next specifier settles the position of the preceding group.
+  if (trailing)
+    check_type_attributes(trailing, TypeAttributePosition::kBetweenSpecifiers);
+  parse_optional_attribute_specifier_seq(trailing);
+  if (!trailing) return;
 
   auto it = &specs.attributeList;
   while (*it) it = &(*it)->next;
-  *it = attributes;
+  *it = trailing;
 }
 
 auto Parser::parse_decl_specifier_seq(List<SpecifierAST*>*& yyast,
-                                      DeclSpecs& specs, TypeNameContext context)
+                                      DeclSpecs& specs, TypeNameContext context,
+                                      List<AttributeSpecifierAST*>* trailing)
     -> bool {
   auto it = &yyast;
 
@@ -6371,7 +6420,7 @@ auto Parser::parse_decl_specifier_seq(List<SpecifierAST*>*& yyast,
   SpecifierAST* specifier = nullptr;
   if (!parse_decl_specifier(specifier, specs, context)) return false;
 
-  parse_optional_declaration_attributes(specs);
+  parse_optional_declaration_attributes(specs, trailing);
 
   *it = make_list_node(pool_, specifier);
   it = &(*it)->next;
@@ -6379,7 +6428,7 @@ auto Parser::parse_decl_specifier_seq(List<SpecifierAST*>*& yyast,
   specifier = nullptr;
 
   while (parse_decl_specifier(specifier, specs, context)) {
-    parse_optional_declaration_attributes(specs);
+    parse_optional_declaration_attributes(specs, trailing);
 
     *it = make_list_node(pool_, specifier);
     it = &(*it)->next;
@@ -6387,20 +6436,22 @@ auto Parser::parse_decl_specifier_seq(List<SpecifierAST*>*& yyast,
     specifier = nullptr;
   }
 
+  if (trailing)
+    check_type_attributes(trailing, TypeAttributePosition::kSpecifier);
   specs.finish();
 
   return true;
 }
 
-auto Parser::parse_decl_specifier_seq_no_typespecs(List<SpecifierAST*>*& yyast,
-                                                   DeclSpecs& specs)
-    -> List<SpecifierAST*>** {
+auto Parser::parse_decl_specifier_seq_no_typespecs(
+    List<SpecifierAST*>*& yyast, DeclSpecs& specs,
+    List<AttributeSpecifierAST*>*& trailing) -> List<SpecifierAST*>** {
   auto tail = &yyast;
   specs.no_typespecs = true;
   for (;;) {
     SpecifierAST* specifier = nullptr;
     if (!parse_decl_specifier(specifier, specs)) return tail;
-    parse_optional_declaration_attributes(specs);
+    parse_optional_declaration_attributes(specs, trailing);
     *tail = make_list_node(pool_, specifier);
     tail = &(*tail)->next;
   }
@@ -6513,6 +6564,7 @@ auto Parser::parse_type_specifier_seq(List<SpecifierAST*>*& yyast,
                                       DeclSpecs& specs, TypeNameContext context)
     -> bool {
   auto it = &yyast;
+  List<AttributeSpecifierAST*>* trailing = nullptr;
 
   specs.no_class_or_enum_specs = true;
 
@@ -6534,7 +6586,7 @@ auto Parser::parse_type_specifier_seq(List<SpecifierAST*>*& yyast,
     *attributes = leadingAttributes;
   }
 
-  parse_optional_declaration_attributes(specs);
+  parse_optional_declaration_attributes(specs, trailing);
 
   *it = make_list_node(pool_, typeSpecifier);
   it = &(*it)->next;
@@ -6555,12 +6607,14 @@ auto Parser::parse_type_specifier_seq(List<SpecifierAST*>*& yyast,
       break;
     }
 
-    parse_optional_declaration_attributes(specs);
+    parse_optional_declaration_attributes(specs, trailing);
 
     *it = make_list_node(pool_, typeSpecifier);
     it = &(*it)->next;
   }
 
+  if (trailing)
+    check_type_attributes(trailing, TypeAttributePosition::kSpecifier);
   specs.finish();
 
   return true;
@@ -6625,6 +6679,7 @@ auto Parser::parse_defining_type_specifier(SpecifierAST*& yyast,
 auto Parser::parse_defining_type_specifier_seq(List<SpecifierAST*>*& yyast,
                                                DeclSpecs& specs) -> bool {
   auto it = &yyast;
+  List<AttributeSpecifierAST*>* trailing = nullptr;
 
   SpecifierAST* typeSpecifier = nullptr;
 
@@ -6632,7 +6687,7 @@ auto Parser::parse_defining_type_specifier_seq(List<SpecifierAST*>*& yyast,
                                      TypeNameContext::kTypeOnly))
     return false;
 
-  parse_optional_declaration_attributes(specs);
+  parse_optional_declaration_attributes(specs, trailing);
 
   *it = make_list_node(pool_, typeSpecifier);
   it = &(*it)->next;
@@ -6652,12 +6707,14 @@ auto Parser::parse_defining_type_specifier_seq(List<SpecifierAST*>*& yyast,
       break;
     }
 
-    parse_optional_declaration_attributes(specs);
+    parse_optional_declaration_attributes(specs, trailing);
 
     *it = make_list_node(pool_, typeSpecifier);
     it = &(*it)->next;
   }
 
+  if (trailing)
+    check_type_attributes(trailing, TypeAttributePosition::kSpecifier);
   specs.finish();
 
   return true;
@@ -7867,7 +7924,7 @@ auto Parser::parse_array_declarator(ArrayDeclaratorChunkAST*& yyast) -> bool {
   }
 
   List<AttributeSpecifierAST*>* attributes = nullptr;
-  parse_optional_attribute_specifier_seq(attributes);
+  parse_optional_declarator_type_attributes(attributes);
 
   lookahead.commit();
 
@@ -7982,8 +8039,8 @@ auto Parser::parse_function_declarator(FunctionDeclaratorChunkAST*& yyast,
 
   (void)parse_trailing_return_type(ast->trailingReturnType);
 
-  parse_optional_attribute_specifier_seq(ast->attributeList,
-                                         AllowedAttributes::kAll);
+  parse_optional_declarator_type_attributes(ast->attributeList,
+                                            AllowedAttributes::kAll);
 
   return true;
 }
@@ -8034,7 +8091,7 @@ auto Parser::parse_ptr_operator(PtrOperatorAST*& yyast) -> bool {
 
     ast->starLoc = starLoc;
 
-    parse_optional_attribute_specifier_seq(ast->attributeList);
+    parse_optional_declarator_type_attributes(ast->attributeList);
 
     DeclSpecs cvQualifiers{unit_};
     (void)parse_cv_qualifier_seq(ast->cvQualifierList, cvQualifiers);
@@ -8047,7 +8104,7 @@ auto Parser::parse_ptr_operator(PtrOperatorAST*& yyast) -> bool {
     ast->refLoc = refLoc;
     ast->refOp = unit_->tokenKind(refLoc);
 
-    parse_optional_attribute_specifier_seq(ast->attributeList);
+    parse_optional_declarator_type_attributes(ast->attributeList);
 
     ast->isRestrict = match(TokenKind::T___RESTRICT__, ast->restrictLoc);
 
@@ -8072,7 +8129,7 @@ auto Parser::parse_ptr_operator(PtrOperatorAST*& yyast) -> bool {
   ast->nestedNameSpecifier = nestedNameSpecifier;
   ast->starLoc = starLoc;
 
-  parse_optional_attribute_specifier_seq(ast->attributeList);
+  parse_optional_declarator_type_attributes(ast->attributeList);
 
   DeclSpecs cvQualifiers{unit_};
   (void)parse_cv_qualifier_seq(ast->cvQualifierList, cvQualifiers);
@@ -9904,6 +9961,31 @@ auto Parser::parse_attribute_list(List<AttributeAST*>*& yyast,
   return true;
 }
 
+static auto resolveAttributeKind(AttributeSyntax syntax,
+                                 AttributeTokenAST* token,
+                                 const Identifier* usingNamespace)
+    -> AttributeKind {
+  auto attributeNamespace = usingNamespace;
+  const Identifier* name = nullptr;
+
+  if (auto simple = ast_cast<SimpleAttributeTokenAST>(token)) {
+    name = simple->identifier;
+  } else if (auto scoped = ast_cast<ScopedAttributeTokenAST>(token)) {
+    attributeNamespace = scoped->attributeNamespace;
+    name = scoped->identifier;
+  }
+
+  if (!name) return AttributeKind::kUnknown;
+  auto spelling = findAttributeSpelling(
+      syntax,
+      attributeNamespace
+          ? canonicalAttributeNamespaceSpelling(attributeNamespace->name())
+          : std::string_view{},
+      canonicalAttributeSpelling(name->name()));
+
+  return spelling ? spelling->kind : AttributeKind::kUnknown;
+}
+
 auto Parser::parse_attribute(AttributeAST*& yyast, AttributeSyntax syntax,
                              const Identifier* usingNamespace) -> bool {
   AttributeTokenAST* attributeToken = nullptr;
@@ -9911,7 +9993,8 @@ auto Parser::parse_attribute(AttributeAST*& yyast, AttributeSyntax syntax,
   if (!parse_attribute_token(attributeToken, syntax, usingNamespace))
     return false;
 
-  checkAttributeSignatureHelp(syntax, attributeToken, usingNamespace);
+  auto kind = resolveAttributeKind(syntax, attributeToken, usingNamespace);
+  checkAttributeSignatureHelp(kind);
 
   AttributeArgumentClauseAST* attributeArgumentClause = nullptr;
 
@@ -9921,6 +10004,7 @@ auto Parser::parse_attribute(AttributeAST*& yyast, AttributeSyntax syntax,
   yyast = ast;
 
   ast->attributeToken = attributeToken;
+  ast->attributeKind = kind;
   ast->attributeArgumentClause = attributeArgumentClause;
 
   return true;
@@ -10506,16 +10590,18 @@ auto Parser::parse_member_declaration_helper(
   List<SpecifierAST*>* declSpecifierList = nullptr;
   DeclSpecs specs{unit_};
   specs.attributeList = attributes;
+  List<AttributeSpecifierAST*>* trailing = nullptr;
   auto lastDeclSpecifier =
-      parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs);
+      parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs, trailing);
   if (hasNoUniqueAddressAttribute(specs.attributeList))
     specs.isNoUniqueAddress = true;
 
-  if (parse_notypespec_function_definition(yyast, declSpecifierList, specs))
+  if (parse_notypespec_function_definition(yyast, declSpecifierList, specs,
+                                           trailing))
     return true;
 
   (void)parse_decl_specifier_seq(*lastDeclSpecifier, specs,
-                                 TypeNameContext::kTypeOnly);
+                                 TypeNameContext::kTypeOnly, trailing);
   attributes = specs.attributeList;
 
   if (!specs.hasTypeOrSizeSpecifier()) return false;

@@ -2130,6 +2130,7 @@ class AttributeAST final : public AST {
   AttributeTokenAST* attributeToken = nullptr;
   AttributeArgumentClauseAST* attributeArgumentClause = nullptr;
   SourceLocation ellipsisLoc;
+  AttributeKind attributeKind = AttributeKind::kUnknown;
 
   void accept(ASTVisitor* visitor) override { visitor->visit(this); }
 
@@ -2143,11 +2144,12 @@ class AttributeAST final : public AST {
   [[nodiscard]] static auto create(
       Arena* arena, AttributeTokenAST* attributeToken,
       AttributeArgumentClauseAST* attributeArgumentClause,
-      SourceLocation ellipsisLoc) -> AttributeAST*;
+      SourceLocation ellipsisLoc, AttributeKind attributeKind) -> AttributeAST*;
 
   [[nodiscard]] static auto create(
       Arena* arena, AttributeTokenAST* attributeToken,
-      AttributeArgumentClauseAST* attributeArgumentClause) -> AttributeAST*;
+      AttributeArgumentClauseAST* attributeArgumentClause,
+      AttributeKind attributeKind) -> AttributeAST*;
 
  protected:
   AttributeAST() : AST(Kind) {}

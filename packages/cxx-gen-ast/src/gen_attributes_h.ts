@@ -138,7 +138,9 @@ function loadAttributes(): AttributeDef[] {
   if (new Set(names).size !== names.length)
     throw new Error("attributes.json: duplicate attribute names");
 
-  return [...attributes].sort((a, b) => compareBytes(a.name, b.name));
+  // AttributeKind values are written to semantic archives. New kinds append
+  // to the catalog. The independent spelling index is sorted for lookup.
+  return attributes;
 }
 
 const quote = (text: string) => JSON.stringify(text);
@@ -155,6 +157,8 @@ export function gen_attribute_kind_h({ output }: { output: string }) {
   lines.push(`namespace cxx {`);
   lines.push(``);
   lines.push(`enum class AttributeKind {`);
+  lines.push(`  kUnknown,`);
+  lines.push(`  kIgnored,`);
   for (const attribute of attributes) lines.push(`  ${kindOf(attribute)},`);
   lines.push(`};`);
   lines.push(``);

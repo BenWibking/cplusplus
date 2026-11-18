@@ -215,9 +215,7 @@ class Parser final {
   void checkSignatureHelp(std::vector<FunctionSymbol*> candidates,
                           int activeParameter);
   void checkTemplateSignatureHelp(Symbol* templateSymbol);
-  void checkAttributeSignatureHelp(AttributeSyntax syntax,
-                                   AttributeTokenAST* attributeToken,
-                                   const Identifier* usingNamespace);
+  void checkAttributeSignatureHelp(AttributeKind kind);
   [[nodiscard]] auto checkAttributeCompletion(
       AttributeCompletionContext context) -> bool;
   void checkInitializerCompletion(const Type* targetType);
@@ -566,7 +564,7 @@ class Parser final {
 
   [[nodiscard]] auto parse_notypespec_function_definition(
       DeclarationAST*& yyast, List<SpecifierAST*>* declSpecifierList,
-      const DeclSpecs& specs) -> bool;
+      const DeclSpecs& specs, List<AttributeSpecifierAST*>* trailing) -> bool;
 
   [[nodiscard]] auto parse_type_or_forward_declaration(
       DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes,
@@ -598,11 +596,13 @@ class Parser final {
       TypeNameContext context = TypeNameContext::kGeneral) -> bool;
   [[nodiscard]] auto parse_decl_specifier_seq(
       List<SpecifierAST*>*& yyast, DeclSpecs& specs,
-      TypeNameContext context = TypeNameContext::kGeneral) -> bool;
+      TypeNameContext context = TypeNameContext::kGeneral,
+      List<AttributeSpecifierAST*>* trailing = nullptr) -> bool;
   // Returns the insertion point for the remaining, typed declaration
   // specifiers.
   [[nodiscard]] auto parse_decl_specifier_seq_no_typespecs(
-      List<SpecifierAST*>*& yyast, DeclSpecs& specs) -> List<SpecifierAST*>**;
+      List<SpecifierAST*>*& yyast, DeclSpecs& specs,
+      List<AttributeSpecifierAST*>*& trailing) -> List<SpecifierAST*>**;
   [[nodiscard]] auto parse_storage_class_specifier(SpecifierAST*& yyast,
                                                    DeclSpecs& specs) -> bool;
   [[nodiscard]] auto parse_function_specifier(SpecifierAST*& yyast,
@@ -809,7 +809,18 @@ class Parser final {
   void parse_optional_attribute_specifier_seq(
       List<AttributeSpecifierAST*>*& yyast,
       AllowedAttributes allowedAttributes = AllowedAttributes::kIgnoreAsm);
-  void parse_optional_declaration_attributes(DeclSpecs& specs);
+  enum class TypeAttributePosition {
+    kBetweenSpecifiers,
+    kSpecifier,
+    kDeclarator
+  };
+  void check_type_attributes(List<AttributeSpecifierAST*>* attributes,
+                             TypeAttributePosition position);
+  void parse_optional_declarator_type_attributes(
+      List<AttributeSpecifierAST*>*& attributes,
+      AllowedAttributes allowed = AllowedAttributes::kIgnoreAsm);
+  void parse_optional_declaration_attributes(
+      DeclSpecs& specs, List<AttributeSpecifierAST*>*& trailing);
 
   [[nodiscard]] auto parse_attribute_specifier_seq(
       List<AttributeSpecifierAST*>*& yyast,

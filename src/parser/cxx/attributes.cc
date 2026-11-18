@@ -50,7 +50,9 @@ auto attributeInfos() -> std::span<const AttributeInfo> {
 }
 
 auto attributeInfo(AttributeKind kind) -> const AttributeInfo& {
-  return attribute_table::kAttributeInfos[static_cast<std::size_t>(kind)];
+  constexpr auto first = static_cast<std::size_t>(AttributeKind::kIgnored) + 1;
+  return attribute_table::kAttributeInfos[static_cast<std::size_t>(kind) -
+                                          first];
 }
 
 namespace {
@@ -70,7 +72,8 @@ static_assert(std::ranges::all_of(
                      std::size(attribute_table::kAttributeInfos)),
     [](std::size_t index) {
       return static_cast<std::size_t>(
-                 attribute_table::kAttributeInfos[index].kind) == index;
+                 attribute_table::kAttributeInfos[index].kind) ==
+             static_cast<std::size_t>(AttributeKind::kIgnored) + 1 + index;
     }));
 
 }  // namespace
@@ -240,6 +243,7 @@ void addAttribute(AttributeMap& map, Attribute attribute) {
   AttributeMap collected;
 
   for (auto entry : ListView{entries}) {
+    if (entry->attributeKind == AttributeKind::kIgnored) continue;
     Attribute attribute;
     attribute.syntax = syntax;
     attribute.attributeNamespace = usingNamespace;
@@ -340,71 +344,38 @@ auto attributeArgument(const AttributeMap* attributes, AttributeKind kind)
   return attribute->arguments.front();
 }
 
-auto knownAttributes(TranslationUnit* unit,
-                     List<AttributeSpecifierAST*>* attributeList)
+auto knownAttributes(List<AttributeSpecifierAST*>* attributeList)
     -> std::vector<AttributeRef> {
-  auto control = unit->control();
   std::vector<AttributeRef> result;
-
   for (auto specifier : ListView{attributeList}) {
     List<AttributeAST*>* entries = nullptr;
-    auto syntax = AttributeSyntax::kCxx;
-    const Identifier* usingNamespace = nullptr;
-
-    if (auto cxxAttribute = ast_cast<CxxAttributeAST>(specifier)) {
+    if (auto cxxAttribute = ast_cast<CxxAttributeAST>(specifier))
       entries = cxxAttribute->attributeList;
-      if (auto prefix = cxxAttribute->attributeUsingPrefix) {
-        usingNamespace = canonicalAttributeNamespace(
-            control, unit->identifier(prefix->attributeNamespaceLoc));
-      }
-    } else if (auto gccAttribute = ast_cast<GccAttributeAST>(specifier)) {
+    else if (auto gccAttribute = ast_cast<GccAttributeAST>(specifier))
       entries = gccAttribute->attributeList;
-      syntax = AttributeSyntax::kGnu;
-    } else {
-      continue;
-    }
 
     for (auto entry : ListView{entries}) {
-      const Identifier* attributeNamespace = usingNamespace;
-      const Identifier* name = nullptr;
-
-      if (auto simple =
-              ast_cast<SimpleAttributeTokenAST>(entry->attributeToken)) {
-        name = canonicalAttributeName(control, simple->identifier);
-      } else if (auto scoped =
-                     ast_cast<ScopedAttributeTokenAST>(entry->attributeToken)) {
-        name = canonicalAttributeName(control, scoped->identifier);
-        attributeNamespace =
-            canonicalAttributeNamespace(control, scoped->attributeNamespace);
-      }
-
-      auto spelling = findAttributeSpelling(
-          syntax, spellingOf(attributeNamespace), spellingOf(name));
-      if (!spelling) continue;
-
-      result.push_back({spelling, entry->attributeArgumentClause,
-                        entry->firstSourceLocation()});
+      if (entry->attributeKind <= AttributeKind::kIgnored) continue;
+      result.push_back({entry->attributeArgumentClause,
+                        entry->firstSourceLocation(), entry->attributeKind});
     }
   }
-
   return result;
 }
 
-auto findAttributes(TranslationUnit* unit,
-                    List<AttributeSpecifierAST*>* attributeList,
+auto findAttributes(List<AttributeSpecifierAST*>* attributeList,
                     AttributeKind kind) -> std::vector<AttributeRef> {
-  auto attributes = knownAttributes(unit, attributeList);
+  auto attributes = knownAttributes(attributeList);
   std::erase_if(attributes, [kind](const AttributeRef& attribute) {
-    return attribute.kind() != kind;
+    return attribute.kind != kind;
   });
   return attributes;
 }
 
-auto findAttribute(TranslationUnit* unit,
-                   List<AttributeSpecifierAST*>* attributeList,
+auto findAttribute(List<AttributeSpecifierAST*>* attributeList,
                    AttributeKind kind) -> AttributeRef {
-  for (auto attribute : knownAttributes(unit, attributeList))
-    if (attribute.kind() == kind) return attribute;
+  for (auto attribute : knownAttributes(attributeList))
+    if (attribute.kind == kind) return attribute;
   return {};
 }
 

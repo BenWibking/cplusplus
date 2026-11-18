@@ -6697,6 +6697,7 @@ auto AttributeAST::clone(Arena* arena) -> AttributeAST* {
     node->attributeArgumentClause = attributeArgumentClause->clone(arena);
 
   node->ellipsisLoc = ellipsisLoc;
+  node->attributeKind = cloneAttribute(arena, attributeKind);
 
   return node;
 }
@@ -6708,20 +6709,23 @@ auto AttributeAST::create(Arena* arena) -> AttributeAST* {
 
 auto AttributeAST::create(Arena* arena, AttributeTokenAST* attributeToken,
                           AttributeArgumentClauseAST* attributeArgumentClause,
-                          SourceLocation ellipsisLoc) -> AttributeAST* {
+                          SourceLocation ellipsisLoc,
+                          AttributeKind attributeKind) -> AttributeAST* {
   auto node = new (arena) AttributeAST();
   node->attributeToken = attributeToken;
   node->attributeArgumentClause = attributeArgumentClause;
   node->ellipsisLoc = ellipsisLoc;
+  node->attributeKind = attributeKind;
   return node;
 }
 
 auto AttributeAST::create(Arena* arena, AttributeTokenAST* attributeToken,
-                          AttributeArgumentClauseAST* attributeArgumentClause)
-    -> AttributeAST* {
+                          AttributeArgumentClauseAST* attributeArgumentClause,
+                          AttributeKind attributeKind) -> AttributeAST* {
   auto node = new (arena) AttributeAST();
   node->attributeToken = attributeToken;
   node->attributeArgumentClause = attributeArgumentClause;
+  node->attributeKind = attributeKind;
   return node;
 }
 

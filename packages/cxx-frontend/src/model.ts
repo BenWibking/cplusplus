@@ -917,7 +917,7 @@ const LambdaSpecifierASTSlotBase = TrailingReturnTypeASTSlotBase + 2;
 const TypeConstraintASTSlotBase = LambdaSpecifierASTSlotBase + 2;
 const AttributeArgumentClauseASTSlotBase = TypeConstraintASTSlotBase + 7;
 const AttributeASTSlotBase = AttributeArgumentClauseASTSlotBase + 3;
-const AttributeUsingPrefixASTSlotBase = AttributeASTSlotBase + 3;
+const AttributeUsingPrefixASTSlotBase = AttributeASTSlotBase + 4;
 const NewPlacementASTSlotBase = AttributeUsingPrefixASTSlotBase + 3;
 const NestedNamespaceSpecifierASTSlotBase = NewPlacementASTSlotBase + 3;
 const LabeledStatementASTSlotBase = NestedNamespaceSpecifierASTSlotBase + 6;
@@ -3427,6 +3427,11 @@ export class AttributeAST extends AST {
       cxx.readAST(this.handle, AttributeASTSlotBase + 2),
       this.modelOwner,
     );
+  }
+  get attributeKind(): AttributeKind {
+    return attributeKindNames[
+      cxx.readAST(this.handle, AttributeASTSlotBase + 3)
+    ]!;
   }
 }
 /** @category AST Nodes */
@@ -12606,6 +12611,94 @@ const valueCategoryNames: Record<number, ValueCategory> = {
   1: "LValue",
   2: "XValue",
   3: "PrValue",
+};
+/** @category Enumerations */
+export type AttributeKind =
+  | "Unknown"
+  | "Ignored"
+  | "AbiTag"
+  | "AddressSpace"
+  | "Alias"
+  | "Aligned"
+  | "AlwaysInline"
+  | "Asm"
+  | "Assume"
+  | "Buffer"
+  | "Constructor"
+  | "Deprecated"
+  | "EnableIf"
+  | "ExcludeFromExplicitInstantiation"
+  | "ExportName"
+  | "ExtVectorType"
+  | "Fallthrough"
+  | "GlobalId"
+  | "GnuInline"
+  | "ImportModule"
+  | "ImportName"
+  | "Indeterminate"
+  | "Kernel"
+  | "Likely"
+  | "LocalId"
+  | "MayAlias"
+  | "MaybeUnused"
+  | "NoUniqueAddress"
+  | "Nodiscard"
+  | "Noinline"
+  | "Noreturn"
+  | "Nothrow"
+  | "Packed"
+  | "Section"
+  | "TrivialAbi"
+  | "Unlikely"
+  | "Used"
+  | "VectorSize"
+  | "WarnUnusedResult"
+  | "Weak"
+  | "WorkgroupId"
+  | "WorkgroupSize";
+const attributeKindNames: Record<number, AttributeKind> = {
+  0: "Unknown",
+  1: "Ignored",
+  2: "AbiTag",
+  3: "AddressSpace",
+  4: "Alias",
+  5: "Aligned",
+  6: "AlwaysInline",
+  7: "Asm",
+  8: "Assume",
+  9: "Buffer",
+  10: "Constructor",
+  11: "Deprecated",
+  12: "EnableIf",
+  13: "ExcludeFromExplicitInstantiation",
+  14: "ExportName",
+  15: "ExtVectorType",
+  16: "Fallthrough",
+  17: "GlobalId",
+  18: "GnuInline",
+  19: "ImportModule",
+  20: "ImportName",
+  21: "Indeterminate",
+  22: "Kernel",
+  23: "Likely",
+  24: "LocalId",
+  25: "MayAlias",
+  26: "MaybeUnused",
+  27: "NoUniqueAddress",
+  28: "Nodiscard",
+  29: "Noinline",
+  30: "Noreturn",
+  31: "Nothrow",
+  32: "Packed",
+  33: "Section",
+  34: "TrivialAbi",
+  35: "Unlikely",
+  36: "Used",
+  37: "VectorSize",
+  38: "WarnUnusedResult",
+  39: "Weak",
+  40: "WorkgroupId",
+  41: "WorkgroupSize",
 };
 /** @category Enumerations */
 export type VectorComponentKind =

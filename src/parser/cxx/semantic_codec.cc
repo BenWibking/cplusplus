@@ -3982,6 +3982,8 @@ void SemanticEncoder::writeAstAttributeAST(
   out.varU32(static_cast<std::uint32_t>(astRef(self->attributeArgumentClause)));
   // ::cxx::AttributeAST::ellipsisLoc
   out.varU32(static_cast<std::uint32_t>(locationRef(self->ellipsisLoc)));
+  // ::cxx::AttributeAST::attributeKind
+  out.varU32(static_cast<std::uint32_t>(self->attributeKind));
 }
 
 void SemanticEncoder::writeAstAttributeUsingPrefixAST(
@@ -13043,6 +13045,13 @@ void SemanticDecoder::readAstAttributeAST(
   // ::cxx::AttributeAST::ellipsisLoc
   cxx::SourceLocation value3 = locationAt(LocationRef{in.varU32()});
   self->ellipsisLoc = std::move(value3);
+  // ::cxx::AttributeAST::attributeKind
+  static_assert(
+      static_cast<std::uint32_t>(::cxx::AttributeKind::kWorkgroupSize) + 1 ==
+      42);
+  ::cxx::AttributeKind value4 =
+      static_cast<::cxx::AttributeKind>(readEnum(in, 42));
+  self->attributeKind = std::move(value4);
 }
 
 void SemanticDecoder::readAstAttributeUsingPrefixAST(

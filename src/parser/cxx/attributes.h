@@ -158,26 +158,27 @@ struct AttributeInfo {
                                      AttributeKind kind) -> const Identifier*;
 
 struct AttributeRef {
-  const AttributeSpelling* spelling = nullptr;
+  // Parsed arguments owned by the translation unit, when present.
   AttributeArgumentClauseAST* argumentClause = nullptr;
+  // First token of the attribute, used for diagnostics.
   SourceLocation location;
+  // Builtin identified at its spelling site; kUnknown denotes an empty ref.
+  AttributeKind kind = AttributeKind::kUnknown;
 
-  [[nodiscard]] auto kind() const -> AttributeKind { return spelling->kind; }
-
-  explicit operator bool() const { return spelling != nullptr; }
+  [[nodiscard]] auto name() const -> std::string_view {
+    return attributeInfo(kind).name;
+  }
+  explicit operator bool() const { return kind != AttributeKind::kUnknown; }
 };
 
-[[nodiscard]] auto knownAttributes(TranslationUnit* unit,
-                                   List<AttributeSpecifierAST*>* attributeList)
+[[nodiscard]] auto knownAttributes(List<AttributeSpecifierAST*>* attributeList)
     -> std::vector<AttributeRef>;
 
-[[nodiscard]] auto findAttributes(TranslationUnit* unit,
-                                  List<AttributeSpecifierAST*>* attributeList,
+[[nodiscard]] auto findAttributes(List<AttributeSpecifierAST*>* attributeList,
                                   AttributeKind kind)
     -> std::vector<AttributeRef>;
 
-[[nodiscard]] auto findAttribute(TranslationUnit* unit,
-                                 List<AttributeSpecifierAST*>* attributeList,
+[[nodiscard]] auto findAttribute(List<AttributeSpecifierAST*>* attributeList,
                                  AttributeKind kind) -> AttributeRef;
 
 }  // namespace cxx

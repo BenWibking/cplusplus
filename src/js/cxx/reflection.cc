@@ -192,7 +192,7 @@ constexpr int AttributeArgumentClauseASTSlotBase =
 
 constexpr int AttributeASTSlotBase = AttributeArgumentClauseASTSlotBase + 3;
 
-constexpr int AttributeUsingPrefixASTSlotBase = AttributeASTSlotBase + 3;
+constexpr int AttributeUsingPrefixASTSlotBase = AttributeASTSlotBase + 4;
 
 constexpr int NewPlacementASTSlotBase = AttributeUsingPrefixASTSlotBase + 3;
 
@@ -2411,6 +2411,11 @@ auto readAST(std::intptr_t handle, int slot) -> double {
       auto self = static_cast<const ::cxx::AttributeAST*>(
           reinterpret_cast<const ::cxx::AST*>(handle));
       return static_cast<double>(self->ellipsisLoc.index());
+    }
+    case AttributeASTSlotBase + 3: {
+      auto self = static_cast<const ::cxx::AttributeAST*>(
+          reinterpret_cast<const ::cxx::AST*>(handle));
+      return static_cast<double>(self->attributeKind);
     }
     case AttributeUsingPrefixASTSlotBase + 0: {
       auto self = static_cast<const ::cxx::AttributeUsingPrefixAST*>(

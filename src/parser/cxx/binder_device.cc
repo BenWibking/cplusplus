@@ -99,7 +99,7 @@ class DeviceAttributeBinder {
                      std::span<const AttributeRef> attributes) {
     std::optional<AttributeRef> binding;
     for (auto attribute : attributes) {
-      if (!isParameterAttribute(attribute.kind())) {
+      if (!isParameterAttribute(attribute.kind)) {
         unit_->error(attribute.location,
                      "kernel attributes require a function");
         continue;
@@ -113,7 +113,7 @@ class DeviceAttributeBinder {
       binding = attribute;
     }
     if (!binding) return;
-    if (binding->kind() == AttributeKind::kBuffer) {
+    if (binding->kind == AttributeKind::kBuffer) {
       if (auto buffer = bufferBinding(parameter, *binding))
         parameter->setKernelParameterBinding(*buffer);
       return;
@@ -127,7 +127,7 @@ class DeviceAttributeBinder {
     bool isKernel = false;
     std::optional<KernelWorkgroupSize> workgroup;
     for (auto attribute : attributes) {
-      switch (attribute.kind()) {
+      switch (attribute.kind) {
         case AttributeKind::kKernel:
           if (isKernel) {
             unit_->error(attribute.location, "duplicate 'kernel' attribute");
@@ -148,7 +148,7 @@ class DeviceAttributeBinder {
           unit_->error(attribute.location,
                        std::format("'{}' attribute requires a function "
                                    "parameter",
-                                   attribute.spelling->name));
+                                   attribute.name()));
       }
     }
     if (!declareKernel(function, isKernel, workgroup)) return;
@@ -164,10 +164,10 @@ class DeviceAttributeBinder {
 
   void rejectAttributes(std::span<const AttributeRef> attributes) {
     for (auto attribute : attributes) {
-      if (isParameterAttribute(attribute.kind()))
+      if (isParameterAttribute(attribute.kind))
         unit_->error(attribute.location,
                      std::format("'{}' attribute requires a function parameter",
-                                 attribute.spelling->name));
+                                 attribute.name()));
       else
         unit_->error(attribute.location,
                      "kernel attributes require a function");
@@ -226,7 +226,7 @@ class DeviceAttributeBinder {
       unit_->error(
           attribute.location,
           std::format("'{}' attribute requires {} argument{}",
-                      attribute.spelling->name, count, count == 1 ? "" : "s"));
+                      attribute.name(), count, count == 1 ? "" : "s"));
       return std::nullopt;
     }
     return values;
@@ -312,10 +312,10 @@ class DeviceAttributeBinder {
       unit_->error(attribute.location,
                    std::format("'{}' requires an unsigned int parameter or a "
                                "vector of 2 or 3 unsigned ints",
-                               attribute.spelling->name));
+                               attribute.name()));
       return std::nullopt;
     }
-    return KernelInvocationId{invocationIdKind(attribute.kind())};
+    return KernelInvocationId{invocationIdKind(attribute.kind)};
   }
 
   [[nodiscard]] auto isInvocationIdType(const Type* type) -> bool {
