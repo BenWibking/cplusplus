@@ -41,9 +41,6 @@ namespace cxx {
 
 [[nodiscard]] auto bindsName(Symbol* symbol) -> bool;
 
-[[nodiscard]] auto inlineNamespaceSet(NamespaceSymbol* namespaceSymbol)
-    -> std::vector<NamespaceSymbol*>;
-
 enum class NameUse { kOrdinary, kTemplateName };
 
 struct ClassMemberLookup {
@@ -55,6 +52,44 @@ struct ClassMemberLookup {
 [[nodiscard]] auto lookupClassMember(ClassSymbol* scope, const Name* name,
                                      const std::function<bool(Symbol*)>& accept)
     -> ClassMemberLookup;
+
+// Keep small, ordered namespace and declaration results inline.
+template <typename T, std::size_t InlineCapacity>
+class LookupList {
+ public:
+  LookupList() = default;
+  LookupList(const LookupList&) = delete;
+  auto operator=(const LookupList&) -> LookupList& = delete;
+
+  [[nodiscard]] auto begin() const -> T* const* {
+    return overflow_.empty() ? inline_.data() : overflow_.data();
+  }
+  [[nodiscard]] auto end() const -> T* const* { return begin() + size_; }
+  [[nodiscard]] auto size() const -> std::size_t { return size_; }
+  [[nodiscard]] auto empty() const -> bool { return size_ == 0; }
+  [[nodiscard]] auto front() const -> T* { return *begin(); }
+
+  void push_back(T* value) {
+    if (size_ < InlineCapacity) {
+      inline_[size_++] = value;
+      return;
+    }
+    if (size_ == InlineCapacity) {
+      overflow_.reserve(InlineCapacity * 2);
+      overflow_.assign(inline_.begin(), inline_.end());
+    }
+    overflow_.push_back(value);
+    ++size_;
+  }
+
+ private:
+  // Initial entries, valid up to the inline capacity.
+  std::array<T*, InlineCapacity> inline_;
+  // Complete sequence once it outgrows inline storage.
+  std::vector<T*> overflow_;
+  // Number of valid entries in the active storage.
+  std::size_t size_ = 0;
+};
 
 class VisitedScopes {
  public:
@@ -79,6 +114,14 @@ class VisitedScopes {
   std::array<ScopeSymbol*, 32> inline_;
   std::unordered_set<ScopeSymbol*> overflow_;
   std::size_t size_ = 0;
+};
+
+// The namespace itself and its transitively nested inline namespaces.
+class InlineNamespaceSet : private LookupList<NamespaceSymbol, 1> {
+ public:
+  explicit InlineNamespaceSet(NamespaceSymbol* root);
+  using LookupList::begin;
+  using LookupList::end;
 };
 
 namespace detail {

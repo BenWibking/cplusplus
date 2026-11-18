@@ -63,7 +63,7 @@ struct AssociatedNamespaceCollector {
       if (!parent) break;
       ns = parent;
     }
-    for (auto current : inlineNamespaceSet(ns)) {
+    for (auto current : InlineNamespaceSet(ns)) {
       if (std::ranges::contains(namespaces, current)) continue;
       namespaces.push_back(current);
     }
@@ -201,24 +201,23 @@ struct AssociatedNamespaceCollector {
 }  // namespace
 
 namespace {
+using FoundDeclarations = LookupList<Symbol, 1>;
+
 template <typename Predicate>
 void collectQualifiedNamespaceDeclarations(NamespaceSymbol* scope,
                                            const Name* name, Predicate accept,
-                                           std::vector<Symbol*>& found,
+                                           FoundDeclarations& found,
                                            VisitedScopes& visited) {
   if (!scope || visited.contains(scope)) return;
-  auto inlineSet = inlineNamespaceSet(scope);
+  InlineNamespaceSet inlineSet(scope);
 
   const auto start = found.size();
   for (auto ns : inlineSet) {
-    if (visited.contains(ns)) continue;
+    if (!visited.insert(ns)) continue;
     VisitedScopes directVisited;
     if (auto symbol =
             detail::searchScope(ns, name, directVisited, accept, false))
       found.push_back(symbol);
-  }
-  for (auto ns : inlineSet) {
-    visited.insert(ns);
   }
   if (found.size() != start) return;
 
@@ -239,7 +238,7 @@ void collectQualifiedNamespaceDeclarations(NamespaceSymbol* scope,
   return first->type() == second->type();
 }
 
-auto uniqueLookupDeclaration(const std::vector<Symbol*>& found) -> Symbol* {
+auto uniqueLookupDeclaration(const FoundDeclarations& found) -> Symbol* {
   if (found.empty()) return nullptr;
   auto first = found.front();
   for (auto symbol : found) {
@@ -250,7 +249,7 @@ auto uniqueLookupDeclaration(const std::vector<Symbol*>& found) -> Symbol* {
 
 auto lookupNamespaceHelper(ScopeSymbol* scope, const Identifier* id,
                            VisitedScopes& visited) -> NamespaceSymbol* {
-  std::vector<Symbol*> found;
+  FoundDeclarations found;
   collectQualifiedNamespaceDeclarations(
       symbol_cast<NamespaceSymbol>(scope), id,
       [](Symbol* symbol) { return resolve_namespace_alias(symbol) != nullptr; },
@@ -313,7 +312,7 @@ auto lookupTypeHelper(ScopeSymbol* scope, const Identifier* id,
   }
 
   if (followUsingDirectives) {
-    std::vector<Symbol*> found;
+    FoundDeclarations found;
     VisitedScopes namespaceVisited;
     collectQualifiedNamespaceDeclarations(symbol_cast<NamespaceSymbol>(scope),
                                           id, accept, found, namespaceVisited);
@@ -378,7 +377,7 @@ auto qualifiedLookupType(ScopeSymbol* scope, const Identifier* id,
   if (!scope) return nullptr;
   VisitedScopes visited;
   if (auto ns = symbol_cast<NamespaceSymbol>(scope)) {
-    std::vector<Symbol*> found;
+    FoundDeclarations found;
     collectQualifiedNamespaceDeclarations(
         ns, id,
         [](Symbol* symbol) {
@@ -432,8 +431,10 @@ void collectActiveNominatedNamespaces(ScopeSymbol* scope,
 }
 
 auto mergeDeclarations(Control* control, ScopeSymbol* scope, const Name* name,
-                       std::vector<Symbol*>& found, bool* ambiguous)
+                       const FoundDeclarations& found, bool* ambiguous)
     -> Symbol* {
+  if (found.size() == 1) return found.front();
+
   std::vector<Symbol*> distinct;
   for (auto symbol : found) {
     if (!std::ranges::contains(distinct, symbol->canonical(),
@@ -474,7 +475,7 @@ auto unqualifiedLookupType(Scope* lexicalScope, const Identifier* id,
   for (auto sc = lexicalScope; sc; sc = sc->parent) {
     if (!sc->symbol) continue;
     collectActiveNominatedNamespaces(sc->symbol, nominated);
-    std::vector<Symbol*> found;
+    FoundDeclarations found;
     bool ambiguous = false;
     auto search = [&](ScopeSymbol* scope) {
       VisitedScopes visited;
@@ -548,7 +549,7 @@ auto unqualifiedLookupNamespace(Scope* lexicalScope, const Identifier* id)
   for (auto sc = lexicalScope; sc; sc = sc->parent) {
     if (!sc->symbol) continue;
     collectActiveNominatedNamespaces(sc->symbol, nominated);
-    std::vector<Symbol*> found;
+    FoundDeclarations found;
     auto search = [&](ScopeSymbol* scope) {
       for (auto candidate : scope->find(id))
         if (auto ns = resolve_namespace_alias(candidate)) found.push_back(ns);
@@ -572,7 +573,7 @@ template <typename Predicate>
     -> Symbol* {
   collectActiveNominatedNamespaces(scope, nominated);
 
-  std::vector<Symbol*> found;
+  FoundDeclarations found;
 
   if (auto symbol = detail::searchScope(scope, name, visited, accept,
                                         /*followUsingDirectives=*/false)) {
@@ -665,7 +666,7 @@ auto qualifiedLookupIncludingInlineNamespaces(Control* control,
     }
     return qualifiedLookup(scopeOrAlias, name);
   }
-  std::vector<Symbol*> found;
+  FoundDeclarations found;
   VisitedScopes visited;
   collectQualifiedNamespaceDeclarations(
       ns, name, [](Symbol*) { return true; }, found, visited);
@@ -701,23 +702,18 @@ auto isPureFriend(FunctionSymbol* func) -> bool {
   return std::ranges::all_of(canonical->declarations(), isClassParented);
 }
 
-auto inlineNamespaceSet(NamespaceSymbol* namespaceSymbol)
-    -> std::vector<NamespaceSymbol*> {
-  std::vector<NamespaceSymbol*> result;
-  if (!namespaceSymbol) return result;
-
-  result.push_back(namespaceSymbol);
-
-  for (std::size_t i = 0; i < result.size(); ++i) {
-    for (auto directive : result[i]->usingDirectives()) {
-      auto nested = symbol_cast<NamespaceSymbol>(directive);
-      if (!nested || !nested->isInline()) continue;
-      if (std::ranges::contains(result, nested)) continue;
-      result.push_back(nested);
+InlineNamespaceSet::InlineNamespaceSet(NamespaceSymbol* root) {
+  if (!root) return;
+  push_back(root);
+  for (std::size_t i = 0; i < size(); ++i) {
+    auto parent = begin()[i];
+    if (!parent->hasInlineNamespaces()) continue;
+    for (auto directive : parent->usingDirectives()) {
+      auto child = symbol_cast<NamespaceSymbol>(directive);
+      if (!child || !child->isInline() || child->parent() != parent) continue;
+      if (!std::ranges::contains(*this, child)) push_back(child);
     }
   }
-
-  return result;
 }
 
 auto bindsName(Symbol* symbol) -> bool {
