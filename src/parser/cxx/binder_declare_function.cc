@@ -538,7 +538,7 @@ auto Binder::DeclareFunction::specializedPrimaryTemplates() const
 
   std::vector<ScopeSymbol*> scopes{declaringScope};
   if (auto ns = symbol_cast<NamespaceSymbol>(declaringScope)) {
-    for (auto nested : inlineNamespaceSet(ns)) {
+    for (auto nested : InlineNamespaceSet(ns)) {
       if (nested != ns) scopes.push_back(nested);
     }
   }

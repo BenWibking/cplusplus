@@ -1166,7 +1166,7 @@ auto TemplateEquivalence::namesScope(NestedNameSpecifierAST* qualifier,
 
   if (auto ns = symbol_cast<NamespaceSymbol>(scope)) {
     auto context = symbol_cast<NamespaceSymbol>(qualifier->symbol);
-    return context && std::ranges::contains(inlineNamespaceSet(context), ns);
+    return context && std::ranges::contains(InlineNamespaceSet(context), ns);
   }
 
   NestedNameSpecifierAST* outer = nullptr;

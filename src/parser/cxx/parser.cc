@@ -5622,29 +5622,27 @@ auto Parser::parse_alias_declaration(DeclarationAST*& yyast,
   return true;
 }
 
+namespace {
+auto originalNamespace(NamespaceSymbol* parent, const Identifier* identifier)
+    -> NamespaceSymbol* {
+  if (!identifier) return parent->unnamedNamespace();
+  NamespaceSymbol* original = nullptr;
+  for (auto scope : InlineNamespaceSet(parent)) {
+    for (auto candidate : scope->find(identifier) | views::namespaces) {
+      if (original) return nullptr;
+      original = candidate;
+    }
+  }
+  return original;
+}
+}  // namespace
+
 auto Parser::enterOrCreateNamespace(const Identifier* identifier,
                                     SourceLocation identifierLoc, bool isInline)
     -> NamespaceSymbol* {
   auto parentScope = scope();
   auto parentNamespace = symbol_cast<NamespaceSymbol>(parentScope);
-
-  NamespaceSymbol* namespaceSymbol = nullptr;
-
-  if (!identifier) {
-    namespaceSymbol = parentNamespace->unnamedNamespace();
-  } else {
-    std::vector<NamespaceSymbol*> matches;
-    auto collect = [&](auto&& self, NamespaceSymbol* ns) -> void {
-      for (auto candidate : ns->find(identifier) | views::namespaces)
-        matches.push_back(symbol_cast<NamespaceSymbol>(candidate));
-      for (auto member : ns->members()) {
-        auto nested = symbol_cast<NamespaceSymbol>(member);
-        if (nested && nested->isInline()) self(self, nested);
-      }
-    };
-    collect(collect, parentNamespace);
-    if (matches.size() == 1) namespaceSymbol = matches.front();
-  }
+  auto namespaceSymbol = originalNamespace(parentNamespace, identifier);
 
   if (!namespaceSymbol) {
     namespaceSymbol = control_->newNamespaceSymbol(parentScope, identifierLoc);

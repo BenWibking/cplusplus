@@ -39,9 +39,6 @@ namespace cxx {
 
 [[nodiscard]] auto bindsName(Symbol* symbol) -> bool;
 
-[[nodiscard]] auto inlineNamespaceSet(NamespaceSymbol* namespaceSymbol)
-    -> std::vector<NamespaceSymbol*>;
-
 enum class NameUse { kOrdinary, kTemplateName };
 
 struct ClassMemberLookup {
@@ -54,31 +51,53 @@ struct ClassMemberLookup {
                                      const std::function<bool(Symbol*)>& accept)
     -> ClassMemberLookup;
 
-class VisitedScopes {
+// Lookup collects scopes and declarations transiently. Keep the common count
+// inline and use contiguous storage for larger lookup sets.
+template <typename T, std::size_t InlineCapacity>
+class LookupList {
  public:
-  [[nodiscard]] auto begin() const -> ScopeSymbol* const* { return data(); }
-  [[nodiscard]] auto end() const -> ScopeSymbol* const* {
-    return data() + size_;
-  }
+  LookupList() = default;
+  LookupList(const LookupList&) = delete;
+  auto operator=(const LookupList&) -> LookupList& = delete;
 
-  void push_back(ScopeSymbol* scope) {
-    if (overflow_.empty() && size_ < inline_.size()) {
-      inline_[size_++] = scope;
+  [[nodiscard]] auto begin() const -> T* const* {
+    return overflow_.empty() ? inline_.data() : overflow_.data();
+  }
+  [[nodiscard]] auto end() const -> T* const* { return begin() + size_; }
+  [[nodiscard]] auto size() const -> std::size_t { return size_; }
+  [[nodiscard]] auto empty() const -> bool { return size_ == 0; }
+  [[nodiscard]] auto front() const -> T* { return *begin(); }
+
+  void push_back(T* value) {
+    if (size_ < InlineCapacity) {
+      inline_[size_++] = value;
       return;
     }
-    if (overflow_.empty()) overflow_.assign(inline_.begin(), inline_.end());
-    overflow_.push_back(scope);
+    if (size_ == InlineCapacity) {
+      overflow_.reserve(InlineCapacity * 2);
+      overflow_.assign(inline_.begin(), inline_.end());
+    }
+    overflow_.push_back(value);
     ++size_;
   }
 
  private:
-  [[nodiscard]] auto data() const -> ScopeSymbol* const* {
-    return overflow_.empty() ? inline_.data() : overflow_.data();
-  }
-
-  std::array<ScopeSymbol*, 32> inline_;
-  std::vector<ScopeSymbol*> overflow_;
+  // Initial entries, valid up to the inline capacity.
+  std::array<T*, InlineCapacity> inline_;
+  // Complete sequence once it outgrows inline storage.
+  std::vector<T*> overflow_;
+  // Number of valid entries in the active storage.
   std::size_t size_ = 0;
+};
+
+using VisitedScopes = LookupList<ScopeSymbol, 32>;
+
+// The namespace itself and its transitively nested inline namespaces.
+class InlineNamespaceSet : private LookupList<NamespaceSymbol, 1> {
+ public:
+  explicit InlineNamespaceSet(NamespaceSymbol* root);
+  using LookupList::begin;
+  using LookupList::end;
 };
 
 namespace detail {

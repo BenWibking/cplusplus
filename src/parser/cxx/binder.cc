@@ -769,7 +769,7 @@ struct RecordEnumerationDefinition {
 [[nodiscard]] auto scopesDeclaringMembersOf(ScopeSymbol* scope)
     -> std::vector<ScopeSymbol*> {
   if (auto namespaceSymbol = symbol_cast<NamespaceSymbol>(scope)) {
-    auto inlineSet = inlineNamespaceSet(namespaceSymbol);
+    auto inlineSet = InlineNamespaceSet(namespaceSymbol);
     return {inlineSet.begin(), inlineSet.end()};
   }
   if (auto classSymbol = symbol_cast<ClassSymbol>(scope))
@@ -5746,7 +5746,7 @@ auto Binder::getFunction(ScopeSymbol* scope, const Name* name, const Type* type,
   }
 
   if (auto namespaceSymbol = symbol_cast<NamespaceSymbol>(parentScope)) {
-    for (auto candidateScope : inlineNamespaceSet(namespaceSymbol)) {
+    for (auto candidateScope : InlineNamespaceSet(namespaceSymbol)) {
       if (auto function =
               views::find_function(candidateScope->find(name), matches))
         return function;

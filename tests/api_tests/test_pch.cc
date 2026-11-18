@@ -307,6 +307,33 @@ int origin;
   ASSERT_TRUE(symbol_cast<VariableSymbol>(findMember(globalScope, "origin")));
 }
 
+TEST(PrecompiledHeader, ResumesLookupInOwnedInlineNamespaces) {
+  Prefix prefix{R"(
+namespace external { inline namespace abi { using Value = long; } }
+namespace api {
+  using namespace external::abi;
+  using Value = int;
+  inline namespace v1 { namespace detail { using Word = short; } }
+}
+)"};
+  const auto data = prefix.emit();
+  ASSERT_TRUE(prefix.errors().empty());
+  ASSERT_FALSE(data.empty());
+
+  DiagnosticsClient diagnostics;
+  TranslationUnit consumer{&diagnostics};
+  PrecompiledHeaderReader reader{&consumer, keys()};
+  ASSERT_TRUE(reader(data)) << reader.error();
+  consumer.setSource(R"(
+namespace api::detail { using Reopened = Word; }
+static_assert(__is_same(api::Value, int));
+static_assert(__is_same(api::v1::detail::Reopened, short));
+)",
+                     "consumer.cc");
+  consumer.resume({.analysisMode = ParserAnalysisMode::kFull});
+  EXPECT_EQ(diagnostics.errorCount(), 0);
+}
+
 TEST(PrecompiledHeader, RestoresRestrictQualifiers) {
   Prefix prefix{R"(
 int* __restrict__ restricted_pointer;
