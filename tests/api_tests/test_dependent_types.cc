@@ -24,6 +24,7 @@
 #include <cxx/initialization.h>
 #include <cxx/standard_conversion.h>
 #include <cxx/symbols.h>
+#include <cxx/types.h>
 #include <gtest/gtest.h>
 
 #include "test_utils.h"
@@ -62,6 +63,22 @@ TEST(DependentTypes, OrdinaryVariableReadsDoNotNeedTypeDependence) {
   EXPECT_EQ(read->castKind, ImplicitCastKind::kLValueToRValueConversion);
   EXPECT_EQ(read->expression, variable);
   EXPECT_FALSE(source.unit.isNonDependentType(variable->type));
+}
+
+TEST(DependentTypes, AttributedPointersShareTheUnderlyingTypeProof) {
+  auto source = "typedef int* Pointer __attribute__((may_alias));"_cxx;
+  auto alias = source.getAs<TypeAliasSymbol>("Pointer");
+  ASSERT_NE(alias, nullptr);
+  auto attributed = type_cast<AttributedType>(alias->type());
+  ASSERT_NE(attributed, nullptr);
+  auto pointer = type_cast<PointerType>(attributed->elementType());
+  ASSERT_NE(pointer, nullptr);
+
+  EXPECT_FALSE(isDependent(&source.unit, attributed));
+  EXPECT_TRUE(source.unit.isNonDependentType(pointer));
+  EXPECT_FALSE(source.unit.isNonDependentType(attributed));
+  EXPECT_FALSE(source.unit.isNonDependentType(pointer->elementType()));
+  EXPECT_FALSE(isDependent(&source.unit, pointer));
 }
 
 TEST(DependentTypes, SelfReferenceDoesNotHideOtherDependentOperands) {

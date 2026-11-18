@@ -29,9 +29,7 @@
 #include <cxx/types.h>
 
 #include <algorithm>
-#include <array>
 #include <optional>
-#include <span>
 #include <vector>
 
 namespace cxx {
@@ -136,22 +134,78 @@ struct NamesTemplateParameter {
   return templateParameterDepth(parameters->members().front());
 }
 
+// These types carry no template operands. Their answer is independent of the
+// declaration state of the translation unit and of the local template depth.
+constexpr auto isIntrinsicallyNonDependent(TypeKind kind) -> bool {
+  switch (kind) {
+#define ARITHMETIC_CASE(K) case TypeKind::k##K:
+    CXX_FOR_EACH_ARITHMETIC_TYPE_KIND(ARITHMETIC_CASE)
+#undef ARITHMETIC_CASE
+    case TypeKind::kVoid:
+    case TypeKind::kNullptr:
+    case TypeKind::kAuto:
+    case TypeKind::kDecltypeAuto:
+    case TypeKind::kNamespace:
+    case TypeKind::kOverloadSet:
+    case TypeKind::kBuiltinVaList:
+    case TypeKind::kBuiltinMetaInfo:
+    case TypeKind::kBitInt:
+    case TypeKind::kUnsignedBitInt:
+    case TypeKind::kSve:
+      return true;
+    default:
+      return false;
+  }
+}
+
+template <typename Examine>
+[[nodiscard]] auto queryTypeDependence(TranslationUnit* unit, const Type* type,
+                                       Examine examine) -> bool {
+  type = unattributed_type(type);
+  if (!type || isIntrinsicallyNonDependent(type->kind())) return false;
+  if (unit && unit->isNonDependentType(type)) {
+    if (unit->timeTrace())
+      unit->timeTrace()->count(TimeTrace::kTypeDependenceCacheHits);
+    return false;
+  }
+  return examine(type);
+}
+
+// A proof involving a local template depth or an unsettled declaration belongs
+// to the current walk and can be reused at the same template depth.
+template <typename Node>
+struct ScopedNonDependentNodes {
+  struct Entry {
+    // Node proven non-dependent in this walk.
+    Node* node = nullptr;
+    // Lowest template nesting depth treated as local when proving this node.
+    std::optional<int> localTemplateDepth;
+    auto operator==(const Entry&) const -> bool = default;
+  };
+
+  // First proof stays inline to avoid allocating for a single observation.
+  Entry first;
+  // Remaining proofs retained at their respective template depths.
+  std::vector<Entry> others;
+
+  [[nodiscard]] auto contains(Node* node, std::optional<int> depth) const
+      -> bool {
+    const Entry entry{node, depth};
+    return first == entry || std::ranges::find(others, entry) != others.end();
+  }
+
+  void add(Node* node, std::optional<int> depth) {
+    if (!first.node) {
+      first = {node, depth};
+    } else {
+      others.push_back({node, depth});
+    }
+  }
+};
+
 struct IsDependent {
   TranslationUnit* unit = nullptr;
   const NonDependentExpressions* nonDependentExpressions = nullptr;
-
-  struct NonDependentType {
-    const Type* type;
-    int localTemplateDepth;
-  };
-
-  struct NonDependentInitializer {
-    ExpressionAST* expression = nullptr;
-    std::optional<int> localTemplateDepth;
-  };
-
-  NonDependentInitializer firstNonDependentInitializer;
-  std::vector<NonDependentInitializer> nonDependentInitializers;
 
   template <typename Node>
   struct Examination {
@@ -170,9 +224,10 @@ struct IsDependent {
 
   Examination<const Type*>* typesUnderExamination = nullptr;
   Examination<ExpressionAST*>* initializersUnderExamination = nullptr;
-  std::array<NonDependentType, 8> nonDependentTypes;
-  std::size_t nonDependentTypeCount = 0;
-  std::vector<NonDependentType> dynamicNonDependentTypes;
+  // Initializer proofs are valid only while their symbols have this state.
+  ScopedNonDependentNodes<ExpressionAST> nonDependentInitializers;
+  // Type proofs that cannot be published to the translation unit.
+  ScopedNonDependentNodes<const Type> nonDependentTypes;
   std::size_t cycles = 0;
   std::size_t unsettledClasses = 0;
   std::optional<int> localTemplateDepth;
@@ -410,14 +465,8 @@ struct IsDependent {
 
   [[nodiscard]] auto isDependentInitializer(ExpressionAST* expression) -> bool {
     if (!expression) return false;
-    if (firstNonDependentInitializer.expression == expression &&
-        firstNonDependentInitializer.localTemplateDepth == localTemplateDepth)
+    if (nonDependentInitializers.contains(expression, localTemplateDepth))
       return false;
-    for (const auto& entry : nonDependentInitializers) {
-      if (entry.expression == expression &&
-          entry.localTemplateDepth == localTemplateDepth)
-        return false;
-    }
     if (isUnderExamination(initializersUnderExamination, expression)) {
       ++cycles;
       return false;
@@ -429,30 +478,21 @@ struct IsDependent {
     const auto dependent = isDependent(expression);
     initializersUnderExamination = examination.previous;
     if (dependent || cycles != cyclesBefore) return dependent;
-    if (!firstNonDependentInitializer.expression) {
-      firstNonDependentInitializer = {expression, localTemplateDepth};
-    } else {
-      nonDependentInitializers.push_back({expression, localTemplateDepth});
-    }
+    nonDependentInitializers.add(expression, localTemplateDepth);
     return false;
   }
 
   [[nodiscard]] auto isDependent(const Type* type) -> bool {
-    if (!type) return false;
-    if (unit && unit->isNonDependentType(type)) {
-      if (unit->timeTrace())
-        unit->timeTrace()->count(TimeTrace::kTypeDependenceCacheHits);
-      return false;
-    }
+    return queryTypeDependence(
+        unit, type, [this](const Type* type) { return examineType(type); });
+  }
+
+  [[nodiscard]] auto examineType(const Type* type) -> bool {
     if (isUnderExamination(typesUnderExamination, type)) {
       ++cycles;
       return false;
     }
-    const auto depth = localTemplateDepth.value_or(-1);
-    auto examined = std::span{nonDependentTypes}.first(nonDependentTypeCount);
-    if (!dynamicNonDependentTypes.empty()) examined = dynamicNonDependentTypes;
-    for (const auto& entry : examined) {
-      if (entry.type != type || entry.localTemplateDepth != depth) continue;
+    if (nonDependentTypes.contains(type, localTemplateDepth)) {
       if (unit && unit->timeTrace())
         unit->timeTrace()->count(TimeTrace::kTypeDependenceCacheHits);
       return false;
@@ -467,51 +507,19 @@ struct IsDependent {
     typesUnderExamination = examination.previous;
     if (dependent || cycles != cyclesBefore) return dependent;
     if (unit && !localTemplateDepth &&
-        unsettledClasses == unsettledClassesBefore)
+        unsettledClasses == unsettledClassesBefore) {
       unit->addNonDependentType(type);
-    if (nonDependentTypeCount < nonDependentTypes.size()) {
-      nonDependentTypes[nonDependentTypeCount++] = {type, depth};
-      return dependent;
+      return false;
     }
-    if (dynamicNonDependentTypes.empty())
-      dynamicNonDependentTypes.assign(nonDependentTypes.begin(),
-                                      nonDependentTypes.end());
-    dynamicNonDependentTypes.push_back({type, depth});
-    return dependent;
+    nonDependentTypes.add(type, localTemplateDepth);
+    return false;
   }
 
-  auto operator()(const VoidType* type) -> bool { return false; }
-  auto operator()(const NullptrType* type) -> bool { return false; }
-  auto operator()(const DecltypeAutoType* type) -> bool { return false; }
-  auto operator()(const AutoType* type) -> bool { return false; }
-  auto operator()(const BoolType* type) -> bool { return false; }
-  auto operator()(const SignedCharType* type) -> bool { return false; }
-  auto operator()(const ShortIntType* type) -> bool { return false; }
-  auto operator()(const IntType* type) -> bool { return false; }
-  auto operator()(const LongIntType* type) -> bool { return false; }
-  auto operator()(const LongLongIntType* type) -> bool { return false; }
-  auto operator()(const Int128Type* type) -> bool { return false; }
-  auto operator()(const UnsignedCharType* type) -> bool { return false; }
-  auto operator()(const UnsignedShortIntType* type) -> bool { return false; }
-  auto operator()(const UnsignedIntType* type) -> bool { return false; }
-  auto operator()(const UnsignedLongIntType* type) -> bool { return false; }
-  auto operator()(const UnsignedLongLongIntType* type) -> bool { return false; }
-  auto operator()(const UnsignedInt128Type* type) -> bool { return false; }
-  auto operator()(const CharType* type) -> bool { return false; }
-  auto operator()(const Char8Type* type) -> bool { return false; }
-  auto operator()(const Char16Type* type) -> bool { return false; }
-  auto operator()(const Char32Type* type) -> bool { return false; }
-  auto operator()(const WideCharType* type) -> bool { return false; }
-  auto operator()(const FloatType* type) -> bool { return false; }
-  auto operator()(const DoubleType* type) -> bool { return false; }
-  auto operator()(const LongDoubleType* type) -> bool { return false; }
-  auto operator()(const HalfType* type) -> bool { return false; }
-
-  auto operator()(const Float16Type* type) -> bool { return false; }
-  auto operator()(const BFloat16Type* type) -> bool { return false; }
-  auto operator()(const Float8E4M3FNType* type) -> bool { return false; }
-  auto operator()(const Float8E5M2Type* type) -> bool { return false; }
-  auto operator()(const Float128Type* type) -> bool { return false; }
+  template <typename T>
+    requires(isIntrinsicallyNonDependent(T::Kind))
+  auto operator()(const T*) const -> bool {
+    return false;
+  }
 
   auto operator()(const QualType* type) -> bool {
     return isDependent(type->elementType());
@@ -649,8 +657,6 @@ struct IsDependent {
     return false;
   }
 
-  auto operator()(const NamespaceType* type) -> bool { return false; }
-
   auto operator()(const TypeParameterType* type) -> bool {
     return !isLocalTemplateDepth(type->depth());
   }
@@ -696,18 +702,6 @@ struct IsDependent {
   auto operator()(const UnresolvedBuiltinType* type) -> bool {
     return isDependentOperand(type->typeId());
   }
-
-  auto operator()(const OverloadSetType* type) -> bool { return false; }
-
-  auto operator()(const BuiltinVaListType* type) -> bool { return false; }
-
-  auto operator()(const BuiltinMetaInfoType* type) -> bool { return false; }
-
-  auto operator()(const SveType* type) -> bool { return false; }
-
-  auto operator()(const BitIntType* type) -> bool { return false; }
-
-  auto operator()(const UnsignedBitIntType* type) -> bool { return false; }
 
   auto operator()(const UnresolvedBitIntType* type) -> bool {
     return isDependentOperand(type->sizeExpression());
@@ -1612,7 +1606,9 @@ auto isDependent(TranslationUnit* unit, SpecifierAST* spec) -> bool {
 }
 
 auto isDependent(TranslationUnit* unit, const Type* type) -> bool {
-  return IsDependent{unit}.isDependent(type);
+  return queryTypeDependence(unit, type, [unit](const Type* type) {
+    return IsDependent{unit}.examineType(type);
+  });
 }
 
 auto isEnclosedInDependentTemplate(TranslationUnit* unit, ScopeSymbol* scope,
