@@ -546,27 +546,20 @@ class Parser final {
       DeclarationAST*& yyast, TemplateDeclarationAST* templateHead) -> bool;
   [[nodiscard]] auto parse_declaration(DeclarationAST*& yyast,
                                        BindingContext ctx) -> bool;
-  [[nodiscard]] auto parse_block_declaration(DeclarationAST*& yyast,
-                                             BindingContext ctx) -> bool;
+  [[nodiscard]] auto parse_block_declaration(
+      DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes,
+      BindingContext ctx) -> bool;
   [[nodiscard]] auto parse_alias_declaration(
       DeclarationAST*& yyast, TemplateDeclarationAST* templateHead = nullptr)
       -> bool;
   [[nodiscard]] auto parse_simple_declaration(
-      DeclarationAST*& yyast, BindingContext ctx,
-      TemplateDeclarationAST* templateHead = nullptr) -> bool;
-
-  [[nodiscard]] auto parse_empty_or_attribute_declaration(
       DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes,
-      BindingContext ctx) -> auto;
-
-  [[nodiscard]] auto parse_notypespec_function_definition(
-      DeclarationAST*& yyast, List<AttributeSpecifierAST*>* atributes,
       BindingContext ctx, TemplateDeclarationAST* templateHead = nullptr)
       -> bool;
 
   [[nodiscard]] auto parse_notypespec_function_definition(
       DeclarationAST*& yyast, List<SpecifierAST*>* declSpecifierList,
-      const DeclSpecs& specs, List<AttributeSpecifierAST*>* attributes) -> bool;
+      const DeclSpecs& specs) -> bool;
 
   [[nodiscard]] auto parse_type_or_forward_declaration(
       DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes,
@@ -590,19 +583,19 @@ class Parser final {
   [[nodiscard]] auto parse_static_assert_declaration(DeclarationAST*& yyast)
       -> bool;
   auto match_string_literal(SourceLocation& loc) -> bool;
-  [[nodiscard]] auto parse_empty_declaration(DeclarationAST*& yyast) -> bool;
-  [[nodiscard]] auto parse_attribute_declaration(DeclarationAST*& yyast)
-      -> bool;
+  [[nodiscard]] auto parse_empty_declaration(
+      DeclarationAST*& yyast,
+      List<AttributeSpecifierAST*>* attributes = nullptr) -> bool;
   [[nodiscard]] auto parse_decl_specifier(
       SpecifierAST*& yyast, DeclSpecs& specs,
       TypeNameContext context = TypeNameContext::kGeneral) -> bool;
   [[nodiscard]] auto parse_decl_specifier_seq(
       List<SpecifierAST*>*& yyast, DeclSpecs& specs,
       TypeNameContext context = TypeNameContext::kGeneral) -> bool;
+  // Returns the insertion point for the remaining, typed declaration
+  // specifiers.
   [[nodiscard]] auto parse_decl_specifier_seq_no_typespecs(
-      List<SpecifierAST*>*& yyast, DeclSpecs& specs) -> bool;
-  [[nodiscard]] auto parse_decl_specifier_seq_no_typespecs(
-      List<SpecifierAST*>*& yyast) -> bool;
+      List<SpecifierAST*>*& yyast, DeclSpecs& specs) -> List<SpecifierAST*>**;
   [[nodiscard]] auto parse_storage_class_specifier(SpecifierAST*& yyast,
                                                    DeclSpecs& specs) -> bool;
   [[nodiscard]] auto parse_function_specifier(SpecifierAST*& yyast,
@@ -762,8 +755,7 @@ class Parser final {
   [[nodiscard]] auto parse_enum_head_name(
       NestedNameSpecifierAST*& nestedNameSpecifier, NameIdAST*& name) -> bool;
   [[nodiscard]] auto parse_opaque_enum_declaration(
-      DeclarationAST*& yyast, TemplateDeclarationAST* templateHead = nullptr)
-      -> bool;
+      DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes) -> bool;
   [[nodiscard]] auto parse_enum_key(SourceLocation& enumLoc,
                                     SourceLocation& classLoc) -> bool;
   [[nodiscard]] auto parse_enum_base(SourceLocation& colonLoc,
@@ -779,13 +771,15 @@ class Parser final {
       -> bool;
   [[nodiscard]] auto parse_qualified_namespace_specifier(
       NestedNameSpecifierAST*& nestedNameSpecifier, NameIdAST*& name) -> bool;
-  [[nodiscard]] auto parse_using_directive(DeclarationAST*& yyast) -> bool;
+  [[nodiscard]] auto parse_using_directive(
+      DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes) -> bool;
   [[nodiscard]] auto parse_using_declaration(DeclarationAST*& yyast) -> bool;
   [[nodiscard]] auto parse_using_declarator_list(
       List<UsingDeclaratorAST*>*& yyast) -> bool;
   [[nodiscard]] auto parse_using_declarator(UsingDeclaratorAST*& yyast) -> bool;
   [[nodiscard]] auto parse_asm_operand(AsmOperandAST*& yyast) -> bool;
-  [[nodiscard]] auto parse_asm_declaration(DeclarationAST*& yyast) -> bool;
+  [[nodiscard]] auto parse_asm_declaration(
+      DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes) -> bool;
   [[nodiscard]] auto match_asm_colon(SourceLocation& location,
                                      bool& pendingColon) -> bool;
   [[nodiscard]] auto parse_linkage_specification(DeclarationAST*& yyast)
@@ -870,8 +864,8 @@ class Parser final {
   [[nodiscard]] auto parse_maybe_template_member() -> bool;
   [[nodiscard]] auto hasNoUniqueAddressAttribute(
       List<AttributeSpecifierAST*>* attributes) const -> bool;
-  [[nodiscard]] auto parse_member_declaration_helper(DeclarationAST*& yyast)
-      -> bool;
+  [[nodiscard]] auto parse_member_declaration_helper(
+      DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes) -> bool;
   [[nodiscard]] auto parse_member_declarator(
       InitDeclaratorAST*& yyast, const DeclSpecs& specs,
       PlaceholderReplacement& listReplacement) -> bool;
@@ -956,8 +950,8 @@ class Parser final {
       -> bool;
   [[nodiscard]] auto parse_constraint_expression(ExpressionAST*& yyast) -> bool;
   [[nodiscard]] auto parse_deduction_guide(
-      DeclarationAST*& yyast, TemplateDeclarationAST* templateHead = nullptr)
-      -> bool;
+      DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes,
+      TemplateDeclarationAST* templateHead = nullptr) -> bool;
   [[nodiscard]] auto parse_concept_definition(DeclarationAST*& yyast) -> bool;
   [[nodiscard]] auto parse_splicer_specifier(SpecifierAST*& yyast,
                                              DeclSpecs& specs) -> bool;

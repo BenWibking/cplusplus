@@ -86,3 +86,29 @@ TEST(ConstexprCallProvider, EvaluatesDeclarationOnlyFunctions) {
   EXPECT_EQ(diagnostics.errorCount(), 0);
   EXPECT_EQ(provider.callCount, 2);
 }
+
+TEST(ConstexprCallProvider, DoesNotReplayDeclarationAttributes) {
+  constexpr auto source = R"(
+    constexpr int provided(int = 20);
+    alignas(int[provided()]) char global;
+    template <class T> alignas(int[provided()]) T storage;
+    struct Record {
+      alignas(int[provided()]) char field;
+      alignas(provided() - 10) char aligned;
+    };
+    void f() { alignas(int[provided()]) char local; }
+    static_assert(alignof(Record) == 32);
+  )";
+
+  DiagnosticsClient diagnostics;
+  MemoryLayout memoryLayout{64};
+  TestConstexprCallProvider provider;
+  TranslationUnit unit{&diagnostics};
+  unit.control()->setMemoryLayout(&memoryLayout);
+  unit.setConstexprCallProvider(&provider);
+  unit.setSource(source, "attributes.cc");
+  unit.parse({.analysisMode = ParserAnalysisMode::kFull});
+
+  EXPECT_EQ(diagnostics.errorCount(), 0);
+  EXPECT_EQ(provider.callCount, 5);
+}

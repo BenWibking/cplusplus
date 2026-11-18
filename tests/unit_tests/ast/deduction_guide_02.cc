@@ -5,7 +5,7 @@ struct List {
   struct Node {
     Node(T) {}
   };
-  Node(int) -> Node<int>;
+  [[vendor::guide]] Node(int) -> Node<int>;
 };
 
 // clang-format off
@@ -50,6 +50,13 @@ struct List {
 // CHECK-NEXT:                          statement: compound-statement
 // CHECK-NEXT:            deduction-guide
 // CHECK-NEXT:              identifier: Node
+// CHECK-NEXT:              attribute-list
+// CHECK-NEXT:                cxx-attribute
+// CHECK-NEXT:                  attribute-list
+// CHECK-NEXT:                    attribute
+// CHECK-NEXT:                      attribute-token: scoped-attribute-token
+// CHECK-NEXT:                        attribute-namespace: vendor
+// CHECK-NEXT:                        identifier: guide
 // CHECK-NEXT:              parameter-declaration-clause: parameter-declaration-clause
 // CHECK-NEXT:                parameter-declaration-list
 // CHECK-NEXT:                  parameter-declaration
