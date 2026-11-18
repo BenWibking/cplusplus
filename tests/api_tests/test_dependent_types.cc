@@ -21,6 +21,8 @@
 #include <cxx/ast.h>
 #include <cxx/ast_visitor.h>
 #include <cxx/dependent_types.h>
+#include <cxx/initialization.h>
+#include <cxx/standard_conversion.h>
 #include <cxx/symbols.h>
 #include <gtest/gtest.h>
 
@@ -40,6 +42,27 @@ class InitializerVisitor final : public ASTVisitor {
 };
 
 }  // namespace
+
+TEST(DependentTypes, OrdinaryVariableReadsDoNotNeedTypeDependence) {
+  auto source = "int* variable; int*& reference = variable;"_cxx;
+  auto reference = source.getAs<VariableSymbol>("reference");
+  ASSERT_NE(reference, nullptr);
+  auto expression = Initializer{reference->initializer()}.singleExpression();
+  auto variable = ast_cast<IdExpressionAST>(expression);
+  ASSERT_NE(variable, nullptr);
+  auto conversion = StandardConversion{&source.unit};
+
+  conversion.discardedValue(expression);
+  EXPECT_EQ(expression, variable);
+  EXPECT_FALSE(source.unit.isNonDependentType(variable->type));
+
+  conversion.prepareOperand(expression);
+  auto read = ast_cast<ImplicitCastExpressionAST>(expression);
+  ASSERT_NE(read, nullptr);
+  EXPECT_EQ(read->castKind, ImplicitCastKind::kLValueToRValueConversion);
+  EXPECT_EQ(read->expression, variable);
+  EXPECT_FALSE(source.unit.isNonDependentType(variable->type));
+}
 
 TEST(DependentTypes, SelfReferenceDoesNotHideOtherDependentOperands) {
   struct Case {

@@ -494,6 +494,7 @@ auto StandardConversion::readsConstantVariable(ImplicitCastExpressionAST* read,
     return false;
   auto object = traits.remove_reference(variable->type());
   if (traits.is_volatile(object)) return false;
+  if (isDependent(unit_, read)) return false;
   return !traits.has_mutable_subobject(traits.remove_cv(object));
 }
 
@@ -501,7 +502,6 @@ void StandardConversion::foldConstantRead(ExpressionAST*& expression) {
   auto cast = ast_cast<ImplicitCastExpressionAST>(expression);
   if (!cast) return;
   if (cast->castKind != ImplicitCastKind::kLValueToRValueConversion) return;
-  if (isDependent(unit_, cast)) return;
 
   auto operand = cast->expression;
   while (auto nested = ast_cast<NestedExpressionAST>(operand))
@@ -571,6 +571,7 @@ void StandardConversion::foldConditionalRead(
     ConditionalExpressionAST* conditional) {
   if (!is_glvalue(conditional->iftrueExpression)) return;
   if (!is_glvalue(conditional->iffalseExpression)) return;
+  if (isDependent(unit_, read)) return;
 
   auto iftrue = readOfPotentialResult(read, conditional->iftrueExpression);
   auto iffalse = readOfPotentialResult(read, conditional->iffalseExpression);
@@ -595,6 +596,7 @@ void StandardConversion::foldCommaRead(ExpressionAST*& expression,
                                        ImplicitCastExpressionAST* read,
                                        BinaryExpressionAST* comma) {
   if (!is_glvalue(comma->rightExpression)) return;
+  if (isDependent(unit_, read)) return;
 
   auto right = readOfPotentialResult(read, comma->rightExpression);
   if (designatesAddressableStorage(comma) &&
@@ -701,9 +703,9 @@ void StandardConversion::promoteOperand(ExpressionAST*& expr) {
 
 void StandardConversion::discardedValue(ExpressionAST*& expr) {
   if (!expr || !expr->type) return;
-  if (isDependent(unit_, expr)) return;
   if (!traits.is_volatile(expr->type)) return;
   if (!isDiscardedValueRead(expr)) return;
+  if (isDependent(unit_, expr)) return;
   if (traits.is_class_or_union(traits.remove_reference(expr->type))) {
     copyDiscardedClass(expr);
     return;
