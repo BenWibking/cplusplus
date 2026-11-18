@@ -36,6 +36,16 @@ TEST(RuntimeErrors, ArenaRejectsAllocationSizeOverflow) {
   ASSERT_THROW((void)arena.allocate(maxSize, 2), std::runtime_error);
 }
 
+TEST(RuntimeErrors, ManagedNewPropagatesArenaExhaustion) {
+  class ExhaustedArena final : public Arena {
+    auto do_allocate(std::size_t bytes, std::size_t alignment)
+        -> void* override {
+      return std::pmr::null_memory_resource()->allocate(bytes, alignment);
+    }
+  } arena;
+  EXPECT_THROW((void)(new (&arena) Managed), std::bad_alloc);
+}
+
 TEST(RuntimeErrors, TokenAccessOutsideTheSegment) {
   DiagnosticsClient diagnostics;
   TranslationUnit unit{&diagnostics};

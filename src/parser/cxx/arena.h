@@ -53,8 +53,11 @@ class Arena : public std::pmr::memory_resource {
     auto object = static_cast<T*>(allocate(sizeof(T), alignof(T)));
     std::construct_at(object, std::forward<Args>(args)...);
     if constexpr (!std::is_trivially_destructible_v<T>) {
-      cleanups_.push_back(
-          {[](void* ptr) { std::destroy_at(static_cast<T*>(ptr)); }, object});
+      auto destroy = [](void* ptr) { std::destroy_at(static_cast<T*>(ptr)); };
+      // Until the cleanup record is stored, registration can still throw.
+      std::unique_ptr<void, decltype(destroy)> pending(object, destroy);
+      cleanups_.push_back({destroy, object});
+      (void)pending.release();
     }
     return object;
   }
@@ -157,7 +160,7 @@ class Arena : public std::pmr::memory_resource {
 };
 
 struct Managed {
-  auto operator new(std::size_t size, Arena* arena) noexcept -> void* {
+  auto operator new(std::size_t size, Arena* arena) -> void* {
     return arena->allocate(size);
   }
   void operator delete(void* ptr, std::size_t) {}
