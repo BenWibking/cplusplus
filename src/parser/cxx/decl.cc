@@ -491,22 +491,11 @@ namespace {
   return clause->expressionList->value;
 }
 
-}  // namespace
-
-namespace {
-
-[[nodiscard]] auto applyVectorTypeAttributes(
-    TranslationUnit* unit, List<AttributeSpecifierAST*>* attributeList,
-    const Type* type, SourceLocation location) -> const Type* {
-  if (!type || !attributeList) return type;
-
-  auto attributes = knownAttributes(unit, attributeList);
-  auto found = std::ranges::find_if(attributes, isVectorTypeAttribute,
-                                    &AttributeRef::kind);
-
-  if (found == attributes.end()) return type;
-
-  const auto attribute = *found;
+[[nodiscard]] auto applyVectorTypeAttribute(TranslationUnit* unit,
+                                            const AttributeRef& attribute,
+                                            const Type* type,
+                                            SourceLocation location)
+    -> const Type* {
   const auto at = attribute.location ? attribute.location : location;
   const auto vectorKind = vectorKindOf(attribute.kind());
   const auto sizeKind = vectorSizeKindOf(attribute.kind());
@@ -622,11 +611,14 @@ auto applyTypeAttributes(TranslationUnit* unit,
                          const Type* type, SourceLocation location)
     -> const Type* {
   if (!type || !attributeList) return type;
-  for (const auto& attribute :
-       findAttributes(unit, attributeList, AttributeKind::kAddressSpace)) {
-    type = applyAddressSpaceAttribute(unit, attribute, type, location);
+  for (const auto& attribute : knownAttributes(unit, attributeList)) {
+    if (attribute.kind() == AttributeKind::kAddressSpace) {
+      type = applyAddressSpaceAttribute(unit, attribute, type, location);
+    } else if (isVectorTypeAttribute(attribute.kind())) {
+      type = applyVectorTypeAttribute(unit, attribute, type, location);
+    }
   }
-  return applyVectorTypeAttributes(unit, attributeList, type, location);
+  return type;
 }
 
 [[nodiscard]] auto getGenericSelectionExpression(
