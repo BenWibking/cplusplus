@@ -417,16 +417,6 @@ struct TransparentStringEqual {
   return std::visit(Visitor{}, macro);
 }
 
-[[nodiscard]] inline auto isObjectLikeMacro(const Macro& macro) -> bool {
-  return std::holds_alternative<ObjectMacro>(macro) ||
-         std::holds_alternative<BuiltinObjectMacro>(macro);
-}
-
-[[nodiscard]] inline auto isFunctionLikeMacro(const Macro& macro) -> bool {
-  return std::holds_alternative<FunctionMacro>(macro) ||
-         std::holds_alternative<BuiltinFunctionMacro>(macro);
-}
-
 static auto isSameBody(
     const TokVector& a, const TokVector& b,
     const std::vector<std::string>& texts,
@@ -998,24 +988,20 @@ struct Preprocessor::Private {
 
   using TokRange = std::pair<const Tok*, const Tok*>;
 
-  [[nodiscard]] auto substitute(const Tok& pointOfSubstitution,
-                                const Macro* macro,
-                                const std::vector<TokRange>& actuals,
-                                const std::vector<TokRange>& expandedActuals)
+  struct MacroSubstitution;
+
+  [[nodiscard]] auto substitute(const Tok& origin, const Macro& macro,
+                                const Identifier* ident,
+                                std::span<const TokRange> actuals = {})
       -> TokVector;
 
   [[nodiscard]] auto paste(const Tok& left, const Tok& right, const Tok& origin)
       -> Tok;
 
-  [[nodiscard]] auto stringize(TokRange actual, const Tok& origin) -> Tok;
+  [[nodiscard]] auto stringize(TokSpan tokens, const Tok& origin) -> Tok;
 
   [[nodiscard]] auto lookupMacro(const Tok& tk)
       -> std::pair<const Macro*, const cxx::Identifier*>;
-
-  [[nodiscard]] auto lookupMacroArgument(const Tok*& ts, const Tok* lineEnd,
-                                         const Macro* macro,
-                                         const std::vector<TokRange>& actuals)
-      -> std::optional<TokRange>;
 
   [[nodiscard]] auto copyLine(const Tok* ts, const Tok* lineEnd,
                               bool inMacroBody = false) -> TokVector;
@@ -1913,15 +1899,13 @@ auto Preprocessor::Private::parseArguments(const Tok* pos, const Tok* end,
   return result;
 }
 
-auto Preprocessor::Private::stringize(TokRange actual, const Tok& origin)
+auto Preprocessor::Private::stringize(TokSpan tokens, const Tok& origin)
     -> Tok {
   std::string s;
-  auto [begin, end] = actual;
-  if (begin) {
-    for (auto it = begin; it != end; ++it) {
-      if (!s.empty() && (it->space || it->bol)) s += ' ';
-      s += getText(*it);
-    }
+  for (const auto& token : tokens) {
+    if (token.is(TokenKind::T_EOF_SYMBOL)) continue;  // placemarker
+    if (!s.empty() && (token.space || token.bol)) s += ' ';
+    s += getText(token);
   }
 
   std::string o;
@@ -2022,245 +2006,185 @@ auto Preprocessor::Private::lookupMacro(const Tok& tk)
   return {nullptr, nullptr};
 }
 
-auto Preprocessor::Private::lookupMacroArgument(
-    const Tok*& ts, const Tok* lineEnd, const Macro* m,
-    const std::vector<TokRange>& actuals) -> std::optional<TokRange> {
-  if (!isFunctionLikeMacro(*m)) return std::nullopt;
-  const auto macro = std::get_if<FunctionMacro>(m);
-  if (!macro) return std::nullopt;
+// Substitution sees the unexpanded arguments. Each ordinary parameter use
+// shares its first expansion; # and ## always take the original spelling.
+struct Preprocessor::Private::MacroSubstitution {
+  // Owns the macro environment and generated spellings.
+  Private& pp;
+  // Invocation token used to locate generated replacement tokens.
+  const Tok& origin;
+  // Formal parameters, absent for an object-like macro.
+  const FunctionMacro* function;
+  // Unexpanded argument ranges in the invocation.
+  std::span<const TokRange> actuals;
+  // Materialized only when an ordinary use needs argument prescan.
+  std::vector<std::optional<TokVector>> expansions;
 
-  if (ts >= lineEnd || ts->isNot(TokenKind::T_IDENTIFIER)) return std::nullopt;
-
-  auto text = getText(*ts);
-
-  if (macro->variadic) {
-    if (text == "__VA_ARGS__") {
-      ++ts;
-      if (actuals.size() > macro->formals.size()) {
-        return actuals.back();
-      }
-      return TokRange{nullptr, nullptr};
+  auto parameterIndex(std::string_view name) const
+      -> std::optional<std::size_t> {
+    if (function->variadic && name == "__VA_ARGS__") {
+      return function->formals.size();
     }
-
-    if (text == "__VA_OPT__" && ts + 1 < lineEnd &&
-        (ts + 1)->is(TokenKind::T_LPAREN)) {
-      ++ts;
-      ++ts;
-      int depth = 1;
-      while (ts < lineEnd && depth > 0) {
-        if (ts->is(TokenKind::T_LPAREN))
-          ++depth;
-        else if (ts->is(TokenKind::T_RPAREN))
-          --depth;
-        if (depth > 0) ++ts;
-      }
-      if (ts < lineEnd && ts->is(TokenKind::T_RPAREN)) ++ts;
-
-      return TokRange{nullptr, nullptr};
-    }
+    const auto& names = function->formals;
+    auto it = std::ranges::find(names, name);
+    if (it == names.end()) return std::nullopt;
+    return static_cast<std::size_t>(it - names.begin());
   }
 
-  for (std::size_t i = 0; i < macro->formals.size(); ++i) {
-    if (macro->formals[i] == text) {
-      ++ts;
-      if (i < actuals.size()) return actuals[i];
-      return TokRange{nullptr, nullptr};
+  auto argument(std::size_t index, bool expand) -> TokSpan {
+    if (index >= actuals.size()) return {};
+    auto [begin, end] = actuals[index];
+    if (begin == end || !expand) return {begin, end};
+    // A single literal or a name excluded by the definition index is already
+    // its own expansion. Borrow it without pushing a cursor or allocating.
+    if (end - begin == 1 &&
+        (begin->isNot(TokenKind::T_IDENTIFIER) || begin->noexpand ||
+         !pp.mayHaveMacro(pp.getText(*begin)))) {
+      return {begin, end};
     }
+    if (expansions.empty()) expansions.resize(actuals.size());
+    auto& cached = expansions[index];
+    if (!cached) cached = pp.expandTokens(begin, end, false);
+    return *cached;
   }
 
-  return std::nullopt;
-}
+  auto atUse(Tok token) const -> Tok {
+    if (token.isFromMacroBody) {
+      token.sourceFile = origin.sourceFile;
+      token.offset = origin.offset;
+      token.length = origin.length;
+    }
+    return token;
+  }
 
-auto Preprocessor::Private::substitute(
-    const Tok& pointOfSubstitution, const Macro* macro,
-    const std::vector<TokRange>& actuals,
-    const std::vector<TokRange>& expandedActuals) -> TokVector {
-  TokVector os;
-
-  auto appendToken = [&](const Tok& tk) {
-    if (tk.isFromMacroBody) {
-      auto copyTk = tk;
-      copyTk.sourceFile = pointOfSubstitution.sourceFile;
-      copyTk.offset = pointOfSubstitution.offset;
-      copyTk.length = pointOfSubstitution.length;
-      os.push_back(copyTk);
+  // Empty operands of ## survive inside a replacement list, including at
+  // the edge of __VA_OPT__ where the enclosing list can paste them again.
+  auto paste(const Tok& left, const Tok& right) -> Tok {
+    Tok result;
+    if (left.is(TokenKind::T_EOF_SYMBOL)) {
+      if (right.isNot(TokenKind::T_EOF_SYMBOL)) {
+        result = pp.genTok(right.kind, pp.getText(right), origin);
+      }
+    } else if (right.is(TokenKind::T_EOF_SYMBOL)) {
+      result = pp.genTok(left.kind, pp.getText(left), origin);
     } else {
-      os.push_back(tk);
+      result = pp.paste(left, right, origin);
     }
-  };
+    result.space = left.space;
+    result.bol = left.bol;
+    return result;
+  }
 
-  auto appendTokens = [&](const Tok* begin, const Tok* end,
-                          const Tok* parameter = nullptr) {
-    const auto start = os.size();
-    for (auto it = begin; it < end; ++it) appendToken(*it);
-    if (parameter && start < os.size()) {
-      os[start].space = parameter->space;
-      os[start].bol = parameter->bol;
-    }
-  };
+  void replace(TokSpan body, TokVector& out, bool insideOptional = false) {
+    const Tok* pos = body.data();
+    const Tok* end = pos + body.size();
+    bool pasteLeft = false;
+    while (pos != end) {
+      const auto& first = *pos++;
+      if (first.is(TokenKind::T_HASH_HASH)) {
+        pasteLeft = !out.empty();
+        continue;
+      }
 
-  // An empty token represents the placemarker produced by an empty argument
-  // next to ##. The paste result is generated even when one operand survives.
-  auto pasteLastToken = [&](const Tok* right) {
-    auto leftText = getText(os.back());
-    if (leftText.empty()) {
-      if (!right) {
-        os.pop_back();
+      // The GNU comma extension retains the comma for an explicitly supplied
+      // variadic argument. That argument undergoes ordinary substitution.
+      if (first.is(TokenKind::T_COMMA) && function && function->variadic &&
+          end - pos >= 2 && pos[0].is(TokenKind::T_HASH_HASH) &&
+          pos[1].is(TokenKind::T_IDENTIFIER) &&
+          pp.getText(pos[1]) == "__VA_ARGS__") {
+        ++pos;
+        if (actuals.size() <= function->formals.size()) continue;
+      }
+
+      bool stringize = first.is(TokenKind::T_HASH) && function && pos != end &&
+                       pos->is(TokenKind::T_IDENTIFIER);
+      const auto& operand = stringize ? *pos++ : first;
+      TokSpan tokens{&operand, 1};
+      TokVector optional;
+      if (function && operand.is(TokenKind::T_IDENTIFIER)) {
+        const auto name = pp.getText(operand);
+        if (auto index = parameterIndex(name)) {
+          const bool pasteRight = pos != end && pos->is(TokenKind::T_HASH_HASH);
+          tokens = argument(*index, !stringize && !pasteLeft && !pasteRight);
+        } else if (function->variadic && name == "__VA_OPT__" && pos != end &&
+                   pos->is(TokenKind::T_LPAREN)) {
+          const auto begin = ++pos;
+          unsigned depth = 1;
+          while (pos != end) {
+            if (pos->is(TokenKind::T_LPAREN)) ++depth;
+            if (pos->is(TokenKind::T_RPAREN) && --depth == 0) break;
+            ++pos;
+          }
+          if (pos == end) {
+            pp.error(&origin, "unterminated __VA_OPT__ replacement list");
+            return;
+          }
+          const TokSpan content{begin, pos++};
+          if (insideOptional) {
+            pp.error(&origin, "__VA_OPT__ cannot be nested");
+          } else if (!argument(function->formals.size(), true).empty()) {
+            replace(content, optional, true);
+          }
+          tokens = optional;
+        } else if (stringize) {
+          --pos;
+          tokens = {&first, 1};
+          stringize = false;
+        }
+      }
+
+      Tok generated;
+      if (stringize) {
+        generated = pp.stringize(tokens, origin);
+        tokens = {&generated, 1};
+      }
+      // An empty ordinary substitution emits nothing. Next to ##, an empty
+      // substitution supplies a placemarker for the next paste.
+      const bool pasteRight = pos != end && pos->is(TokenKind::T_HASH_HASH);
+      if (tokens.empty() && !pasteLeft && !pasteRight) continue;
+      Tok leading = tokens.empty() ? Tok{} : atUse(tokens.front());
+      leading.space = first.space;
+      leading.bol = first.bol;
+      if (pasteLeft) {
+        out.back() = paste(out.back(), leading);
+        pasteLeft = false;
       } else {
-        os.back() = genTok(right->kind, getText(*right), pointOfSubstitution);
+        out.push_back(leading);
       }
-    } else if (!right) {
-      os.back() = genTok(os.back().kind, leftText, pointOfSubstitution);
-    } else {
-      os.back() = paste(os.back(), *right, pointOfSubstitution);
-    }
-  };
-
-  const TokVector* macroBody = getMacroBody(*macro);
-  if (!macroBody) return os;
-
-  const Tok* ts = macroBody->data();
-  const Tok* tsEnd = ts + macroBody->size();
-
-  while (ts < tsEnd && ts->isNot(TokenKind::T_EOF_SYMBOL)) {
-    if (ts->is(TokenKind::T_HASH) && ts + 1 < tsEnd &&
-        (ts + 1)->is(TokenKind::T_IDENTIFIER)) {
-      const auto saved = ts;
-      ++ts;
-      if (auto actual = lookupMacroArgument(ts, tsEnd, macro, actuals)) {
-        appendToken(stringize(*actual, pointOfSubstitution));
-        continue;
-      }
-      ts = saved;
-    }
-
-    if (ts->is(TokenKind::T_HASH_HASH) && ts + 1 < tsEnd &&
-        (ts + 1)->is(TokenKind::T_IDENTIFIER)) {
-      const auto saved = ts;
-      ++ts;
-      if (auto actual = lookupMacroArgument(ts, tsEnd, macro, actuals)) {
-        auto [ab, ae] = *actual;
-        if (!os.empty()) {
-          const Tok* right = ab && ab != ae ? ab : nullptr;
-          pasteLastToken(right);
-          if (right) {
-            for (auto it = ab + 1; it != ae; ++it) appendToken(*it);
-          }
-        }
-        continue;
-      }
-      ts = saved;
-    }
-
-    if (ts->is(TokenKind::T_HASH_HASH) && ts + 1 < tsEnd) {
-      if (!os.empty()) {
-        pasteLastToken(ts + 1);
-      }
-      ts += 2;
-      continue;
-    }
-
-    if (ts->is(TokenKind::T_COMMA) && ts + 1 < tsEnd &&
-        (ts + 1)->is(TokenKind::T_HASH_HASH) && ts + 2 < tsEnd) {
-      auto commaText = getText(*(ts + 2));
-      if (commaText == "__VA_ARGS__") {
-        auto comma = *ts;
-        ts += 2;
-        if (auto actual = lookupMacroArgument(ts, tsEnd, macro, actuals)) {
-          auto [ab, ae] = *actual;
-          if (ab && ab < ae) {
-            appendToken(comma);
-            appendTokens(ab, ae);
-          }
-          continue;
-        }
-      }
-    }
-
-    if (ts->is(TokenKind::T_IDENTIFIER) && ts + 1 < tsEnd &&
-        (ts + 1)->is(TokenKind::T_HASH_HASH)) {
-      if (auto actual = lookupMacroArgument(ts, tsEnd, macro, actuals)) {
-        auto [ab, ae] = *actual;
-        if (ab && ab < ae) {
-          appendTokens(ab, ae);
-        } else {
-          auto emptyTk = genTok(TokenKind::T_IDENTIFIER, "");
-          appendToken(emptyTk);
-        }
-        continue;
-      }
-    }
-
-    if (ts->is(TokenKind::T_IDENTIFIER) && getText(*ts) == "__VA_OPT__" &&
-        ts + 1 < tsEnd && (ts + 1)->is(TokenKind::T_LPAREN)) {
-      const auto funcMacro = std::get_if<FunctionMacro>(macro);
-      if (funcMacro && funcMacro->variadic) {
-        ++ts;
-        ++ts;
-        auto contentBegin = ts;
-        int depth = 1;
-        while (ts < tsEnd && depth > 0) {
-          if (ts->is(TokenKind::T_LPAREN))
-            ++depth;
-          else if (ts->is(TokenKind::T_RPAREN))
-            --depth;
-          if (depth > 0) ++ts;
-        }
-        auto contentEnd = ts;
-        if (ts < tsEnd && ts->is(TokenKind::T_RPAREN)) ++ts;
-
-        bool hasVarArgs = false;
-        if (actuals.size() > funcMacro->formals.size()) {
-          auto [ab, ae] = actuals.back();
-          if (ab != ae && ab != nullptr) hasVarArgs = true;
-        }
-
-        if (hasVarArgs) {
-          TokVector contentTokens(contentBegin, contentEnd);
-          Tok eol;
-          eol.kind = TokenKind::T_EOF_SYMBOL;
-          contentTokens.push_back(eol);
-
-          const Tok* cTs = contentTokens.data();
-          const Tok* cEnd = cTs + contentTokens.size();
-          while (cTs < cEnd && cTs->isNot(TokenKind::T_EOF_SYMBOL)) {
-            const auto parameter = cTs;
-            if (auto actual =
-                    lookupMacroArgument(cTs, cEnd, macro, expandedActuals)) {
-              auto [ab, ae] = *actual;
-              if (ab && ab < ae) appendTokens(ab, ae, parameter);
-              continue;
-            }
-            appendToken(*cTs);
-            ++cTs;
-          }
-        }
-        continue;
-      }
-    }
-
-    const auto parameter = ts;
-    if (auto actual = lookupMacroArgument(ts, tsEnd, macro, expandedActuals)) {
-      auto [ab, ae] = *actual;
-      if (ab && ab < ae) appendTokens(ab, ae, parameter);
-      continue;
-    }
-
-    appendToken(*ts);
-    ++ts;
-  }
-
-  for (auto& tok : os) {
-    if (tok.is(TokenKind::T_IDENTIFIER) && !tok.noexpand) {
-      auto text = getText(tok);
-      if (!text.empty() && isDefined(text) &&
-          isTainted(control_->getIdentifier(text))) {
-        tok.noexpand = true;
+      for (std::size_t i = 1; i < tokens.size(); ++i) {
+        out.push_back(atUse(tokens[i]));
       }
     }
   }
+};
 
-  return os;
+auto Preprocessor::Private::substitute(const Tok& origin, const Macro& macro,
+                                       const Identifier* ident,
+                                       std::span<const TokRange> actuals)
+    -> TokVector {
+  TokVector output;
+  MacroSubstitution substitution{
+      *this, origin, std::get_if<FunctionMacro>(&macro), actuals, {}};
+  TokSpan body = *getMacroBody(macro);
+  if (!body.empty() && body.back().is(TokenKind::T_EOF_SYMBOL)) {
+    body = body.first(body.size() - 1);
+  }
+  substitution.replace(body, output);
+
+  // Argument prescan permits nested invocations of this macro. Disable it
+  // only for rescanning the substituted result.
+  taint(ident);
+  std::erase_if(output, [](const Tok& token) {
+    return token.is(TokenKind::T_EOF_SYMBOL);
+  });
+  for (auto& token : output) {
+    if (token.isNot(TokenKind::T_IDENTIFIER) || token.noexpand) continue;
+    auto text = getText(token);
+    if (isDefined(text) && isTainted(control_->getIdentifier(text))) {
+      token.noexpand = true;
+    }
+  }
+  return output;
 }
 
 auto Preprocessor::Private::expandMacro(Cursor& cursor) -> bool {
@@ -2345,9 +2269,7 @@ auto Preprocessor::Private::expandObjectLikeMacro(Cursor& cursor,
     -> bool {
   const auto& tk = cursor.current();
 
-  taint(ident);
-
-  auto expanded = substitute(tk, m, {}, {});
+  auto expanded = substitute(tk, *m, ident);
 
   if (!expanded.empty()) {
     expanded.front().space = tk.space;
@@ -2620,7 +2542,7 @@ auto Preprocessor::Private::expandFunctionLikeMacro(
       parseArguments(argBegin, argEnd, macro->formals.size(), macro->variadic);
   if (!argsResult.rest) return false;
 
-  auto actuals = argsResult.args;
+  const auto& actuals = argsResult.args;
   auto rest = originalRest ? originalRest : argsResult.rest;
 
   const auto argumentCount = invocationArgumentCount(*macro, actuals.size());
@@ -2628,20 +2550,7 @@ auto Preprocessor::Private::expandFunctionLikeMacro(
     error(&tk, argumentCountMismatch(*macro, argumentCount));
   }
 
-  std::vector<TokRange> expandedArgs;
-  expandedArgs.reserve(actuals.size());
-
-  std::vector<TokVector> expandedArgStorage;
-  expandedArgStorage.reserve(actuals.size());
-  for (const auto& [ab, ae] : actuals) {
-    expandedArgStorage.push_back(expandTokens(ab, ae, false));
-    auto& v = expandedArgStorage.back();
-    expandedArgs.push_back({v.data(), v.data() + v.size()});
-  }
-
-  taint(ident);
-
-  auto expanded = substitute(tk, m, actuals, expandedArgs);
+  auto expanded = substitute(tk, *m, ident, actuals);
 
   if (!expanded.empty()) {
     expanded.front().space = tk.space;

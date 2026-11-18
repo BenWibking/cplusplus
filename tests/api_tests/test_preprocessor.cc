@@ -145,6 +145,51 @@ TEST(Preprocessor, ConcurrentConstructionProducesValidCompilationTimes) {
   }
 }
 
+TEST(Preprocessor, ExpandsArgumentsOnFirstOrdinarySubstitution) {
+  Control control;
+  MacroDiagnostics diagnostics;
+  Preprocessor pp{&control, &diagnostics};
+  auto tokens = preprocessSpellings(pp, R"(
+#define first(x, unused) x
+#define pair(x, y) x y
+#define quote(x) #x
+#define join(x, y) x ## y
+#define repeat(x) x x
+#define reverse(x, y) y x
+#define mixed(x) #x x x
+first(17, pair(1)) first(first(18, ignored), __COUNTER__)
+quote(__COUNTER__) join(prefix_, __COUNTER__) __COUNTER__
+repeat(__COUNTER__) reverse(__COUNTER__, __COUNTER__) mixed(__COUNTER__)
+)");
+  EXPECT_EQ(tokens, (std::vector<std::string>{
+                        "17", "18", "\"__COUNTER__\"", "prefix___COUNTER__",
+                        "0", "1", "1", "2", "3", "\"__COUNTER__\"", "4", "4"}));
+  EXPECT_EQ(diagnostics.errorCount(), 0);
+}
+
+TEST(Preprocessor, SubstitutesOptionalVariadicOperands) {
+  Control control;
+  MacroDiagnostics diagnostics;
+  Preprocessor pp{&control, &diagnostics};
+  auto tokens = preprocessSpellings(pp, R"(
+#define empty
+#define pair(x, y) x y
+#define optional(x, ...) __VA_OPT__(x)
+#define suffix(x, ...) __VA_OPT__(left x ## x) ## right
+#define quoted(x, ...) #__VA_OPT__(x ## x x ## x)
+#define inner(x, ...) __VA_OPT__(#x x ## end)
+optional(pair(1), empty) optional(__COUNTER__) __COUNTER__
+optional(__COUNTER__, yes) __COUNTER__
+suffix(, yes) suffix(word) suffix(ok, yes)
+quoted(, yes), quoted(ab, yes), inner(raw, yes)
+)");
+  EXPECT_EQ(tokens,
+            (std::vector<std::string>{
+                "0", "1", "2", "left", "right", "right", "left", "okokright",
+                "\"\"", ",", "\"abab abab\"", ",", "\"raw\"", "rawend"}));
+  EXPECT_EQ(diagnostics.errorCount(), 0);
+}
+
 TEST(Preprocessor, PredefinedMacrosTokenizeOnExpansionOncePerInstance) {
   static constexpr PredefinedMacro definitions[] = {
       "VALUE /* replacement list */ 3",
