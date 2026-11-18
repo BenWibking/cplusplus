@@ -274,10 +274,10 @@ class Binder {
       -> std::optional<int>;
 
   [[nodiscard]] auto alignedAttribute(
-      List<AttributeSpecifierAST*>* attributeList) -> std::optional<int>;
+      std::span<const AttributeRef> attributeList) -> std::optional<int>;
 
   [[nodiscard]] auto sourceTypeAttributeFlags(
-      List<AttributeSpecifierAST*>* attributeList) -> TypeAttributeFlags;
+      std::span<const AttributeRef> attributeList) -> TypeAttributeFlags;
 
   void applySourceTypeAttributes(Symbol* symbol,
                                  TypeAttributeFlags attributeFlags);
@@ -745,7 +745,7 @@ class Binder {
   void applyDeclarationAttributes(SimpleDeclarationAST* ast);
 
   void validatePackedAttributes(Symbol* symbol,
-                                List<AttributeSpecifierAST*>* attributes);
+                                std::span<const AttributeRef> attributes);
 
   void inheritDeclarationAttributes(Symbol* symbol, Symbol* pattern);
 
@@ -753,11 +753,11 @@ class Binder {
 
   void rejectKernelTemplate(FunctionSymbol* function);
 
-  void applyDeviceAttributes(Symbol* symbol,
+  void bindDeviceDeclaration(Symbol* symbol,
                              std::span<const AttributeRef> attributes);
 
   void applyConstructorAttribute(FunctionSymbol* function,
-                                 List<AttributeSpecifierAST*>* attributes);
+                                 std::span<const AttributeRef> attributes);
 
   void applyWasmFunctionAttributes(FunctionSymbol* function,
                                    const AttributeMap* attributes);

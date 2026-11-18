@@ -436,16 +436,20 @@ void Binder::rejectKernelTemplate(FunctionSymbol* function) {
   error(function->location(), std::string{kKernelTemplateMessage});
 }
 
-void Binder::applyDeviceAttributes(Symbol* symbol,
+void Binder::bindDeviceDeclaration(Symbol* symbol,
                                    std::span<const AttributeRef> attributes) {
-  if (attributes.empty() && !symbol->isFunction()) return;
-  if (control()->memoryLayout()->deviceProfile() !=
-      DeviceProfile::kVulkan11F32) {
+  const auto* layout = control()->memoryLayout();
+  if (!layout || layout->deviceProfile() != DeviceProfile::kVulkan11F32) {
     if (!attributes.empty())
       error(attributes.front().location,
             "device attributes require the 'vulkan1.1-f32' device profile");
     return;
   }
+  if ((symbol->isVariable() || symbol->isField() || symbol->isParameter()) &&
+      traits.is_volatile(symbol->type()))
+    error(symbol->location(),
+          "volatile-qualified objects are not supported by the device profile");
+  if (attributes.empty() && !symbol->isFunction()) return;
   DeviceAttributeBinder device{unit_};
   if (auto parameter = symbol_cast<ParameterSymbol>(symbol))
     return device.bindParameter(parameter, attributes);
