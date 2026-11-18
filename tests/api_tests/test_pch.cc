@@ -903,6 +903,10 @@ template <class T> struct Packet {
   T [[gnu::vector_size(16)]] scalar;
   T lanes [[gnu::vector_size(16)]];
 };
+template <class T> struct Tagged {
+  T marker [[no_unique_address]];
+  char tag;
+};
 )"};
   const auto data = prefix.emit();
   ASSERT_TRUE(prefix.errors().empty());
@@ -936,6 +940,8 @@ static_assert(!noexcept(ordinary()));
 static_assert(noexcept(noThrow()));
 static_assert(sizeof(Packet<int>::scalar) == 4);
 static_assert(sizeof(Packet<int>::lanes) == 16);
+struct Empty {};
+static_assert(sizeof(Tagged<Empty>) == 1);
 )",
                      "consumer.cc");
   consumer.resume({.analysisMode = ParserAnalysisMode::kFull});

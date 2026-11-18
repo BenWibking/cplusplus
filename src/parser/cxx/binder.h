@@ -758,8 +758,8 @@ class Binder {
 
   void applyDeclarationAttributes(SimpleDeclarationAST* ast);
 
-  void validatePackedAttributes(Symbol* symbol,
-                                std::span<const AttributeRef> attributes);
+  void applyRecordLayoutAttributes(Symbol* symbol,
+                                   std::span<const AttributeRef> attributes);
 
   void inheritDeclarationAttributes(Symbol* symbol, Symbol* pattern);
 

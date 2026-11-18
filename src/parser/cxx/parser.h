@@ -883,8 +883,6 @@ class Parser final {
                                                const DeclSpecs& declSpecs)
       -> bool;
   [[nodiscard]] auto parse_maybe_template_member() -> bool;
-  [[nodiscard]] auto hasNoUniqueAddressAttribute(
-      List<AttributeSpecifierAST*>* attributes) const -> bool;
   [[nodiscard]] auto parse_member_declaration_helper(
       DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes) -> bool;
   [[nodiscard]] auto parse_member_declarator(

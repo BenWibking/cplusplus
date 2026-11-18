@@ -10565,22 +10565,6 @@ auto Parser::parse_maybe_template_member() -> bool {
   return false;
 }
 
-auto Parser::hasNoUniqueAddressAttribute(
-    List<AttributeSpecifierAST*>* attributes) const -> bool {
-  for (auto spec : ListView{attributes}) {
-    auto cxxAttr = ast_cast<CxxAttributeAST>(spec);
-    if (!cxxAttr) continue;
-    for (auto attr : ListView{cxxAttr->attributeList}) {
-      auto token = ast_cast<SimpleAttributeTokenAST>(attr->attributeToken);
-      if (!token || !token->identifier) continue;
-      const auto& name = token->identifier->name();
-      if (name == "no_unique_address" || name == "__no_unique_address__")
-        return true;
-    }
-  }
-  return false;
-}
-
 auto Parser::parse_member_declaration_helper(
     DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes) -> bool {
   SourceLocation extensionLoc;
@@ -10593,8 +10577,6 @@ auto Parser::parse_member_declaration_helper(
   List<AttributeSpecifierAST*>* trailing = nullptr;
   auto lastDeclSpecifier =
       parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs, trailing);
-  if (hasNoUniqueAddressAttribute(specs.attributeList))
-    specs.isNoUniqueAddress = true;
 
   if (parse_notypespec_function_definition(yyast, declSpecifierList, specs,
                                            trailing))

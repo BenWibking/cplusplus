@@ -505,16 +505,8 @@ auto ASTRewriter::initDeclarator(InitDeclaratorAST* ast,
   VariableSymbol* specialization = nullptr;
 
   if (declaresClassMember) {
-    auto symbol = binder_.declareMemberSymbol(copy->declarator, decl,
-                                              addSymbolToParentScope);
-    copy->symbol = symbol;
-
-    if (auto newField = symbol_cast<FieldSymbol>(symbol)) {
-      if (auto oldField = symbol_cast<FieldSymbol>(ast->symbol);
-          oldField && oldField->isNoUniqueAddress()) {
-        newField->setNoUniqueAddress(true);
-      }
-    }
+    copy->symbol = binder_.declareMemberSymbol(copy->declarator, decl,
+                                               addSymbolToParentScope);
   } else {
     if (auto declId = decl.declaratorId; declId) {
       if (decl.specs.isTypedef) {

@@ -2437,21 +2437,30 @@ void Binder::applyFunctionDefinitionKind(FunctionSymbol* functionSymbol,
   if (isFirstDeclaration) functionSymbol->setConstexpr(true);
 }
 
-void Binder::validatePackedAttributes(
+void Binder::applyRecordLayoutAttributes(
     Symbol* symbol, std::span<const AttributeRef> attributes) {
   for (auto attribute : attributes) {
-    if (attribute.kind != AttributeKind::kPacked) continue;
+    if (attribute.kind != AttributeKind::kPacked &&
+        attribute.kind != AttributeKind::kNoUniqueAddress)
+      continue;
     if (attribute.argumentClause) {
-      error(attribute.location, "'packed' attribute takes no arguments");
+      error(attribute.location,
+            std::format("'{}' attribute takes no arguments", attribute.name()));
       continue;
     }
 
     auto field = symbol_cast<FieldSymbol>(symbol);
-    const bool validEntity = symbol_cast<ClassSymbol>(symbol) ||
-                             symbol_cast<EnumSymbol>(symbol) ||
-                             symbol_cast<ScopedEnumSymbol>(symbol) ||
-                             (field && !field->isStatic());
-    if (!validEntity) {
+    if (attribute.kind == AttributeKind::kNoUniqueAddress) {
+      if (field && !field->isStatic() && !field->isBitField())
+        field->setNoUniqueAddress(true);
+      else
+        error(attribute.location,
+              "'no_unique_address' attribute requires a non-static data member "
+              "that is not a bit-field");
+    } else if (!symbol_cast<ClassSymbol>(symbol) &&
+               !symbol_cast<EnumSymbol>(symbol) &&
+               !symbol_cast<ScopedEnumSymbol>(symbol) &&
+               !(field && !field->isStatic())) {
       error(attribute.location,
             "'packed' attribute requires a record, enumeration, or "
             "non-static data member");
@@ -2472,7 +2481,7 @@ void Binder::applyDeclarationAttributes(
   const std::vector<AttributeRef> groups[] = {
       knownAttributes(attributes), knownAttributes(declaratorAttributes),
       knownAttributes(trailingAttributes)};
-  for (const auto& group : groups) validatePackedAttributes(symbol, group);
+  for (const auto& group : groups) applyRecordLayoutAttributes(symbol, group);
   if (!symbol) {
     for (const auto& group : groups) (void)sourceTypeAttributeFlags(group);
     for (const auto& group : groups) (void)alignedAttribute(group);
@@ -2665,7 +2674,7 @@ void Binder::applyDeclarationAttributes(SimpleDeclarationAST* ast) {
   if (!ast) return;
 
   if (!ast->initDeclaratorList) {
-    validatePackedAttributes(nullptr, knownAttributes(ast->attributeList));
+    applyRecordLayoutAttributes(nullptr, knownAttributes(ast->attributeList));
   }
 
   for (auto initDeclarator : ListView{ast->initDeclaratorList}) {
@@ -4416,7 +4425,6 @@ auto Binder::declareField(DeclaratorAST* declarator, const Decl& decl)
   if (!decl.specs.isStatic && address_space(type))
     error(decl.location(),
           "non-static data member cannot have an address space qualifier");
-  fieldSymbol->setNoUniqueAddress(decl.specs.isNoUniqueAddress);
 
   if (auto alignment = control()->memoryLayout()->alignmentOf(type)) {
     fieldSymbol->setAlignment(alignment.value());
