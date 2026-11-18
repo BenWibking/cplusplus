@@ -4641,10 +4641,12 @@ void Parser::parse_init_statement(StatementAST*& yyast) {
       cxx_runtime_error("enclosing scope of init statement is not empty");
     }
 
-    if (parse_alias_declaration(declaration)) {
-    } else if (!parse_simple_declaration(declaration,
-                                         BindingContext::kInitStatement)) {
-      return false;
+    if (!parse_alias_declaration(declaration)) {
+      List<AttributeSpecifierAST*>* attributes = nullptr;
+      parse_optional_attribute_specifier_seq(attributes);
+      if (!parse_simple_declaration(declaration, attributes,
+                                    BindingContext::kInitStatement))
+        return false;
     }
 
     lookahead.commit();
@@ -5410,7 +5412,9 @@ auto Parser::parse_coroutine_return_statement(
 auto Parser::parse_declaration_statement(StatementAST*& yyast) -> bool {
   DeclarationAST* declaration = nullptr;
 
-  if (!parse_block_declaration(declaration, BindingContext::kBlock))
+  List<AttributeSpecifierAST*>* attributes = nullptr;
+  parse_optional_attribute_specifier_seq(attributes);
+  if (!parse_block_declaration(declaration, attributes, BindingContext::kBlock))
     return false;
 
   auto ast = DeclarationStatementAST::create(pool_);
@@ -5441,11 +5445,15 @@ auto Parser::parse_maybe_module() -> bool {
 
 auto Parser::parse_template_declaration_body(
     DeclarationAST*& yyast, TemplateDeclarationAST* templateHead) -> bool {
-  if (parse_deduction_guide(yyast, templateHead)) return true;
   if (parse_export_declaration(yyast, templateHead)) return true;
-  if (parse_opaque_enum_declaration(yyast, templateHead)) return true;
   if (parse_alias_declaration(yyast, templateHead)) return true;
-  return parse_simple_declaration(yyast, BindingContext::kTemplate,
+
+  auto templateHeadGuard = EnclosingTemplateHeadGuard{this, templateHead};
+  List<AttributeSpecifierAST*>* attributes = nullptr;
+  parse_optional_attribute_specifier_seq(attributes);
+  if (parse_deduction_guide(yyast, attributes, templateHead)) return true;
+  if (parse_opaque_enum_declaration(yyast, attributes)) return true;
+  return parse_simple_declaration(yyast, attributes, BindingContext::kTemplate,
                                   templateHead);
 }
 
@@ -5546,25 +5554,30 @@ auto Parser::parse_declaration(DeclarationAST*& yyast, BindingContext ctx)
   }
   if (parse_linkage_specification(yyast)) return true;
   if (parse_namespace_definition(yyast)) return true;
-  if (parse_deduction_guide(yyast)) return true;
   if (parse_export_declaration(yyast)) return true;
-  if (parse_module_import_declaration(yyast)) return true;
-  if (parse_attribute_declaration(yyast)) return true;
-  return parse_block_declaration(yyast, ctx);
+
+  List<AttributeSpecifierAST*>* attributes = nullptr;
+  parse_optional_attribute_specifier_seq(attributes);
+  if (parse_deduction_guide(yyast, attributes)) return true;
+  if (!attributes && parse_module_import_declaration(yyast)) return true;
+  return parse_block_declaration(yyast, attributes, ctx);
 }
 
-auto Parser::parse_block_declaration(DeclarationAST*& yyast, BindingContext ctx)
-    -> bool {
-  if (parse_asm_declaration(yyast)) return true;
-  if (parse_namespace_alias_definition(yyast)) return true;
-  if (parse_static_assert_declaration(yyast)) return true;
-  if (parse_consteval_block_declaration(yyast)) return true;
-  if (parse_opaque_enum_declaration(yyast)) return true;
-  if (parse_using_enum_declaration(yyast)) return true;
-  if (parse_using_directive(yyast)) return true;
-  if (parse_alias_declaration(yyast)) return true;
-  if (parse_using_declaration(yyast)) return true;
-  return parse_simple_declaration(yyast, ctx);
+auto Parser::parse_block_declaration(DeclarationAST*& yyast,
+                                     List<AttributeSpecifierAST*>* attributes,
+                                     BindingContext ctx) -> bool {
+  if (parse_asm_declaration(yyast, attributes)) return true;
+  if (parse_opaque_enum_declaration(yyast, attributes)) return true;
+  if (parse_using_directive(yyast, attributes)) return true;
+  if (!attributes) {
+    if (parse_namespace_alias_definition(yyast)) return true;
+    if (parse_static_assert_declaration(yyast)) return true;
+    if (parse_consteval_block_declaration(yyast)) return true;
+    if (parse_using_enum_declaration(yyast)) return true;
+    if (parse_alias_declaration(yyast)) return true;
+    if (parse_using_declaration(yyast)) return true;
+  }
+  return parse_simple_declaration(yyast, attributes, ctx);
 }
 
 auto Parser::parse_alias_declaration(DeclarationAST*& yyast,
@@ -5684,68 +5697,6 @@ auto Parser::enterOrCreateNamespace(const Identifier* identifier,
 void Parser::enterFunctionScope(
     FunctionDeclaratorChunkAST* functionDeclarator) {}
 
-auto Parser::parse_empty_or_attribute_declaration(
-    DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes,
-    BindingContext ctx) -> auto {
-  LookaheadParser lookahead{this};
-
-  SourceLocation semicolonLoc;
-
-  if (!match(TokenKind::T_SEMICOLON, semicolonLoc)) return false;
-
-  lookahead.commit();
-
-  if (attributes) {
-    auto ast = AttributeDeclarationAST::create(pool_);
-    yyast = ast;
-    ast->attributeList = attributes;
-    ast->semicolonLoc = semicolonLoc;
-    return true;
-  }
-
-  auto ast = EmptyDeclarationAST::create(pool_);
-  yyast = ast;
-  ast->semicolonLoc = semicolonLoc;
-  return true;
-}
-
-auto Parser::parse_notypespec_function_definition(
-    DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes,
-    BindingContext ctx, TemplateDeclarationAST* templateHead) -> bool {
-  if (!isCxx()) return false;
-  if (!context_allows_function_definition(ctx)) return false;
-
-  LookaheadParser lookahead{this};
-
-  DeclSpecs specs{unit_};
-  specs.templateHead = templateHead;
-  specs.attributeList = attributes;
-  List<SpecifierAST*>* declSpecifierList = nullptr;
-
-  auto parse_optional_decl_specifier_seq_no_typespecs = [&] {
-    LookaheadParser lookahead{this};
-    if (!parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs)) {
-      specs = DeclSpecs{unit_};
-      specs.templateHead = templateHead;
-      specs.attributeList = attributes;
-      return;
-    }
-    lookahead.commit();
-  };
-
-  parse_optional_decl_specifier_seq_no_typespecs();
-
-  specs.finish();
-
-  if (!parse_notypespec_function_definition(yyast, declSpecifierList, specs,
-                                            specs.attributeList))
-    return false;
-
-  lookahead.commit();
-
-  return true;
-}
-
 auto Parser::parse_type_or_forward_declaration(
     DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes,
     List<SpecifierAST*>* declSpecifierList, const DeclSpecs& specs,
@@ -5840,57 +5791,44 @@ auto Parser::parse_structured_binding(DeclarationAST*& yyast,
 }
 
 auto Parser::parse_simple_declaration(DeclarationAST*& yyast,
+                                      List<AttributeSpecifierAST*>* attributes,
                                       BindingContext ctx,
                                       TemplateDeclarationAST* templateHead)
     -> bool {
   auto templateHeadGuard = EnclosingTemplateHeadGuard{this, templateHead};
 
   SourceLocation extensionLoc;
+  if (!attributes && match(TokenKind::T___EXTENSION__, extensionLoc))
+    parse_optional_attribute_specifier_seq(attributes);
 
-  match(TokenKind::T___EXTENSION__, extensionLoc);
-
-  List<AttributeSpecifierAST*>* attributes = nullptr;
-  parse_optional_attribute_specifier_seq(attributes);
-
-  if (SourceLocation semicolonLoc;
-      ctx != BindingContext::kTemplate && attributes &&
-      match(TokenKind::T_SEMICOLON, semicolonLoc)) {
-    auto ast = AttributeDeclarationAST::create(pool_);
-    yyast = ast;
-
-    ast->attributeList = attributes;
-    ast->semicolonLoc = semicolonLoc;
-    return true;
-  }
-
-  if (parse_empty_or_attribute_declaration(yyast, attributes, ctx)) return true;
-
-  if (parse_notypespec_function_definition(yyast, attributes, ctx,
-                                           templateHead))
-    return true;
+  if (parse_empty_declaration(yyast, attributes)) return true;
 
   DeclSpecs specs{unit_};
   specs.templateHead = templateHead;
   specs.attributeList = attributes;
   List<SpecifierAST*>* declSpecifierList = nullptr;
 
-  auto lookat_decl_specifiers = [&] {
+  {
     LookaheadParser lookahead{this};
+    auto tail = &declSpecifierList;
+    if (isCxx() && context_allows_function_definition(ctx)) {
+      tail = parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs);
+      if (parse_notypespec_function_definition(yyast, declSpecifierList,
+                                               specs)) {
+        lookahead.commit();
+        return true;
+      }
+    }
 
     auto typeNameContext = ctx == BindingContext::kBlock ||
                                    ctx == BindingContext::kInitStatement ||
                                    ctx == BindingContext::kCondition
                                ? TypeNameContext::kGeneral
                                : TypeNameContext::kTypeOnly;
-    if (!parse_decl_specifier_seq(declSpecifierList, specs, typeNameContext))
-      return false;
-
+    if (!parse_decl_specifier_seq(*tail, specs, typeNameContext)) return false;
     if (!specs.hasTypeOrSizeSpecifier()) return false;
     lookahead.commit();
-    return true;
-  };
-
-  if (!lookat_decl_specifiers()) return false;
+  }
 
   if (ctx == BindingContext::kLinkage) {
     specs.isExtern = true;
@@ -6103,10 +6041,12 @@ auto Parser::parse_simple_declaration(
 
 auto Parser::parse_notypespec_function_definition(
     DeclarationAST*& yyast, List<SpecifierAST*>* declSpecifierList,
-    const DeclSpecs& specs, List<AttributeSpecifierAST*>* attributes) -> bool {
+    const DeclSpecs& specs) -> bool {
+  LookaheadParser lookahead{this};
   CoreDeclaratorAST* declaratorId = nullptr;
 
   Decl decl{specs};
+  decl.specs.finish();
   if (!parse_declarator_id(declaratorId, decl, DeclaratorKind::kDeclarator))
     return false;
 
@@ -6161,6 +6101,7 @@ auto Parser::parse_notypespec_function_definition(
   const auto isDefinition = lookat_function_body();
 
   if (!isDeclaration && !isDefinition) return false;
+  lookahead.commit();
 
   auto abbreviatedHead = takeAbbreviatedTemplateHead(decl);
   auto templateHead = decl.specs.templateHead;
@@ -6172,7 +6113,8 @@ auto Parser::parse_notypespec_function_definition(
   auto functionSymbol = declareFunction(declarator, decl);
   associatePendingNoexceptSpecifier(declarator, functionSymbol);
 
-  binder_.applyDeclarationAttributes(functionSymbol, attributes, declarator);
+  binder_.applyDeclarationAttributes(functionSymbol, specs.attributeList,
+                                     declarator);
 
   setFunctionTemplateHead(functionSymbol, decl, templateHead);
 
@@ -6190,7 +6132,7 @@ auto Parser::parse_notypespec_function_definition(
 
     auto ast = SimpleDeclarationAST::create(pool_);
     yyast = ast;
-    ast->attributeList = attributes;
+    ast->attributeList = specs.attributeList;
     ast->declSpecifierList = declSpecifierList;
     ast->initDeclaratorList = make_list_node(pool_, initDeclarator);
     ast->semicolonLoc = semicolonLoc;
@@ -6217,7 +6159,7 @@ auto Parser::parse_notypespec_function_definition(
   auto ast = FunctionDefinitionAST::create(pool_);
   yyast = ast;
 
-  ast->attributeList = attributes;
+  ast->attributeList = specs.attributeList;
   ast->declSpecifierList = declSpecifierList;
   ast->declarator = declarator;
   ast->requiresClause = requiresClause;
@@ -6304,41 +6246,23 @@ auto Parser::match_string_literal(SourceLocation& loc) -> bool {
   }
 }
 
-auto Parser::parse_empty_declaration(DeclarationAST*& yyast) -> bool {
+auto Parser::parse_empty_declaration(DeclarationAST*& yyast,
+                                     List<AttributeSpecifierAST*>* attributes)
+    -> bool {
   SourceLocation semicolonLoc;
-
   if (!match(TokenKind::T_SEMICOLON, semicolonLoc)) return false;
+
+  if (attributes) {
+    auto ast = AttributeDeclarationAST::create(pool_);
+    yyast = ast;
+    ast->attributeList = attributes;
+    ast->semicolonLoc = semicolonLoc;
+    return true;
+  }
 
   auto ast = EmptyDeclarationAST::create(pool_);
   yyast = ast;
-
   ast->semicolonLoc = semicolonLoc;
-
-  return true;
-}
-
-auto Parser::parse_attribute_declaration(DeclarationAST*& yyast) -> bool {
-  List<AttributeSpecifierAST*>* attributes = nullptr;
-  SourceLocation semicolonLoc;
-
-  auto lookat_attribute_declaration = [&] {
-    LookaheadParser lookahead{this};
-    if (!parse_attribute_specifier_seq(attributes)) return false;
-
-    if (!match(TokenKind::T_SEMICOLON, semicolonLoc)) return false;
-
-    lookahead.commit();
-    return true;
-  };
-
-  if (!lookat_attribute_declaration()) return false;
-
-  auto ast = AttributeDeclarationAST::create(pool_);
-  yyast = ast;
-
-  ast->attributeList = attributes;
-  ast->semicolonLoc = semicolonLoc;
-
   return true;
 }
 
@@ -6467,32 +6391,17 @@ auto Parser::parse_decl_specifier_seq(List<SpecifierAST*>*& yyast,
 }
 
 auto Parser::parse_decl_specifier_seq_no_typespecs(List<SpecifierAST*>*& yyast,
-                                                   DeclSpecs& specs) -> bool {
-  auto it = &yyast;
-
+                                                   DeclSpecs& specs)
+    -> List<SpecifierAST*>** {
+  auto tail = &yyast;
   specs.no_typespecs = true;
-
-  SpecifierAST* specifier = nullptr;
-
-  if (!parse_decl_specifier(specifier, specs)) return false;
-
-  parse_optional_declaration_attributes(specs);
-
-  *it = make_list_node(pool_, specifier);
-  it = &(*it)->next;
-
-  specifier = nullptr;
-
-  while (parse_decl_specifier(specifier, specs)) {
+  for (;;) {
+    SpecifierAST* specifier = nullptr;
+    if (!parse_decl_specifier(specifier, specs)) return tail;
     parse_optional_declaration_attributes(specs);
-
-    *it = make_list_node(pool_, specifier);
-    it = &(*it)->next;
-
-    specifier = nullptr;
+    *tail = make_list_node(pool_, specifier);
+    tail = &(*tail)->next;
   }
-
-  return true;
 }
 
 auto Parser::parse_storage_class_specifier(SpecifierAST*& yyast,
@@ -7611,12 +7520,6 @@ auto Parser::parse_elaborated_type_specifier(SpecifierAST*& yyast,
                         ast->declaredSymbol);
 
   return true;
-}
-
-auto Parser::parse_decl_specifier_seq_no_typespecs(List<SpecifierAST*>*& yyast)
-    -> bool {
-  DeclSpecs specs{unit_};
-  return parse_decl_specifier_seq_no_typespecs(yyast, specs);
 }
 
 auto Parser::parse_decltype_specifier(DecltypeSpecifierAST*& yyast) -> bool {
@@ -9002,12 +8905,11 @@ auto Parser::parse_enum_head_name(NestedNameSpecifierAST*& nestedNameSpecifier,
   return true;
 }
 
-auto Parser::parse_opaque_enum_declaration(DeclarationAST*& yyast,
-                                           TemplateDeclarationAST* templateHead)
-    -> bool {
+auto Parser::parse_opaque_enum_declaration(
+    DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes) -> bool {
+  if (!lookat(TokenKind::T_ENUM)) return false;
   SourceLocation enumLoc;
   SourceLocation classLoc;
-  List<AttributeSpecifierAST*>* attributes = nullptr;
   NestedNameSpecifierAST* nestedNameSpecifier = nullptr;
   NameIdAST* name = nullptr;
   SourceLocation colonLoc;
@@ -9017,7 +8919,6 @@ auto Parser::parse_opaque_enum_declaration(DeclarationAST*& yyast,
 
   auto lookat_opaque_enum_declaration = [&] {
     LookaheadParser lookahead{this};
-    parse_optional_attribute_specifier_seq(attributes);
     if (!parse_enum_key(enumLoc, classLoc)) return false;
     if (!parse_enum_head_name(nestedNameSpecifier, name)) return false;
     (void)parse_enum_base(colonLoc, typeSpecifierList, underlyingTypeSpecs);
@@ -9356,26 +9257,12 @@ auto Parser::parse_qualified_namespace_specifier(
   return true;
 }
 
-auto Parser::parse_using_directive(DeclarationAST*& yyast) -> bool {
-  List<AttributeSpecifierAST*>* attributes = nullptr;
-  SourceLocation usingLoc;
-  SourceLocation namespaceLoc;
-
-  auto lookat_using_directive = [&] {
-    LookaheadParser lookahead{this};
-
-    parse_optional_attribute_specifier_seq(attributes);
-
-    if (!match(TokenKind::T_USING, usingLoc)) return false;
-
-    if (!match(TokenKind::T_NAMESPACE, namespaceLoc)) return false;
-
-    lookahead.commit();
-
-    return true;
-  };
-
-  if (!lookat_using_directive()) return false;
+auto Parser::parse_using_directive(DeclarationAST*& yyast,
+                                   List<AttributeSpecifierAST*>* attributes)
+    -> bool {
+  if (!lookat(TokenKind::T_USING, TokenKind::T_NAMESPACE)) return false;
+  const auto usingLoc = consumeToken();
+  const auto namespaceLoc = consumeToken();
 
   auto ast = UsingDirectiveAST::create(pool_);
   yyast = ast;
@@ -9527,23 +9414,11 @@ auto Parser::match_asm_colon(SourceLocation& location, bool& pendingColon)
   return true;
 }
 
-auto Parser::parse_asm_declaration(DeclarationAST*& yyast) -> bool {
-  List<AttributeSpecifierAST*>* attributes = nullptr;
+auto Parser::parse_asm_declaration(DeclarationAST*& yyast,
+                                   List<AttributeSpecifierAST*>* attributes)
+    -> bool {
   SourceLocation asmLoc;
-
-  auto lookat_asm_declaration = [&] {
-    LookaheadParser lookahead{this};
-
-    parse_optional_attribute_specifier_seq(attributes);
-
-    if (!match(TokenKind::T_ASM, asmLoc)) return false;
-
-    lookahead.commit();
-
-    return true;
-  };
-
-  if (!lookat_asm_declaration()) return false;
+  if (!match(TokenKind::T_ASM, asmLoc)) return false;
 
   auto ast = AsmDeclarationAST::create(pool_);
   yyast = ast;
@@ -9957,9 +9832,7 @@ auto Parser::parse_alignment_specifier(AttributeSpecifierAST*& yyast) -> bool {
 
   expect(TokenKind::T_LPAREN, ast->lparenLoc);
 
-  std::optional<ConstValue> value;
-
-  if (!parse_constant_expression(ast->expression, value)) {
+  if (!parse_constant_expression(ast->expression)) {
     report_failed_parse("expected an expression");
   }
 
@@ -10591,14 +10464,17 @@ auto Parser::parse_member_declaration(DeclarationAST*& yyast) -> bool {
   if (parse_using_declaration(yyast)) return true;
   if (parse_static_assert_declaration(yyast)) return true;
   if (parse_consteval_block_declaration(yyast)) return true;
-  if (parse_deduction_guide(yyast)) return true;
-  if (parse_opaque_enum_declaration(yyast)) return true;
   if (TemplateDeclarationAST* templateDeclaration = nullptr;
       parse_template_declaration(templateDeclaration)) {
     yyast = templateDeclaration;
     return true;
   }
-  return parse_member_declaration_helper(yyast);
+
+  List<AttributeSpecifierAST*>* attributes = nullptr;
+  parse_optional_attribute_specifier_seq(attributes);
+  if (parse_deduction_guide(yyast, attributes)) return true;
+  if (parse_opaque_enum_declaration(yyast, attributes)) return true;
+  return parse_member_declaration_helper(yyast, attributes);
 }
 
 auto Parser::parse_maybe_template_member() -> bool {
@@ -10625,41 +10501,22 @@ auto Parser::hasNoUniqueAddressAttribute(
   return false;
 }
 
-auto Parser::parse_member_declaration_helper(DeclarationAST*& yyast) -> bool {
+auto Parser::parse_member_declaration_helper(
+    DeclarationAST*& yyast, List<AttributeSpecifierAST*>* attributes) -> bool {
   SourceLocation extensionLoc;
-  match(TokenKind::T___EXTENSION__, extensionLoc);
-
-  List<AttributeSpecifierAST*>* attributes = nullptr;
-  parse_optional_attribute_specifier_seq(attributes);
+  if (!attributes && match(TokenKind::T___EXTENSION__, extensionLoc))
+    parse_optional_attribute_specifier_seq(attributes);
 
   List<SpecifierAST*>* declSpecifierList = nullptr;
   DeclSpecs specs{unit_};
   specs.attributeList = attributes;
-  (void)parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs);
-  attributes = specs.attributeList;
-  if (hasNoUniqueAddressAttribute(attributes)) specs.isNoUniqueAddress = true;
+  auto lastDeclSpecifier =
+      parse_decl_specifier_seq_no_typespecs(declSpecifierList, specs);
+  if (hasNoUniqueAddressAttribute(specs.attributeList))
+    specs.isNoUniqueAddress = true;
 
-  auto lookat_notypespec_function_definition = [&] {
-    auto declSpecs = specs;
-    declSpecs.finish();
-
-    LookaheadParser lookahead{this};
-
-    if (!parse_notypespec_function_definition(yyast, declSpecifierList,
-                                              declSpecs, attributes))
-      return false;
-
-    lookahead.commit();
-
+  if (parse_notypespec_function_definition(yyast, declSpecifierList, specs))
     return true;
-  };
-
-  if (lookat_notypespec_function_definition()) return true;
-
-  auto lastDeclSpecifier = &declSpecifierList;
-  while (*lastDeclSpecifier) {
-    lastDeclSpecifier = &(*lastDeclSpecifier)->next;
-  }
 
   (void)parse_decl_specifier_seq(*lastDeclSpecifier, specs,
                                  TypeNameContext::kTypeOnly);
@@ -12378,19 +12235,19 @@ auto Parser::parse_constraint_expression(ExpressionAST*& yyast) -> bool {
 }
 
 auto Parser::parse_deduction_guide(DeclarationAST*& yyast,
+                                   List<AttributeSpecifierAST*>* attributes,
                                    TemplateDeclarationAST* templateHead)
     -> bool {
-  if (!isCxx()) return false;
+  if (!isCxx() || (!lookat(TokenKind::T_EXPLICIT) &&
+                   !lookat(TokenKind::T_IDENTIFIER, TokenKind::T_LPAREN)))
+    return false;
 
-  List<AttributeSpecifierAST*>* attributeList = nullptr;
   SpecifierAST* explicitSpecifier = nullptr;
   SourceLocation identifierLoc;
   SourceLocation lparenLoc;
 
   auto lookat_deduction_guide = [&] {
     LookaheadParser lookahead{this};
-
-    parse_optional_attribute_specifier_seq(attributeList);
 
     DeclSpecs specs{unit_};
     (void)parse_explicit_specifier(explicitSpecifier, specs);
@@ -12417,7 +12274,7 @@ auto Parser::parse_deduction_guide(DeclarationAST*& yyast,
   auto ast = DeductionGuideAST::create(pool_);
   yyast = ast;
 
-  ast->attributeList = attributeList;
+  ast->attributeList = attributes;
   ast->explicitSpecifier = explicitSpecifier;
   ast->identifierLoc = identifierLoc;
   ast->identifier = unit_->identifier(identifierLoc);
