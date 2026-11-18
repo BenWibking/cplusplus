@@ -83,6 +83,8 @@ class Parser final {
   struct CheckContext;
 
   enum class TypeNameContext { kGeneral, kTypeOnly };
+  enum class TypeSpecifierGrammar { kSimple, kTypeRequirement };
+  enum class TypeConstraintContext { kTentative, kRequired };
 
   struct MemberAccess {
     bool isMember;
@@ -280,7 +282,6 @@ class Parser final {
       bool isTemplateIntroduced, bool inRequiresClause,
       MemberAccess memberAccess = {}) -> bool;
   [[nodiscard]] auto lookat_nested_name_specifier_start() -> bool;
-  [[nodiscard]] auto lookat_placeholder_type_specifier_start() -> bool;
   void parse_optional_nested_name_specifier(NestedNameSpecifierAST*& yyast,
                                             NestedNameSpecifierContext ctx,
                                             MemberAccess memberAccess = {});
@@ -625,9 +626,11 @@ class Parser final {
       SpecifierAST*& yyast, DeclSpecs& specs,
       TypeNameContext context = TypeNameContext::kGeneral) -> bool;
   [[nodiscard]] auto rejects_plain_type_name(TypeNameContext context) -> bool;
-  [[nodiscard]] auto parse_named_type_specifier(
-      SpecifierAST*& yyast, DeclSpecs& specs,
-      TypeNameContext context = TypeNameContext::kGeneral) -> bool;
+  [[nodiscard]] auto parse_named_type_specifier(SpecifierAST*& yyast,
+                                                DeclSpecs& specs,
+                                                TypeNameContext context,
+                                                TypeSpecifierGrammar grammar)
+      -> bool;
   [[nodiscard]] auto parse_decltype_specifier_type_specifier(
       SpecifierAST*& yyast, DeclSpecs& specs) -> bool;
   [[nodiscard]] auto parse_underlying_type_specifier(SpecifierAST*& yyast,
@@ -659,8 +662,9 @@ class Parser final {
                                                      DeclSpecs& specs) -> bool;
   [[nodiscard]] auto parse_decltype_specifier(DecltypeSpecifierAST*& yyast)
       -> bool;
-  [[nodiscard]] auto parse_placeholder_type_specifier(SpecifierAST*& yyast,
-                                                      DeclSpecs& specs) -> bool;
+  [[nodiscard]] auto parse_placeholder_type_specifier(
+      SpecifierAST*& yyast, DeclSpecs& specs,
+      TypeConstraintAST* typeConstraint = nullptr) -> bool;
   [[nodiscard]] auto parse_init_declarator(
       InitDeclaratorAST*& yyast, const DeclSpecs& specs, BindingContext ctx,
       PlaceholderReplacement& listReplacement,
@@ -932,9 +936,9 @@ class Parser final {
       TemplateParameterAST*& yyast) -> bool;
   [[nodiscard]] auto parse_type_parameter_key(SourceLocation& classKeyLoc)
       -> bool;
-  [[nodiscard]] auto parse_type_constraint(TypeConstraintAST*& yyast,
-                                           bool parsingPlaceholderTypeSpec)
-      -> bool;
+  [[nodiscard]] auto parse_type_constraint(
+      TypeConstraintAST*& yyast, NestedNameSpecifierAST* nestedNameSpecifier,
+      TypeConstraintContext context) -> bool;
   [[nodiscard]] auto parse_unresolved_simple_template_id(
       SimpleTemplateIdAST*& yyast, Symbol* signatureHelpSymbol) -> bool;
   [[nodiscard]] auto parse_simple_template_id(SimpleTemplateIdAST*& yyast)
