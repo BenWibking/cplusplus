@@ -22,11 +22,8 @@
 #include <cxx/mlir/bitfield_accesses.h>
 #include <cxx/mlir/cxx_dialect.h>
 #include <cxx/mlir/passes.h>
-#include <cxx/token_fwd.h>
+#include <cxx/token.h>
 #include <mlir/Transforms/WalkPatternRewriteDriver.h>
-
-// cxx internal
-#include <cxx/private/builtin_function_keywords-priv.h>
 
 // mlir
 #include <llvm/IR/DataLayout.h>
@@ -1466,9 +1463,7 @@ class BuiltinCallOpLowering : public OpConversionPattern<cxx::BuiltinCallOp> {
       return lowerVaArg(op, adaptor, rewriter);
     }
 
-    auto name = op.getBuiltinName();
-    auto kind =
-        classifyBuiltinFunction(name.data(), static_cast<int>(name.size()));
+    auto kind = ::cxx::Token::builtinFunctionKind(op.getBuiltinName());
 
     switch (kind) {
       case BuiltinFunctionKind::T___BUILTIN_VA_START:

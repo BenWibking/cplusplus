@@ -63,8 +63,7 @@ export type Wire =
   | { k: "map"; cpp: string; key: Wire; value: Wire }
   | { k: "struct"; name: string; cpp: string }
   | { k: "variant"; cpp: string; alternatives: Wire[] }
-  | { k: "unit" }
-  | { k: "identifier-info" };
+  | { k: "unit" };
 
 const literalClasses = new Set([
   "::cxx::Literal",
@@ -268,7 +267,6 @@ export class WireMapper {
     const name = target.name;
 
     if (name === "::cxx::TranslationUnit") return { k: "unit" };
-    if (name === "::cxx::IdentifierInfo") return { k: "identifier-info" };
 
     if (name === "::cxx::List") {
       const [element] = typeArguments(target);

@@ -190,52 +190,9 @@ auto resolveBuiltinFunctionKind(IdExpressionAST* idExpr)
 
 Name::~Name() = default;
 
-auto Identifier::isBuiltinTypeTrait() const -> bool {
-  return builtinTypeTrait() != BuiltinTypeTraitKind::T_NONE;
-}
-
-auto Identifier::builtinTypeTrait() const -> BuiltinTypeTraitKind {
-  if (!info_) return BuiltinTypeTraitKind::T_NONE;
-
-  if (info_->kind() != IdentifierInfoKind::kTypeTrait)
-    return BuiltinTypeTraitKind::T_NONE;
-
-  return static_cast<const TypeTraitIdentifierInfo*>(info_)->trait();
-}
-
-auto Identifier::builtinFunction() const -> BuiltinFunctionKind {
-  if (!info_) return BuiltinFunctionKind::T_NONE;
-
-  if (info_->kind() != IdentifierInfoKind::kBuiltinFunction)
-    return BuiltinFunctionKind::T_NONE;
-
-  return static_cast<const BuiltinFunctionIdentifierInfo*>(info_)
-      ->builtinKind();
-}
-
 auto well_known_name(const Name* name) -> WellKnownName {
   auto id = name_cast<Identifier>(name);
   return id ? id->wellKnownName() : WellKnownName::T_NONE;
-}
-
-auto Identifier::wellKnownName() const -> WellKnownName {
-  if (!info_) return WellKnownName::T_NONE;
-
-  if (info_->kind() != IdentifierInfoKind::kWellKnownName)
-    return WellKnownName::T_NONE;
-
-  return static_cast<const WellKnownNameIdentifierInfo*>(info_)
-      ->wellKnownName();
-}
-
-auto Identifier::builtinTemplate() const -> BuiltinTemplateKind {
-  if (!info_) return BuiltinTemplateKind::T_NONE;
-
-  if (info_->kind() != IdentifierInfoKind::kBuiltinTemplate)
-    return BuiltinTemplateKind::T_NONE;
-
-  return static_cast<const BuiltinTemplateIdentifierInfo*>(info_)
-      ->builtinKind();
 }
 
 auto TemplateId::hash(const Name* name,

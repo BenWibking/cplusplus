@@ -199,8 +199,6 @@ constexpr std::size_t kWellKnownNameCount =
 }  // namespace
 
 struct Control::Private {
-  explicit Private(Control*) {}
-
   std::unordered_set<ClassSymbol*> copyConstructorSelections;
 
   MemoryLayout* memoryLayout = nullptr;
@@ -331,11 +329,7 @@ struct Control::Private {
   std::forward_list<UsingDeclarationSymbol> usingDeclarationSymbols;
   std::forward_list<NamespaceAliasSymbol> namespaceAliasSymbols;
 
-  std::forward_list<TypeTraitIdentifierInfo> typeTraitIdentifierInfos;
-  std::forward_list<UnaryBuiltinTypeInfo> unaryBuiltinTypeInfos;
-  std::forward_list<BuiltinFunctionIdentifierInfo> builtinFunctionInfos;
-  std::forward_list<BuiltinTemplateIdentifierInfo> builtinTemplateInfos;
-  std::forward_list<WellKnownNameIdentifierInfo> wellKnownNameInfos;
+  // Canonical local identifiers also requested directly by semantic enum.
   std::array<const Identifier*, kWellKnownNameCount> wellKnownIdentifiers{};
 
   [[nodiscard]] auto allocatedSymbolCounts() const -> SymbolCounts {
@@ -379,63 +373,6 @@ struct Control::Private {
   int anonymousIdCount = 0;
   const Type* alignValType = nullptr;
   const Type* nothrowType = nullptr;
-
-  [[nodiscard]] auto getIdentifier(std::string_view name) -> const Identifier* {
-    if (auto it = identifiers.find(name); it != identifiers.end()) return &*it;
-    return &*identifiers.emplace(std::string(name)).first;
-  }
-
-  void initBuiltinTypeTraits() {
-#define PROCESS_BUILTIN(id, name) \
-  getIdentifier(name)->setInfo(   \
-      &typeTraitIdentifierInfos.emplace_front(BuiltinTypeTraitKind::T_##id));
-
-    FOR_EACH_BUILTIN_TYPE_TRAIT(PROCESS_BUILTIN)
-
-#undef PROCESS_BUILTIN
-
-#define PROCESS_UNARY_BUILTIN(id, name) \
-  getIdentifier(name)->setInfo(         \
-      &unaryBuiltinTypeInfos.emplace_front(UnaryBuiltinTypeKind::T_##id));
-    FOR_EACH_UNARY_BUILTIN_TYPE_TRAIT(PROCESS_UNARY_BUILTIN)
-#undef PROCESS_UNARY_BUILTIN
-  }
-
-  void initBuiltinFunctions() {
-#define PROCESS_BUILTIN_FUNCTION(id, name) \
-  getIdentifier(name)->setInfo(            \
-      &builtinFunctionInfos.emplace_front(BuiltinFunctionKind::T_##id));
-
-    FOR_EACH_BUILTIN_FUNCTION(PROCESS_BUILTIN_FUNCTION)
-
-#undef PROCESS_BUILTIN_FUNCTION
-  }
-
-  void initWellKnownNames() {
-#define PROCESS_WELL_KNOWN_NAME(id, name) \
-  registerWellKnownName(WellKnownName::T_##id, name);
-
-    FOR_EACH_WELL_KNOWN_NAME(PROCESS_WELL_KNOWN_NAME)
-
-#undef PROCESS_WELL_KNOWN_NAME
-  }
-
-  void registerWellKnownName(WellKnownName wellKnownName,
-                             std::string_view spelling) {
-    auto identifier = getIdentifier(spelling);
-    identifier->setInfo(&wellKnownNameInfos.emplace_front(wellKnownName));
-    wellKnownIdentifiers[std::to_underlying(wellKnownName)] = identifier;
-  }
-
-  void initBuiltinTemplates() {
-#define PROCESS_BUILTIN_TEMPLATE(id, name) \
-  getIdentifier(name)->setInfo(            \
-      &builtinTemplateInfos.emplace_front(BuiltinTemplateKind::T_##id));
-
-    FOR_EACH_BUILTIN_TEMPLATE(PROCESS_BUILTIN_TEMPLATE)
-
-#undef PROCESS_BUILTIN_TEMPLATE
-  }
 };
 
 auto Control::canonicalTypeIdentities(const std::vector<const Type*>& types)
@@ -620,12 +557,7 @@ void Control::canonicalizeTypeArguments(
   }
 }
 
-Control::Control() : d(std::make_unique<Private>(this)) {
-  d->initBuiltinTypeTraits();
-  d->initBuiltinFunctions();
-  d->initBuiltinTemplates();
-  d->initWellKnownNames();
-}
+Control::Control() : d(std::make_unique<Private>()) {}
 
 Control::~Control() = default;
 
@@ -733,11 +665,22 @@ auto Control::newAnonymousId(std::string_view base) -> const Identifier* {
 }
 
 auto Control::getIdentifier(std::string_view name) -> const Identifier* {
-  return d->getIdentifier(name);
+  if (auto it = d->identifiers.find(name); it != d->identifiers.end())
+    return &*it;
+  auto info = IdentifierInfo::classify(name);
+  auto id = &*d->identifiers.emplace(std::string(name), info).first;
+  if (auto known = info.wellKnownName(); known != WellKnownName::T_NONE)
+    d->wellKnownIdentifiers[std::to_underlying(known)] = id;
+  return id;
 }
 
 auto Control::getIdentifier(WellKnownName name) const -> const Identifier* {
-  return d->wellKnownIdentifiers[std::to_underlying(name)];
+  auto& id = d->wellKnownIdentifiers[std::to_underlying(name)];
+  if (!id && name != WellKnownName::T_NONE) {
+    IdentifierInfo info(name);
+    id = &*d->identifiers.emplace(std::string(info.spelling()), info).first;
+  }
+  return id;
 }
 
 auto Control::getOperatorId(TokenKind op) -> const OperatorId* {

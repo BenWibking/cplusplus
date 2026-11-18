@@ -18,20 +18,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import * as tokens from "./tokens.ts";
-import kwgen from "./kwgen.ts";
-import { cpy_header } from "./cpy_header.ts";
+#pragma once
 
-export function gen_builtin_function_kwgen({ output }: { output: string }) {
-  kwgen({
-    copyright: cpy_header,
-    output,
-    keywords: tokens.BUILTIN_FUNCTIONS,
-    tokenPrefix: "cxx::BuiltinFunctionKind::T_",
-    tokenType: "cxx::BuiltinFunctionKind",
-    toUpper: true,
-    noEnums: true,
-    defaultToken: "cxx::BuiltinFunctionKind::T_NONE",
-    classifier: "classifyBuiltinFunction",
-  });
-}
+#include <cxx/token_fwd.h>
+
+#include <cstdint>
+#include <string_view>
+
+namespace cxx {
+
+// One ordinal in the generated spelling table. Each family is a contiguous
+// range in its token enum's order. Zero denotes an ordinary identifier.
+class IdentifierInfo {
+ public:
+  IdentifierInfo() = default;
+  explicit IdentifierInfo(WellKnownName name);
+  [[nodiscard]] static auto classify(std::string_view spelling)
+      -> IdentifierInfo;
+
+  [[nodiscard]] auto spelling() const -> std::string_view;
+  [[nodiscard]] auto builtinTypeTrait() const -> BuiltinTypeTraitKind;
+  [[nodiscard]] auto unaryBuiltinType() const -> UnaryBuiltinTypeKind;
+  [[nodiscard]] auto builtinFunction() const -> BuiltinFunctionKind;
+  [[nodiscard]] auto builtinTemplate() const -> BuiltinTemplateKind;
+  [[nodiscard]] auto wellKnownName() const -> WellKnownName;
+
+ private:
+  explicit IdentifierInfo(std::uint16_t ordinal) : ordinal_(ordinal) {}
+
+  // Index into the immutable spelling table, independent of source lifetime.
+  std::uint16_t ordinal_ = 0;
+};
+
+}  // namespace cxx

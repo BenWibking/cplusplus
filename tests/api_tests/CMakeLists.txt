@@ -39,6 +39,7 @@ add_executable(test_api
     test_diagnostics.cc
     test_external_names.cc
     test_floating_point.cc
+    test_identifiers.cc
     test_if_constexpr.cc
     test_initialization.cc
     test_lexer.cc

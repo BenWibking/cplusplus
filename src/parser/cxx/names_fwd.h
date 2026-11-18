@@ -53,19 +53,6 @@ class Symbol;
 using TemplateArgument =
     std::variant<const Type*, Symbol*, ConstValue, ExpressionAST*>;
 
-enum class IdentifierInfoKind {
-  kTypeTrait,
-  kUnaryBuiltinType,
-  kBuiltinFunction,
-  kBuiltinTemplate,
-  kWellKnownName,
-};
-
-class IdentifierInfo;
-class TypeTraitIdentifierInfo;
-class BuiltinFunctionIdentifierInfo;
-class WellKnownNameIdentifierInfo;
-
 [[nodiscard]] auto to_string(const Name* name, TypePrintOptions options = {})
     -> std::string;
 [[nodiscard]] auto to_string(const TemplateArgument& argument,

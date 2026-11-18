@@ -1157,7 +1157,7 @@ const StringLiteralSlotBase = FloatLiteralSlotBase + 3;
 const CharLiteralSlotBase = StringLiteralSlotBase + 7;
 const NameSlotBase = 0;
 const IdentifierSlotBase = NameSlotBase + 2;
-const OperatorIdSlotBase = IdentifierSlotBase + 8;
+const OperatorIdSlotBase = IdentifierSlotBase + 9;
 const DestructorIdSlotBase = OperatorIdSlotBase + 1;
 const LiteralOperatorIdSlotBase = DestructorIdSlotBase + 1;
 const ConversionFunctionIdSlotBase = LiteralOperatorIdSlotBase + 1;
@@ -9193,6 +9193,11 @@ export class Identifier extends Name {
   get wellKnownName(): WellKnownName {
     return wellKnownNameNames[
       cxx.readName(this.handle, IdentifierSlotBase + 7)
+    ]!;
+  }
+  get unaryBuiltinType(): UnaryBuiltinTypeKind {
+    return unaryBuiltinTypeKindNames[
+      cxx.readName(this.handle, IdentifierSlotBase + 8)
     ]!;
   }
 }

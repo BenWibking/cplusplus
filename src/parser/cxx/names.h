@@ -21,6 +21,7 @@
 #pragma once
 
 #include <cxx/ast_fwd.h>
+#include <cxx/identifier_info.h>
 #include <cxx/names_fwd.h>
 #include <cxx/source_location.h>
 #include <cxx/token_fwd.h>
@@ -33,91 +34,6 @@
 namespace cxx {
 
 class TranslationUnit;
-
-class IdentifierInfo {
- public:
-  explicit IdentifierInfo(IdentifierInfoKind kind) : kind_(kind) {}
-
-  virtual ~IdentifierInfo() = default;
-
-  [[nodiscard]] auto kind() const -> IdentifierInfoKind { return kind_; }
-
- private:
-  IdentifierInfoKind kind_;
-};
-
-class TypeTraitIdentifierInfo final : public IdentifierInfo {
- public:
-  static constexpr auto Kind = IdentifierInfoKind::kTypeTrait;
-
-  explicit TypeTraitIdentifierInfo(BuiltinTypeTraitKind trait)
-      : IdentifierInfo(Kind), trait_(trait) {}
-
-  [[nodiscard]] auto trait() const -> BuiltinTypeTraitKind { return trait_; }
-
- private:
-  BuiltinTypeTraitKind trait_;
-};
-
-class UnaryBuiltinTypeInfo final : public IdentifierInfo {
- public:
-  static constexpr auto Kind = IdentifierInfoKind::kUnaryBuiltinType;
-
-  explicit UnaryBuiltinTypeInfo(UnaryBuiltinTypeKind builtinKind)
-      : IdentifierInfo(Kind), builtinKind_(builtinKind) {}
-
-  [[nodiscard]] auto builtinKind() const -> UnaryBuiltinTypeKind {
-    return builtinKind_;
-  }
-
- private:
-  UnaryBuiltinTypeKind builtinKind_;
-};
-
-class BuiltinFunctionIdentifierInfo final : public IdentifierInfo {
- public:
-  static constexpr auto Kind = IdentifierInfoKind::kBuiltinFunction;
-
-  explicit BuiltinFunctionIdentifierInfo(BuiltinFunctionKind builtinKind)
-      : IdentifierInfo(Kind), builtinKind_(builtinKind) {}
-
-  [[nodiscard]] auto builtinKind() const -> BuiltinFunctionKind {
-    return builtinKind_;
-  }
-
- private:
-  BuiltinFunctionKind builtinKind_;
-};
-
-class BuiltinTemplateIdentifierInfo final : public IdentifierInfo {
- public:
-  static constexpr auto Kind = IdentifierInfoKind::kBuiltinTemplate;
-
-  explicit BuiltinTemplateIdentifierInfo(BuiltinTemplateKind builtinKind)
-      : IdentifierInfo(Kind), builtinKind_(builtinKind) {}
-
-  [[nodiscard]] auto builtinKind() const -> BuiltinTemplateKind {
-    return builtinKind_;
-  }
-
- private:
-  BuiltinTemplateKind builtinKind_;
-};
-
-class WellKnownNameIdentifierInfo final : public IdentifierInfo {
- public:
-  static constexpr auto Kind = IdentifierInfoKind::kWellKnownName;
-
-  explicit WellKnownNameIdentifierInfo(WellKnownName wellKnownName)
-      : IdentifierInfo(Kind), wellKnownName_(wellKnownName) {}
-
-  [[nodiscard]] auto wellKnownName() const -> WellKnownName {
-    return wellKnownName_;
-  }
-
- private:
-  WellKnownName wellKnownName_;
-};
 
 class Name {
  public:
@@ -142,8 +58,8 @@ class Identifier final : public Name {
     return std::hash<std::string_view>{}(name);
   }
 
-  explicit Identifier(std::string name)
-      : Name(Kind, hash(name)), name_(std::move(name)) {}
+  explicit Identifier(std::string name, IdentifierInfo info = {})
+      : Name(Kind, hash(name)), name_(std::move(name)), info_(info) {}
 
   [[nodiscard]] auto isAnonymous() const -> bool { return name_.at(0) == '$'; }
 
@@ -151,21 +67,33 @@ class Identifier final : public Name {
 
   [[nodiscard]] auto value() const -> const std::string& { return name(); }
 
-  [[nodiscard]] auto isBuiltinTypeTrait() const -> bool;
-  [[nodiscard]] auto builtinTypeTrait() const -> BuiltinTypeTraitKind;
+  [[nodiscard]] auto isBuiltinTypeTrait() const -> bool {
+    return builtinTypeTrait() != BuiltinTypeTraitKind::T_NONE;
+  }
+  [[nodiscard]] auto builtinTypeTrait() const -> BuiltinTypeTraitKind {
+    return info_.builtinTypeTrait();
+  }
+  [[nodiscard]] auto builtinFunction() const -> BuiltinFunctionKind {
+    return info_.builtinFunction();
+  }
+  [[nodiscard]] auto builtinTemplate() const -> BuiltinTemplateKind {
+    return info_.builtinTemplate();
+  }
+  [[nodiscard]] auto wellKnownName() const -> WellKnownName {
+    return info_.wellKnownName();
+  }
+  [[nodiscard]] auto unaryBuiltinType() const -> UnaryBuiltinTypeKind {
+    return info_.unaryBuiltinType();
+  }
 
-  [[nodiscard]] auto builtinFunction() const -> BuiltinFunctionKind;
-
-  [[nodiscard]] auto builtinTemplate() const -> BuiltinTemplateKind;
-
-  [[nodiscard]] auto wellKnownName() const -> WellKnownName;
-
-  [[nodiscard]] auto info() const -> const IdentifierInfo* { return info_; }
-  void setInfo(const IdentifierInfo* info) const { info_ = info; }
+  // A trait used as a declarator is an ordinary name for the rest of this unit.
+  void clearBuiltinTypeTrait() const { info_ = {}; }
 
  private:
+  // Owned spelling used for interning, including ordinary source identifiers.
   std::string name_;
-  mutable const IdentifierInfo* info_ = nullptr;
+  // Semantic meaning in the translation unit that interned this identifier.
+  mutable IdentifierInfo info_;
 };
 
 class OperatorId final : public Name {

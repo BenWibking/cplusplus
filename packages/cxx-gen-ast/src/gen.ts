@@ -43,7 +43,7 @@ import { gen_keywords_kwgen } from "./gen_keywords_kwgen.ts";
 import { gen_c_keywords_kwgen } from "./gen_c_keywords_kwgen.ts";
 import { gen_sve_types_kwgen } from "./gen_sve_types_kwgen.ts";
 import { gen_pp_keywords_kwgen } from "./gen_pp_keywords_kwgen.ts";
-import { gen_builtin_function_kwgen } from "./gen_builtin_function_kwgen.ts";
+import { gen_identifier_index } from "./gen_identifier_index.ts";
 import { gen_ast_pretty_printer_h } from "./gen_ast_pretty_printer_h.ts";
 import { gen_ast_pretty_printer_cc } from "./gen_ast_pretty_printer_cc.ts";
 import { gen_builtins_h } from "./gen_builtins_h.ts";
@@ -180,11 +180,8 @@ gen_sve_types_kwgen({
 gen_pp_keywords_kwgen({
   output: path.join(outdir, "src/parser/cxx/private/pp_directives-priv.h"),
 });
-gen_builtin_function_kwgen({
-  output: path.join(
-    outdir,
-    "src/parser/cxx/private/builtin_function_keywords-priv.h",
-  ),
+gen_identifier_index({
+  output: path.join(outdir, "src/parser/cxx/private/identifier_index-priv.h"),
 });
 
 child_process.execSync("clang-format -i *.h *.cc", {

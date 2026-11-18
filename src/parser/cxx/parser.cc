@@ -3452,16 +3452,9 @@ auto Parser::parse_unary_builtin_type_op(SourceLocation& loc,
 
   auto identifier = unit_->identifier(currentLocation());
 
-  auto info = identifier->info();
-  if (!info) return false;
-
-  if (info->kind() != IdentifierInfoKind::kUnaryBuiltinType) return false;
-
-  auto builtin = static_cast<const UnaryBuiltinTypeInfo*>(info);
-
-  if (builtin->builtinKind() == UnaryBuiltinTypeKind::T_NONE) return false;
-
-  builtinKind = builtin->builtinKind();
+  auto builtin = identifier->unaryBuiltinType();
+  if (builtin == UnaryBuiltinTypeKind::T_NONE) return false;
+  builtinKind = builtin;
   loc = consumeToken();
 
   return true;
@@ -7463,19 +7456,7 @@ void Parser::check_type_traits() {
   BuiltinTypeTraitKind builtinKind = BuiltinTypeTraitKind::T_NONE;
   if (!parse_type_traits_op(typeTraitLoc, builtinKind)) return;
 
-  if (auto id = unit_->identifier(typeTraitLoc)) {
-    id->setInfo(nullptr);
-  }
-
-#if false
-
-  parse_warn(
-      typeTraitLoc,
-      std::format("keyword '{}' will be made available as an identifier for "
-                  "the remainder of the translation unit",
-                  Token::spell(builtinKind)));
-#endif
-
+  unit_->identifier(typeTraitLoc)->clearBuiltinTypeTrait();
   rewind(typeTraitLoc);
 }
 

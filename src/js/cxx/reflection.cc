@@ -692,7 +692,7 @@ constexpr int NameSlotBase = 0;
 
 constexpr int IdentifierSlotBase = NameSlotBase + 2;
 
-constexpr int OperatorIdSlotBase = IdentifierSlotBase + 8;
+constexpr int OperatorIdSlotBase = IdentifierSlotBase + 9;
 
 constexpr int DestructorIdSlotBase = OperatorIdSlotBase + 1;
 
@@ -15187,6 +15187,11 @@ auto readName(std::intptr_t handle, int slot) -> double {
       auto self = static_cast<const ::cxx::Identifier*>(
           reinterpret_cast<const ::cxx::Name*>(handle));
       return static_cast<double>(self->wellKnownName());
+    }
+    case IdentifierSlotBase + 8: {
+      auto self = static_cast<const ::cxx::Identifier*>(
+          reinterpret_cast<const ::cxx::Name*>(handle));
+      return static_cast<double>(self->unaryBuiltinType());
     }
     case OperatorIdSlotBase + 0: {
       auto self = static_cast<const ::cxx::OperatorId*>(

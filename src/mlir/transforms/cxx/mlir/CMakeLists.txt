@@ -8,7 +8,7 @@ target_include_directories(cxx-mlir-transforms
     PRIVATE ${PROJECT_SOURCE_DIR}/src/parser
 )
 
-target_link_libraries(cxx-mlir-transforms PUBLIC cxx-mlir-dialect)
+target_link_libraries(cxx-mlir-transforms PUBLIC cxx-mlir-dialect PRIVATE cxx-parser)
 
 mlir_target_link_libraries(cxx-mlir-transforms PUBLIC
     MLIRAnalysis

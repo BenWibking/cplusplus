@@ -83,6 +83,7 @@ add_library(cxx-parser
     cxx/floating_point.cc
     cxx/function_body_warnings.cc
     cxx/gcc_linux_toolchain.cc
+    cxx/identifier_info.cc
     cxx/lexer.cc
     cxx/literals.cc
     cxx/macos_toolchain.cc

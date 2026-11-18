@@ -178,7 +178,6 @@ export function emitWrite(
 
     case "empty":
     case "unit":
-    case "identifier-info":
       return;
 
     case "struct":
@@ -494,10 +493,6 @@ export function emitRead(
 
     case "unit":
       push(`${cppType} ${target} = unit();`);
-      return;
-
-    case "identifier-info":
-      push(`${cppType} ${target} = nullptr;`);
       return;
 
     case "struct":

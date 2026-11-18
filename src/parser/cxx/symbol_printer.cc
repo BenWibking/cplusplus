@@ -78,10 +78,7 @@ struct DumpSymbols {
     for (auto symbol : sortedSymbols) {
       if (symbol->canonical() != symbol) continue;
       auto id = name_cast<Identifier>(symbol->name());
-      if (id && id->info() &&
-          id->info()->kind() == IdentifierInfoKind::kBuiltinFunction) {
-        continue;
-      }
+      if (id && id->builtinFunction() != BuiltinFunctionKind::T_NONE) continue;
       if (id && id->builtinTemplate() != BuiltinTemplateKind::T_NONE) continue;
       if (isPreambleSymbol(symbol)) continue;
       visit(*this, symbol);
