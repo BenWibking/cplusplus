@@ -1173,8 +1173,6 @@ class Parser final {
 
   void enterFunctionScope(FunctionDeclaratorChunkAST* functionDeclarator);
 
-  void check_type_traits();
-
   [[nodiscard]] auto evaluate_constant_expression(ExpressionAST* expr)
       -> std::optional<ConstValue>;
 

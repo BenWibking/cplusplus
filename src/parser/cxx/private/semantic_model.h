@@ -51,7 +51,8 @@ inline constexpr FieldDescriptor kSemanticFieldModelStorage[] = {
     {"::cxx::Identifier", "name_", FieldPersistence::kPersisted,
      "carried by the interning factory arguments"},
     {"::cxx::Identifier", "info_", FieldPersistence::kRebuilt,
-     "a builtin-identifier cache, re-resolved from the spelling"},
+     "builtin identity comes from the spelling, with trait demotions carried "
+     "by the session"},
     {"::cxx::OperatorId", "op_", FieldPersistence::kPersisted,
      "carried by the interning factory arguments"},
     {"::cxx::LiteralOperatorId", "name_", FieldPersistence::kPersisted,

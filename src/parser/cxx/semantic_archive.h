@@ -27,6 +27,7 @@
 #include <cxx/names_fwd.h>
 #include <cxx/source_location.h>
 #include <cxx/symbols_fwd.h>
+#include <cxx/token_fwd.h>
 #include <cxx/types_fwd.h>
 
 #include <algorithm>
@@ -124,6 +125,8 @@ struct SemanticArchiveRoots {
   int anonymousIdCount = 0;
   int uniqueClosureCount = 0;
   unsigned prefixTokenCount = 0;
+  // Traits declared as ordinary identifiers in the prefix, in enum order.
+  std::vector<BuiltinTypeTraitKind> demotedTypeTraits;
   std::vector<FunctionSymbol*> pendingBodyCompletions;
   std::vector<ClassSymbol*> pendingMemberInstantiations;
   std::vector<ClassSymbol*> instantiatedMemberClasses;

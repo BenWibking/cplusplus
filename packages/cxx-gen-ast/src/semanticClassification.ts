@@ -388,7 +388,7 @@ export const bindings: Record<string, ClassBindings> = {
   '::cxx::Identifier': {
     info_: {
       cls: 'R',
-      why: 'a builtin-identifier cache, re-resolved from the spelling',
+      why: 'builtin identity comes from the spelling, with trait demotions carried by the session',
     },
   },
 

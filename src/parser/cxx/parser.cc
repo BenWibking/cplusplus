@@ -7451,15 +7451,6 @@ void Parser::synthesizeLambdaAbbreviatedTemplateParams(
   parameter_declaration_clauses_.erase(clauseStart);
 }
 
-void Parser::check_type_traits() {
-  SourceLocation typeTraitLoc;
-  BuiltinTypeTraitKind builtinKind = BuiltinTypeTraitKind::T_NONE;
-  if (!parse_type_traits_op(typeTraitLoc, builtinKind)) return;
-
-  unit_->identifier(typeTraitLoc)->clearBuiltinTypeTrait();
-  rewind(typeTraitLoc);
-}
-
 auto Parser::evaluate_constant_expression(ExpressionAST* expr)
     -> std::optional<ConstValue> {
   auto interp = ASTInterpreter{unit_, binder_.scope()};
@@ -8210,7 +8201,7 @@ auto Parser::parse_declarator_id(CoreDeclaratorAST*& yyast, Decl& decl,
   SourceLocation templateLoc;
   const auto isTemplateIntroduced = match(TokenKind::T_TEMPLATE, templateLoc);
 
-  check_type_traits();
+  unit_->demoteBuiltinTypeTrait(LA());
 
   UnqualifiedIdAST* unqualifiedId = nullptr;
   if (!parse_unqualified_id(unqualifiedId, nestedNameSpecifier,
@@ -10359,7 +10350,7 @@ auto Parser::parse_class_specifier(ClassSpecifierAST*& yyast, DeclSpecs& specs)
         nestedNameSpecifier, NestedNameSpecifierContext::kDeclarative);
 
     if (lookat(TokenKind::T_IDENTIFIER)) {
-      check_type_traits();
+      unit_->demoteBuiltinTypeTrait(LA());
 
       if (SimpleTemplateIdAST* templateId = nullptr;
           parse_simple_template_id(templateId)) {

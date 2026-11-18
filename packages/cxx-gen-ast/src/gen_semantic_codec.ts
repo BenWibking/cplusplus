@@ -20,6 +20,7 @@
 
 import * as fs from "node:fs";
 import { cpy_header } from "./cpy_header.ts";
+import { BUILTIN_TYPE_TRAITS } from "./tokens.ts";
 import type { CodecPlan, EntityPlan, FieldPlan } from "./semanticPlan.ts";
 import type { Wire } from "./semanticWire.ts";
 import {
@@ -419,6 +420,11 @@ function encoderEntryPoint(plan: CodecPlan): string {
   lines.push(`  session.varI32(roots.anonymousIdCount);`);
   lines.push(`  session.varI32(roots.uniqueClosureCount);`);
   lines.push(`  session.varU32(roots.prefixTokenCount);`);
+  lines.push(
+    `  session.varU32(static_cast<std::uint32_t>(roots.demotedTypeTraits.size()));`,
+  );
+  lines.push(`  for (auto trait : roots.demotedTypeTraits)`);
+  lines.push(`    session.varU32(static_cast<std::uint32_t>(trait));`);
   lines.push(``);
   for (const queue of queues) {
     lines.push(
@@ -674,6 +680,21 @@ function decoderEntryPoint(plan: CodecPlan): string {
   lines.push(`  roots.anonymousIdCount = session.varI32();`);
   lines.push(`  roots.uniqueClosureCount = session.varI32();`);
   lines.push(`  roots.prefixTokenCount = session.varU32();`);
+  lines.push(`  {`);
+  lines.push(`    const auto count = session.varCount(1);`);
+  lines.push(`    std::uint32_t previous = 0;`);
+  lines.push(`    for (std::uint32_t i = 0; ok() && i < count; ++i) {`);
+  lines.push(`      const auto trait = session.varU32();`);
+  lines.push(`      if (trait <= previous || trait > ${BUILTIN_TYPE_TRAITS.length}) {`);
+  lines.push(`        fail("invalid demoted builtin type trait in session");`);
+  lines.push(`        break;`);
+  lines.push(`      }`);
+  lines.push(
+    `      roots.demotedTypeTraits.push_back(static_cast<BuiltinTypeTraitKind>(trait));`,
+  );
+  lines.push(`      previous = trait;`);
+  lines.push(`    }`);
+  lines.push(`  }`);
   lines.push(``);
   for (const queue of queues) {
     lines.push(`  {`);

@@ -293,6 +293,13 @@ auto TranslationUnit::tokenLength(SourceLocation loc) const -> int {
   return static_cast<int>(Token::spell(tk.kind()).size());
 }
 
+void TranslationUnit::demoteBuiltinTypeTrait(const Token& token) {
+  auto trait = token.builtinTypeTrait();
+  if (trait == BuiltinTypeTraitKind::T_NONE) return;
+  demotedTypeTraits_.push_back(trait);
+  token.value().idValue->clearBuiltinTypeTrait();
+}
+
 auto TranslationUnit::identifier(SourceLocation loc) const
     -> const Identifier* {
   const auto& tk = tokenAt(loc);
@@ -392,6 +399,9 @@ void TranslationUnit::adoptPrefix(SemanticArchiveRoots roots,
 
   control_->setAnonymousIdCount(roots.anonymousIdCount);
   uniqueClosureCount_ = roots.uniqueClosureCount;
+  demotedTypeTraits_ = std::move(roots.demotedTypeTraits);
+  for (auto trait : demotedTypeTraits_)
+    control_->getIdentifier(Token::spell(trait))->clearBuiltinTypeTrait();
 
   setTokenSegmentBase(roots.prefixTokenCount);
 
@@ -459,6 +469,8 @@ auto TranslationUnit::semanticArchiveRoots() -> SemanticArchiveRoots {
   roots.anonymousIdCount = control_->anonymousIdCount();
   roots.uniqueClosureCount = uniqueClosureCount_;
   roots.prefixTokenCount = locationOfIndex(tokenCount()).index();
+  roots.demotedTypeTraits = demotedTypeTraits_;
+  std::ranges::sort(roots.demotedTypeTraits);
   roots.pendingBodyCompletions = pendingBodyCompletions_;
   roots.pendingMemberInstantiations = pendingMemberInstantiations_;
   roots.instantiatedMemberClasses.assign(instantiatedMemberClasses_.begin(),

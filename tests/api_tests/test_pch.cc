@@ -967,6 +967,33 @@ static_assert(__builtin_offsetof(Slot, pointer) == 32);
   EXPECT_EQ(diagnostics.errorCount(), 0);
 }
 
+TEST(PrecompiledHeader, RestoresTraitNamesDeclaredInThePrefix) {
+  Prefix prefix{R"(
+constexpr int __is_union(int value) { return value + 1; }
+struct Box {
+  static constexpr int __is_class(int value) { return value + 2; }
+};
+)"};
+  auto data = prefix.emit();
+  ASSERT_TRUE(prefix.errors().empty());
+  ASSERT_FALSE(data.empty());
+
+  DiagnosticsClient diagnostics;
+  MemoryLayout layout{32};
+  TranslationUnit consumer{&diagnostics};
+  consumer.control()->setMemoryLayout(&layout);
+  PrecompiledHeaderReader reader{&consumer, keys()};
+  ASSERT_TRUE(reader(data)) << reader.error();
+  consumer.setSource(R"(
+static_assert(__is_union(3) == 4);
+static_assert(Box::__is_class(3) == 5);
+static_assert(__is_empty(Box));
+)",
+                     "consumer.cc");
+  consumer.resume({.analysisMode = ParserAnalysisMode::kFull});
+  EXPECT_EQ(diagnostics.errorCount(), 0);
+}
+
 TEST(PrecompiledHeader, RestoresPackedEnumSemantics) {
   Prefix prefix{R"(
 enum Packed { value = 255 } __attribute__((packed));

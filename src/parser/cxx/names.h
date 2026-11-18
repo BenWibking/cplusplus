@@ -86,10 +86,11 @@ class Identifier final : public Name {
     return info_.unaryBuiltinType();
   }
 
-  // A trait used as a declarator is an ordinary name for the rest of this unit.
+ private:
+  friend class TranslationUnit;
+
   void clearBuiltinTypeTrait() const { info_ = {}; }
 
- private:
   // Owned spelling used for interning, including ordinary source identifiers.
   std::string name_;
   // Semantic meaning in the translation unit that interned this identifier.

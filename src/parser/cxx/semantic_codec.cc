@@ -57,6 +57,9 @@ void SemanticEncoder::writeSession(const SemanticArchiveRoots& roots,
   session.varI32(roots.anonymousIdCount);
   session.varI32(roots.uniqueClosureCount);
   session.varU32(roots.prefixTokenCount);
+  session.varU32(static_cast<std::uint32_t>(roots.demotedTypeTraits.size()));
+  for (auto trait : roots.demotedTypeTraits)
+    session.varU32(static_cast<std::uint32_t>(trait));
 
   session.varU32(
       static_cast<std::uint32_t>(roots.pendingBodyCompletions.size()));
@@ -7401,6 +7404,20 @@ auto SemanticDecoder::operator()(const ArchiveReader& archive,
   roots.anonymousIdCount = session.varI32();
   roots.uniqueClosureCount = session.varI32();
   roots.prefixTokenCount = session.varU32();
+  {
+    const auto count = session.varCount(1);
+    std::uint32_t previous = 0;
+    for (std::uint32_t i = 0; ok() && i < count; ++i) {
+      const auto trait = session.varU32();
+      if (trait <= previous || trait > 71) {
+        fail("invalid demoted builtin type trait in session");
+        break;
+      }
+      roots.demotedTypeTraits.push_back(
+          static_cast<BuiltinTypeTraitKind>(trait));
+      previous = trait;
+    }
+  }
 
   {
     const auto count = session.varCount(1);

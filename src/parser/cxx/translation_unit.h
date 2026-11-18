@@ -569,6 +569,10 @@ class TranslationUnit {
   [[nodiscard]] auto tokenEndPosition(SourceLocation loc) const
       -> SourcePosition;
 
+  // A trait token from this unit used as a declarator becomes an ordinary
+  // identifier for the rest of the unit.
+  void demoteBuiltinTypeTrait(const Token& token);
+
   [[nodiscard]] auto identifier(SourceLocation loc) const -> const Identifier*;
 
   [[nodiscard]] auto packAlignmentAt(SourceLocation loc) const -> int;
@@ -621,6 +625,8 @@ class TranslationUnit {
   std::vector<ClassSymbol*> pendingMemberInstantiations_;
   std::unordered_set<ClassSymbol*> pendingMemberInstantiationIndex_;
   std::unordered_set<ClassSymbol*> instantiatedMemberClasses_;
+  // Trait declarations retained when freezing or adopting a prefix.
+  std::vector<BuiltinTypeTraitKind> demotedTypeTraits_;
   std::vector<FunctionSymbol*> pendingBodyCompletions_;
   std::vector<RequiredDefinition> requiredDefinitions_;
   bool isExaminingRequiredDefinitions_ = false;
