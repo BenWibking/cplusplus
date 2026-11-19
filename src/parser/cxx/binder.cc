@@ -3263,6 +3263,9 @@ void Binder::complete(LambdaExpressionAST* ast) {
     auto operatorCallName = control()->getOperatorId(TokenKind::T_LPAREN);
     auto operatorFunc = declareClosureMemberFunction(
         classSymbol, operatorCallName, funcType, ast->lbracketLoc);
+    if (ast->expressionAttributeList || ast->attributeList)
+      applyDeclarationAttributes(operatorFunc, ast->expressionAttributeList,
+                                 nullptr, ast->attributeList);
     operatorFunc->setTrailingRequiresClause(ast->requiresClause);
     operatorFunc->setStatic(ast->symbol->isStatic());
     operatorFunc->setConsteval(ast->symbol->isConsteval());
@@ -3595,6 +3598,7 @@ auto Binder::closureCallOperatorDefinition(LambdaExpressionAST* ast,
       OperatorFunctionIdAST::create(ar, TokenKind::T_LPAREN);
 
   auto funcChunk = FunctionDeclaratorChunkAST::create(ar);
+  funcChunk->attributeList = ast->attributeList;
   if (ast->parameterDeclarationClause) {
     funcChunk->parameterDeclarationClause =
         ast->parameterDeclarationClause->clone(ar);
@@ -3612,6 +3616,7 @@ auto Binder::closureCallOperatorDefinition(LambdaExpressionAST* ast,
   }
 
   auto funcDef = FunctionDefinitionAST::create(ar);
+  funcDef->attributeList = ast->expressionAttributeList;
   funcDef->declarator = DeclaratorAST::create(
       ar, /*ptrOpList=*/nullptr, /*coreDeclarator=*/idDecl,
       /*declaratorChunkList=*/

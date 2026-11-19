@@ -21,6 +21,7 @@
 #include <cxx/ast.h>
 #include <cxx/attributes.h>
 #include <cxx/control.h>
+#include <cxx/decl.h>
 #include <cxx/diagnostics_client.h>
 #include <cxx/memory_layout.h>
 #include <cxx/preprocessor.h>
@@ -30,6 +31,8 @@
 #include <limits>
 #include <string>
 #include <string_view>
+
+#include "test_utils.h"
 
 using namespace cxx;
 
@@ -218,6 +221,31 @@ TEST(Attributes, AlternateSpellingsShareTheSemanticAttribute) {
   auto cxx = findAttributeSpelling(AttributeSyntax::kCxx, "gnu", "unused");
   ASSERT_NE(cxx, nullptr);
   EXPECT_EQ(cxx->kind, AttributeKind::kMaybeUnused);
+}
+
+TEST(Attributes, LambdaFrontAttributesAppertainToTheCallOperator) {
+  auto source = R"(
+    auto f = [] [[maybe_unused]] (int x) [[vendor::function_type]] { return x; };
+  )"_cxx;
+  auto variable = source.getAs<VariableSymbol>("f");
+  ASSERT_TRUE(variable);
+  auto closure = type_cast<ClassType>(variable->type());
+  ASSERT_TRUE(closure);
+  auto call = closure->symbol()->functionCallOperator();
+  ASSERT_TRUE(call);
+  ASSERT_TRUE(call->attributes());
+  ASSERT_EQ(call->attributes()->size(), 1u);
+  EXPECT_TRUE(findAttribute(call->attributes(), AttributeKind::kMaybeUnused));
+  auto definition = call->declaration();
+  ASSERT_TRUE(definition);
+  EXPECT_TRUE(
+      findAttribute(definition->attributeList, AttributeKind::kMaybeUnused));
+  auto prototype = getFunctionPrototype(definition->declarator);
+  ASSERT_TRUE(prototype);
+  ASSERT_TRUE(prototype->attributeList);
+  auto attributes = collectAttributes(&source.unit, prototype->attributeList);
+  ASSERT_EQ(attributes.size(), 1u);
+  EXPECT_EQ(attributes.front().name->name(), "function_type");
 }
 
 TEST(Attributes, RetainedSpellingsRespectTheirSourceGrammar) {
