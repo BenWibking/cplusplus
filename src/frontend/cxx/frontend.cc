@@ -57,15 +57,13 @@
 #ifdef CXX_WITH_MLIR
 #include <cxx/mlir/cxx_dialect.h>
 #include <cxx/mlir/cxx_dialect_conversions.h>
+#include <cxx/mlir/llvm_codegen.h>
 #include <cxx/mlir/mlir_emitter.h>
 #include <cxx/mlir/mlir_source_contexts.h>
 #include <cxx/mlir/mlir_source_region.h>
 #include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
-#include <llvm/MC/TargetRegistry.h>
 #include <llvm/Pass.h>
-#include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <mlir/Parser/Parser.h>
 #endif
@@ -1252,16 +1250,7 @@ auto Frontend::Private::debugCompilationDirectory() const -> std::string {
 #ifdef CXX_WITH_MLIR
 auto Frontend::Private::llvmOptimizationLevel() const
     -> llvm::OptimizationLevel {
-  switch (cli.optimizationLevel()) {
-    case 1:
-      return llvm::OptimizationLevel::O1;
-    case 2:
-      return llvm::OptimizationLevel::O2;
-    case 3:
-      return llvm::OptimizationLevel::O3;
-    default:
-      return llvm::OptimizationLevel::O0;
-  }
+  return cxx::llvmOptimizationLevel(cli.optimizationLevel());
 }
 
 auto Frontend::Private::relocationModel() const
@@ -1277,44 +1266,12 @@ auto Frontend::Private::relocationModel() const
 auto Frontend::Private::targetMachine() -> llvm::TargetMachine* {
   if (targetMachine_) return targetMachine_.get();
 
-  llvm::InitializeAllAsmPrinters();
-
-  auto triple = llvm::Triple{toolchain_->memoryLayout()->triple()};
-
   std::string error;
-  auto target = llvm::TargetRegistry::lookupTarget(triple, error);
-
-  if (!target) {
-    std::print(stderr, "cxx: cannot find target for triple '{}': {}\n",
-               triple.getTriple(), error);
-    return nullptr;
-  }
-
-  const auto codeGenOptLevel = [&] {
-    switch (cli.optimizationLevel()) {
-      case 1:
-        return llvm::CodeGenOptLevel::Less;
-      case 2:
-        return llvm::CodeGenOptLevel::Default;
-      case 3:
-        return llvm::CodeGenOptLevel::Aggressive;
-      default:
-        return llvm::CodeGenOptLevel::None;
-    }
-  }();
-
-  llvm::TargetOptions opt;
-  opt.UseInitArray = true;
-
   targetMachine_ =
-      std::unique_ptr<llvm::TargetMachine>(target->createTargetMachine(
-          llvm::Triple{triple}, "generic", "", opt, relocationModel(),
-          std::nullopt, codeGenOptLevel));
+      createTargetMachine(toolchain_->memoryLayout()->triple(),
+                          cli.optimizationLevel(), error, relocationModel());
 
-  if (!targetMachine_) {
-    std::print(stderr, "cxx: cannot create target machine for '{}': {}\n",
-               triple.getTriple(), error);
-  }
+  if (!targetMachine_) std::print(stderr, "cxx: {}\n", error);
 
   return targetMachine_.get();
 }
@@ -1335,21 +1292,12 @@ void Frontend::Private::emitCode() {
   const bool emitAssembly = cli.opt_S && !objectOutput_.has_value();
 
   auto emit = [&](llvm::raw_pwrite_stream& out) {
-    llvm::legacy::PassManager pm;
-
-    llvm::CodeGenFileType fileType = emitAssembly
-                                         ? llvm::CodeGenFileType::AssemblyFile
-                                         : llvm::CodeGenFileType::ObjectFile;
-
-    if (targetMachine->addPassesToEmitFile(pm, out, nullptr, fileType)) {
-      std::print(stderr, "{}", "cxx: target machine cannot emit assembly\n");
+    std::string error;
+    if (!emitMachineCode(*llvmModule_, targetMachine, out, emitAssembly,
+                         error)) {
+      if (!error.empty()) std::print(stderr, "cxx: {}\n", error);
       fail();
-      return;
     }
-
-    pm.run(*llvmModule_);
-    if (llvmContext_->getDiagHandlerPtr()->HasErrors) fail();
-    out.flush();
   };
 
   if (objectOutput_.has_value()) {

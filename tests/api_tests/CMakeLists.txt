@@ -54,6 +54,14 @@ if (CXX_ENABLE_MLIR)
         cxx-mlir)
 
     gtest_discover_tests(test_mlir_emitter DISCOVERY_MODE PRE_TEST)
+
+    add_executable(test_llvm_codegen test_llvm_codegen.cc)
+
+    target_link_libraries(test_llvm_codegen
+        GTest::gtest_main
+        cxx-mlir)
+
+    gtest_discover_tests(test_llvm_codegen DISCOVERY_MODE PRE_TEST)
 endif()
 
 # Evaluate the target's effective include directories, including dependencies.

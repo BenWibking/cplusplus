@@ -7,6 +7,7 @@ set(SOURCES
     mlir_emitter_control_flow.cc
     cxx_dialect_conversions.cc
     cxx_llvm_translation.cc
+    llvm_codegen.cc
 )
 
 add_library(cxx-mlir ${SOURCES})
